@@ -1,34 +1,34 @@
-"""JSON store for one-shot entitlements."""
+"""Entitlements store: SQLite by default (free). Supabase if keys are set."""
 
 from __future__ import annotations
 
-import json
-import threading
+import os
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
 
-import os
-
 from envload import ROOT
+import sqlite_db
 import supabase_db
 
 DATA_DIR = ROOT / "data"
 STORE_PATH = DATA_DIR / "store.json"
+DB_PATH = DATA_DIR / "planfit.db"
 PDF_DIR = DATA_DIR / "pdfs"
 OUTBOX_DIR = DATA_DIR / "outbox"
 
-_lock = threading.RLock()
+_lock = __import__("threading").RLock()
 
 
 def configure_paths(root: Path | None = None) -> None:
-    """Point the store at a directory. Tests use a temp folder via PLANFIT_DATA_DIR."""
-    global DATA_DIR, STORE_PATH, PDF_DIR, OUTBOX_DIR
+    global DATA_DIR, STORE_PATH, DB_PATH, PDF_DIR, OUTBOX_DIR
     override = (os.environ.get("PLANFIT_DATA_DIR") or "").strip()
     DATA_DIR = Path(root) if root is not None else (Path(override) if override else ROOT / "data")
     STORE_PATH = DATA_DIR / "store.json"
+    DB_PATH = DATA_DIR / "planfit.db"
     PDF_DIR = DATA_DIR / "pdfs"
     OUTBOX_DIR = DATA_DIR / "outbox"
+    sqlite_db.init(DB_PATH)
 
 
 configure_paths()
@@ -42,58 +42,32 @@ def ensure_dirs() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     PDF_DIR.mkdir(parents=True, exist_ok=True)
     OUTBOX_DIR.mkdir(parents=True, exist_ok=True)
-    if not STORE_PATH.exists():
-        _atomic_write({"entitlements": {}, "by_payment_ref": {}})
-
-
-def _atomic_write(payload: dict) -> None:
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    tmp = STORE_PATH.with_suffix(".tmp")
-    tmp.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-    tmp.replace(STORE_PATH)
-
-
-def _read() -> dict:
-    ensure_dirs()
-    try:
-        data = json.loads(STORE_PATH.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, FileNotFoundError):
-        data = {}
-    data.setdefault("entitlements", {})
-    data.setdefault("by_payment_ref", {})
-    return data
+    sqlite_db.init(DB_PATH)
+    sqlite_db.import_json_if_empty(STORE_PATH)
 
 
 def get_by_token(token: str) -> dict | None:
     if supabase_db.enabled():
         return supabase_db.get_entitlement_by_token(token)
+    ensure_dirs()
     with _lock:
-        ent = _read()["entitlements"].get(token)
-        return deepcopy(ent) if ent else None
+        return sqlite_db.get_entitlement_by_token(token)
 
 
 def get_by_payment_ref(payment_ref: str) -> dict | None:
     if supabase_db.enabled():
         return supabase_db.get_entitlement_by_payment_ref(payment_ref)
+    ensure_dirs()
     with _lock:
-        data = _read()
-        token = data["by_payment_ref"].get(payment_ref)
-        if not token:
-            return None
-        ent = data["entitlements"].get(token)
-        return deepcopy(ent) if ent else None
+        return sqlite_db.get_entitlement_by_payment_ref(payment_ref)
 
 
 def list_all() -> list[dict]:
     if supabase_db.enabled():
         return supabase_db.list_entitlements()
+    ensure_dirs()
     with _lock:
-        items = list(_read()["entitlements"].values())
-        items.sort(key=lambda e: e.get("created_at") or "", reverse=True)
-        return deepcopy(items)
+        return sqlite_db.list_entitlements()
 
 
 def create_entitlement(token: str, email: str, payment_ref: str, url: str) -> dict:
@@ -111,19 +85,15 @@ def create_entitlement(token: str, email: str, payment_ref: str, url: str) -> di
     }
     if supabase_db.enabled():
         return supabase_db.insert_entitlement(ent)
+    ensure_dirs()
     with _lock:
-        data = _read()
-        if payment_ref in data["by_payment_ref"]:
-            raise ValueError("payment_ref_used")
-        if token in data["entitlements"]:
-            raise ValueError("token_collision")
-        data["entitlements"][token] = ent
-        data["by_payment_ref"][payment_ref] = token
-        _atomic_write(data)
-        return deepcopy(ent)
+        return sqlite_db.insert_entitlement(ent)
 
 
 def save_coaching(entry: dict) -> dict:
+    if not entry.get("created_at"):
+        entry = dict(entry)
+        entry["created_at"] = now_iso()
     if supabase_db.enabled():
         payload = {
             "name": entry.get("name"),
@@ -134,24 +104,12 @@ def save_coaching(entry: dict) -> dict:
         saved = supabase_db.insert_coaching(payload)
         entry.update({k: saved[k] for k in saved if k in entry or k == "id"})
         return entry
+    ensure_dirs()
     with _lock:
-        ensure_dirs()
-        path = DATA_DIR / "coaching.json"
-        try:
-            items = json.loads(path.read_text(encoding="utf-8"))
-        except (FileNotFoundError, json.JSONDecodeError):
-            items = []
-        if not isinstance(items, list):
-            items = []
-        items.insert(0, entry)
-        tmp = path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
-        tmp.replace(path)
-        return entry
+        return sqlite_db.insert_coaching(entry)
 
 
 def consume_pending(token: str, pdf_path: str, pdf_filename: str, submission: dict) -> dict:
-    """Spend the token only after a valid submission. Raises KeyError/ValueError."""
     stored_path = pdf_path
     if supabase_db.enabled():
         local = Path(pdf_path)
@@ -161,25 +119,32 @@ def consume_pending(token: str, pdf_path: str, pdf_filename: str, submission: di
             except Exception:
                 stored_path = pdf_path
         return supabase_db.consume_entitlement(token, stored_path, pdf_filename, submission)
+    ensure_dirs()
     with _lock:
-        data = _read()
-        ent = data["entitlements"].get(token)
-        if not ent:
-            raise KeyError("not_found")
-        if ent.get("status") != "pending":
-            raise ValueError("used")
-        ent["status"] = "used"
-        ent["used_at"] = now_iso()
-        ent["pdf_path"] = stored_path
-        ent["pdf_filename"] = pdf_filename
-        ent["submission"] = submission
-        data["entitlements"][token] = ent
-        _atomic_write(data)
-        return deepcopy(ent)
+        return sqlite_db.consume_entitlement(
+            token, stored_path, pdf_filename, submission, now_iso()
+        )
+
+
+def log_mail(entry: dict) -> None:
+    if supabase_db.enabled():
+        supabase_db.log_mail(entry)
+        return
+    ensure_dirs()
+    with _lock:
+        sqlite_db.log_mail(entry)
+
+
+def log_payment(entry: dict) -> None:
+    if supabase_db.enabled():
+        supabase_db.log_payment(entry)
+        return
+    ensure_dirs()
+    with _lock:
+        sqlite_db.log_payment(entry)
 
 
 def resolve_pdf(ent: dict) -> Path | None:
-    """Local path to the PDF, downloading from Supabase Storage if needed."""
     filename = ent.get("pdf_filename")
     raw = ent.get("pdf_path") or ""
     local = Path(raw) if raw and not str(raw).startswith("storage://") else None

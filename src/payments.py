@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 
 from envload import get
 from mailer import send_access_link
-from store import create_entitlement, get_by_payment_ref
+from store import create_entitlement, get_by_payment_ref, log_payment
 from validate import ValidationError, normalize_email, normalize_payment_ref
 
 
@@ -49,20 +49,17 @@ def issue_paid_access(email: str, payment_ref: str) -> dict:
     except Exception as exc:
         mail = f"error:{exc}"
     try:
-        import supabase_db
-
-        if supabase_db.enabled():
-            supabase_db.log_payment(
-                {
-                    "provider": "checkout",
-                    "provider_id": payment_ref,
-                    "email": email,
-                    "payment_ref": payment_ref,
-                    "amount_cents": price_usd() * 100,
-                    "currency": "usd",
-                    "status": "approved",
-                }
-            )
+        log_payment(
+            {
+                "provider": "checkout",
+                "provider_id": payment_ref,
+                "email": email,
+                "payment_ref": payment_ref,
+                "amount_cents": price_usd() * 100,
+                "currency": "usd",
+                "status": "approved",
+            }
+        )
     except Exception:
         pass
     return {

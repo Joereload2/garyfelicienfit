@@ -134,19 +134,19 @@ def send_mail(kind: str, to_addr: str, subject: str, body: str, pdf_path: Path |
 
 
 def _log(kind: str, to_addr: str, subject: str, body: str, provider: str, status: str, error: str | None) -> None:
-    if not supabase_db.enabled():
+    payload = {
+        "kind": kind,
+        "to_email": to_addr,
+        "subject": subject,
+        "body": body[:8000],
+        "provider": provider,
+        "status": status,
+        "error": error,
+    }
+    try:
+        store.log_mail(payload)
+    except Exception:
         return
-    supabase_db.log_mail(
-        {
-            "kind": kind,
-            "to_email": to_addr,
-            "subject": subject,
-            "body": body[:8000],
-            "provider": provider,
-            "status": status,
-            "error": error,
-        }
-    )
 
 
 def send_access_link(email: str, url: str, payment_ref: str) -> str:

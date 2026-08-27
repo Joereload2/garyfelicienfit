@@ -52,24 +52,13 @@ Tras el pago, el backend emite el enlace de un solo uso y envía el correo.
 
 Fotos de prueba en `public/img/` (el retrato de Gary está en `public/img/gary.jpg`). Videos en `public/videos.json`.
 
-## Supabase (base de datos)
+## Base de datos (gratis)
 
-Los pagos, emails, leads de coaching y PDFs no deberían vivir solo en el disco local.
+Por defecto usa **SQLite** en `data/planfit.db`: sin cuenta, sin cuota, incluye pagos, tokens, mails y coaching. Es la base importante.
 
-1. Crea un proyecto en [supabase.com](https://supabase.com).
-2. SQL Editor → pega y corre `supabase/schema.sql`.
-3. Settings → API: copia **Project URL** y **service_role** (nunca la anon key en el servidor de mails).
-4. En `.env`:
+El correo lo envía **Resend** (plan gratis) o SMTP. Si no hay ninguno, queda en `data/outbox/` y se registra en la tabla `mail_log`.
 
-```
-SUPABASE_URL=https://xxxx.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
-RESEND_API_KEY=re_...   # opcional, para mandar el correo de verdad
-```
-
-Con eso: entitlements, coaching, log de mails y el PDF van a Supabase. Sin esas claves, sigue el JSON local (`data/store.json`) para desarrollo.
-
-El correo en sí lo envía **Resend** o **SMTP**. Supabase guarda quién pagó, el token y si el mail salió.
+Supabase es **opcional** (también tiene plan gratis). Si más adelante quieres la DB en la nube, pones `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`. Sin esas claves, no se usa.
 
 ## Pruebas
 

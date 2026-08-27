@@ -1,6 +1,9 @@
 .env
 data/store.json
 data/coaching.json
+data/planfit.db
+data/planfit.db-wal
+data/planfit.db-shm
 data/store.tmp
 data/pdfs/*.pdf
 data/outbox/*

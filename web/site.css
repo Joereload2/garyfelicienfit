@@ -277,6 +277,14 @@ textarea { min-height: 120px; resize: vertical; }
     justify-content: space-between;
     gap: 12px;
     flex-wrap: wrap;
+    align-items: center;
+}
+
+.foot .credit {
+    color: var(--gold);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 11px;
 }
 
 @media (max-width: 860px) {

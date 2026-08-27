@@ -1,0 +1,11 @@
+.env
+data/store.json
+data/coaching.json
+data/store.tmp
+data/pdfs/*.pdf
+data/outbox/*
+!data/pdfs/.gitkeep
+!data/outbox/.gitkeep
+__pycache__/
+*.pyc
+.venv/

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GaryFelicienFit — Guía 12 semanas</title>
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+
+<header class="top">
+    <div class="brand">
+        <b>Gary Felicien</b>
+        <span>Fit</span>
+    </div>
+    <nav class="tabs" aria-label="Secciones">
+        <button type="button" class="active" data-tab="guia">La guía</button>
+        <button type="button" data-tab="coach">El coach</button>
+        <button type="button" data-tab="videos">Videos</button>
+        <button type="button" data-tab="coaching">Coaching</button>
+    </nav>
+</header>
+
+<section class="hero" id="top">
+    <img class="gary-hero" src="/img/gary.jpg" alt="Gary Felicien">
+    <div class="hero-copy">
+        <p class="kicker">GaryFelicienFit</p>
+        <h1>Tu plan de 12 semanas, hecho a tu medida.</h1>
+        <p class="lead">
+            Guía personalizada de alimentación y entrenamiento. La armas una vez,
+            la recibes por correo. Sin calculadora pública y sin atajos.
+        </p>
+        <div class="price-row">
+            <div class="price">USD $40 <small>pago único</small></div>
+        </div>
+        <div class="actions">
+            <button type="button" class="btn btn-gold" id="openBuy">Comprar la guía</button>
+            <button type="button" class="btn btn-ghost" onclick="showTab('coaching')">Coaching personalizado</button>
+        </div>
+    </div>
+</section>
+
+<main class="wrap">
+
+    <section class="panel active" id="panel-guia">
+        <div class="grid-2">
+            <div>
+                <p class="kicker">La oferta</p>
+                <h2>Guía de nutrición y entrenamiento · 12 semanas</h2>
+                <p class="muted">
+                    Pagas USD $40. Completas un formulario de un solo uso, atado a tu email.
+                    Gary no publica el plan en la web: el PDF llega al correo, con menús,
+                    rutina, macros y reglas claras de lo que no debes hacer.
+                </p>
+                <ul class="list">
+                    <li>Plan de 12 semanas según tu peso, meta y días de entreno.</li>
+                    <li>Alimentación con tus vegetales, frutas, proteínas y carbos.</li>
+                    <li>Rutina en casa o gimnasio, con progresión y sustituciones.</li>
+                    <li>Un solo pago. El mismo pago no genera otro plan.</li>
+                </ul>
+                <div class="actions">
+                    <button type="button" class="btn btn-gold" id="openBuy2">Comprar · USD $40</button>
+                </div>
+                <p class="note">La pasarela (Stripe) se conecta cuando esté lista. En pruebas el pago simulado ya dispara el envío del enlace.</p>
+            </div>
+            <article class="card">
+                <img src="/img/guia.jpg" alt="Foto de prueba: comida y guía">
+                <h3>Qué incluye</h3>
+                <p class="muted">
+                    Portada con tu nombre y meta, ficha, barras de macros, 3 menús guía,
+                    rutina, hábitos (agua, pasos, sueño) y una lista de errores a evitar.
+                </p>
+                <p class="caption">Imagen de prueba. Se reemplaza por fotos de Gary y del producto.</p>
+            </article>
+        </div>
+        <div class="grid-2" style="margin-top:28px;">
+            <article class="card">
+                <img src="/img/entreno.jpg" alt="Foto de prueba: entrenamiento">
+                <h3>Entrenamiento</h3>
+                <p class="muted">Días, lugar, especialización muscular y cómo progresar las 12 semanas.</p>
+            </article>
+            <article class="card">
+                <img src="/img/cocina.jpg" alt="Foto de prueba: cocina">
+                <h3>Alimentación</h3>
+                <p class="muted">Números de partida y menús con alimentos que tú eliges. No es una dieta milagro.</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="panel" id="panel-coach">
+        <p class="kicker">El coach</p>
+        <h2>Gary Felicien</h2>
+        <div class="grid-2">
+            <div>
+                <p class="lead">
+                    Gary Felicien es el coach detrás de GaryFelicienFit.
+                    Entrenamiento con criterio, sin atajos y sin vender un cuerpo que no es el tuyo.
+                </p>
+                <p class="muted">
+                    Aquí va su historia: de dónde viene, a quién ayuda y cómo trabaja.
+                    Completa este texto cuando quieras (años, enfoque, lo que no promete).
+                    Las fotos de ambiente del gym se pueden ir sumando; el retrato principal ya es el suyo.
+                </p>
+            </div>
+            <div class="photo-grid">
+                <img class="tall portrait" src="/img/gary.jpg" alt="Gary Felicien">
+                <img src="/img/manos.jpg" alt="Detalle de entrenamiento">
+                <img src="/img/entreno.jpg" alt="Sesión de fuerza">
+            </div>
+        </div>
+    </section>
+
+    <section class="panel" id="panel-videos">
+        <p class="kicker">YouTube</p>
+        <h2>Videos de Gary</h2>
+        <p class="muted">
+            Aquí se incrustan los videos que vaya publicando. Añade objetos en
+            <code>public/videos.json</code>: <code>{"id":"xxxxxxxxxxx","title":"Título"}</code>.
+        </p>
+        <div id="videoGrid" class="videos" style="margin-top:22px;"></div>
+    </section>
+
+    <section class="panel" id="panel-coaching">
+        <p class="kicker">1:1</p>
+        <h2>Coaching personalizado — pedir información</h2>
+        <div class="grid-2">
+            <div>
+                <p class="muted">
+                    Si la guía de USD $40 no es suficiente y quieres seguimiento con Gary,
+                    deja tus datos. Esto no es un pago: es una solicitud. Él te escribe.
+                </p>
+                <img class="portrait" src="/img/gary.jpg" alt="Gary Felicien" style="border-radius:16px;margin-top:18px;height:280px;object-fit:cover;width:100%;object-position:center 20%;">
+            </div>
+            <form class="card" id="coachForm" netlify name="coaching" method="POST">
+                <input type="hidden" name="form-name" value="coaching">
+                <div id="coachError" class="error"></div>
+                <div id="coachOk" class="ok"></div>
+                <label for="cName">Nombre</label>
+                <input id="cName" name="name" maxlength="80" required>
+                <label for="cEmail">Email</label>
+                <input id="cEmail" name="email" type="email" required>
+                <label for="cPhone">WhatsApp / teléfono</label>
+                <input id="cPhone" name="phone" maxlength="40">
+                <label for="cMsg">Qué buscas</label>
+                <textarea id="cMsg" name="message" required placeholder="Meta, tiempo, lesiones, si ya compraste la guía..."></textarea>
+                <div class="actions">
+                    <button type="submit" class="btn btn-gold">Pedir información</button>
+                </div>
+            </form>
+        </div>
+    </section>
+</main>
+
+<footer class="foot">
+    <span>GaryFelicienFit · Gary Felicien</span>
+    <span>La guía no se muestra en esta web. Tras el pago, llega por correo.</span>
+</footer>
+
+<div class="modal" id="buyModal">
+    <form class="card" id="buyForm">
+        <h3>Comprar la guía · USD $40</h3>
+        <p class="muted">El enlace de un solo uso se envía a este email cuando el pago está confirmado.</p>
+        <div id="buyError" class="error"></div>
+        <label for="buyEmail">Email</label>
+        <input id="buyEmail" type="email" required autocomplete="email">
+        <div class="actions">
+            <button type="button" class="btn btn-ghost" id="closeBuy">Cancelar</button>
+            <button type="submit" class="btn btn-gold" id="buySubmit">Pagar USD $40</button>
+        </div>
+        <p class="note">Stripe se activa con STRIPE_SECRET_KEY. Hoy, en local, el modo prueba emite el acceso al instante.</p>
+    </form>
+</div>
+
+<script src="/site.js"></script>
+</body>
+</html>

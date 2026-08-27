@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlanFit — Acceso post-pago</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>PlanFit</h1>
+        <p>Panel interno: emitir acceso después de verificar el pago fuera.</p>
+    </div>
+    <div class="card">
+        <div id="errorBox" class="error"></div>
+        <div id="okBox" class="ok"></div>
+
+        <h2>Credencial</h2>
+        <div class="field">
+            <label for="adminSecret">ADMIN_SECRET</label>
+            <input id="adminSecret" type="password" autocomplete="off">
+        </div>
+
+        <h2>Emitir enlace</h2>
+        <p class="subtitle">Un payment_ref solo puede generar un plan.</p>
+        <div class="field">
+            <label for="email">Email del comprador</label>
+            <input id="email" type="email" autocomplete="off">
+        </div>
+        <div class="field">
+            <label for="paymentRef">payment_ref</label>
+            <input id="paymentRef" type="text" maxlength="80" autocomplete="off">
+        </div>
+        <div class="buttons">
+            <button type="button" class="btn-secondary" id="reloadBtn">Actualizar lista</button>
+            <button type="button" class="btn-primary" id="emitBtn">Emitir acceso</button>
+        </div>
+
+        <div id="linkWrap" class="hidden" style="margin-top:24px;">
+            <h3>Enlace emitido</h3>
+            <div id="issuedLink" class="linkbox"></div>
+        </div>
+
+        <h2 style="margin-top:36px;">Accesos</h2>
+        <div class="table-wrap">
+            <table class="data">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Pago</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="rows"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+"use strict";
+
+function secret() {
+    return document.getElementById("adminSecret").value.trim();
+}
+
+function showError(msg) {
+    const box = document.getElementById("errorBox");
+    box.textContent = msg;
+    box.classList.add("show");
+    document.getElementById("okBox").classList.remove("show");
+}
+
+function showOk(msg) {
+    const box = document.getElementById("okBox");
+    box.textContent = msg;
+    box.classList.add("show");
+    document.getElementById("errorBox").classList.remove("show");
+}
+
+function clearNotes() {
+    document.getElementById("errorBox").classList.remove("show");
+    document.getElementById("okBox").classList.remove("show");
+}
+
+async function emitAccess() {
+    clearNotes();
+    const res = await fetch("/internal/entitlements", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Secret": secret(),
+        },
+        body: JSON.stringify({
+            email: document.getElementById("email").value,
+            payment_ref: document.getElementById("paymentRef").value,
+        }),
+    });
+    const data = await res.json().catch(function () { return {}; });
+    if (!res.ok || !data.ok) {
+        showError(data.error || "No se pudo emitir el acceso.");
+        return;
+    }
+    document.getElementById("linkWrap").classList.remove("hidden");
+    document.getElementById("issuedLink").textContent = data.url;
+    showOk("Acceso emitido. El primer correo está en outbox si no hay SMTP.");
+    loadList();
+}
+
+async function loadList() {
+    const res = await fetch("/internal/entitlements", {
+        headers: { "X-Admin-Secret": secret() },
+    });
+    const data = await res.json().catch(function () { return {}; });
+    const tbody = document.getElementById("rows");
+    tbody.innerHTML = "";
+    if (!res.ok) {
+        showError(data.error || "No autorizado.");
+        return;
+    }
+    (data.items || []).forEach(function (item) {
+        const tr = document.createElement("tr");
+        const badge = item.status === "used"
+            ? '<span class="badge badge-used">usado</span>'
+            : '<span class="badge badge-pending">pendiente</span>';
+        const resend = item.has_pdf
+            ? '<button type="button" class="btn-secondary" data-ref="' +
+              item.payment_ref.replace(/"/g, "") +
+              '">Reenviar PDF</button>'
+            : "";
+        tr.innerHTML =
+            "<td>" + item.email + "<div class=\"linkbox\" style=\"margin-top:8px\">" +
+            item.url + "</div></td>" +
+            "<td>" + item.payment_ref + "</td>" +
+            "<td>" + badge + "</td>" +
+            "<td>" + resend + "</td>";
+        tbody.appendChild(tr);
+    });
+}
+
+async function resend(paymentRef) {
+    clearNotes();
+    const res = await fetch("/internal/resend-pdf", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Secret": secret(),
+        },
+        body: JSON.stringify({ payment_ref: paymentRef }),
+    });
+    const data = await res.json().catch(function () { return {}; });
+    if (!res.ok || !data.ok) {
+        showError(data.error || "No se pudo reenviar.");
+        return;
+    }
+    showOk("Mismo PDF reenviado a " + data.email + ".");
+}
+
+document.getElementById("emitBtn").addEventListener("click", function () {
+    emitAccess().catch(function () { showError("Error de red."); });
+});
+document.getElementById("reloadBtn").addEventListener("click", function () {
+    loadList().catch(function () { showError("Error de red."); });
+});
+document.getElementById("rows").addEventListener("click", function (event) {
+    const btn = event.target.closest("button[data-ref]");
+    if (!btn) return;
+    resend(btn.getAttribute("data-ref")).catch(function () { showError("Error de red."); });
+});
+</script>
+</body>
+</html>

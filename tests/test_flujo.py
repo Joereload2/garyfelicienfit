@@ -1,0 +1,166 @@
+"""End-to-end process: emit access, submit once, reject the second submit, keep the PDF."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import tempfile
+import threading
+import unittest
+import urllib.error
+import urllib.request
+from http.server import ThreadingHTTPServer
+from pathlib import Path
+
+from helpers import ADMIN_SECRET, PAYMENT_REF_MANUAL, TEST_EMAIL, valid_form
+import store
+
+
+def _json_request(method: str, url: str, body=None, headers=None):
+    h = dict(headers or {})
+    data = None
+    if body is not None:
+        data = json.dumps(body).encode("utf-8")
+        h["Content-Type"] = "application/json"
+    req = urllib.request.Request(url, data=data, headers=h, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            raw = resp.read()
+            return resp.status, json.loads(raw.decode("utf-8")) if raw else {}, raw.decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        raw = exc.read()
+        parsed = {}
+        try:
+            parsed = json.loads(raw.decode("utf-8"))
+        except json.JSONDecodeError:
+            pass
+        return exc.code, parsed, raw.decode("utf-8", errors="replace")
+
+
+class FlujoTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        os.environ["PLANFIT_DATA_DIR"] = cls.tmp.name
+        os.environ["SMTP_HOST"] = ""
+        os.environ["ADMIN_SECRET"] = ADMIN_SECRET
+        store.configure_paths(Path(cls.tmp.name))
+        store.ensure_dirs()
+        import server
+
+        cls.httpd = ThreadingHTTPServer(("127.0.0.1", 0), server.Handler)
+        cls.port = cls.httpd.server_address[1]
+        cls.thread = threading.Thread(target=cls.httpd.serve_forever, daemon=True)
+        cls.thread.start()
+        cls.base = f"http://127.0.0.1:{cls.port}"
+        cls.secret_h = {"X-Admin-Secret": ADMIN_SECRET}
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.httpd.shutdown()
+        cls.httpd.server_close()
+        store.configure_paths()
+        cls.tmp.cleanup()
+
+    def test_01_portada_sin_calculadora(self):
+        req = urllib.request.Request(self.base + "/")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            html = resp.read().decode("utf-8")
+        self.assertEqual(resp.status, 200)
+        self.assertIn("GaryFelicienFit", html)
+        self.assertIn("USD $40", html)
+        self.assertIn("no se muestra en esta web", html.lower())
+        self.assertNotIn("jspdf", html.lower())
+        self.assertNotIn("generatePlan", html)
+
+    def test_02_emitir_acceso(self):
+        code, data, _ = _json_request(
+            "POST",
+            self.base + "/internal/entitlements",
+            {"email": TEST_EMAIL, "payment_ref": PAYMENT_REF_MANUAL},
+            self.secret_h,
+        )
+        self.assertEqual(code, 201, data)
+        self.assertTrue(data.get("url", "").endswith("/usar/" + data["token"]))
+        type(self).token = data["token"]
+        type(self).url = data["url"]
+
+    def test_03_payment_ref_duplicado_409(self):
+        code, data, _ = _json_request(
+            "POST",
+            self.base + "/internal/entitlements",
+            {"email": TEST_EMAIL, "payment_ref": PAYMENT_REF_MANUAL},
+            self.secret_h,
+        )
+        self.assertEqual(code, 409)
+        self.assertIn("payment_ref", data.get("error", "").lower())
+
+    def test_04_abrir_link_no_gasta(self):
+        code, data, _ = _json_request("GET", self.base + f"/api/access/{self.token}")
+        self.assertEqual(code, 200, data)
+        self.assertEqual(data["status"], "pending")
+        self.assertEqual(data["email"], TEST_EMAIL)
+        req = urllib.request.Request(self.base + f"/usar/{self.token}")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            html = resp.read().decode("utf-8")
+        self.assertIn("form.js", html)
+        self.assertNotIn("jspdf", html.lower())
+        code, data, _ = _json_request("GET", self.base + f"/api/access/{self.token}")
+        self.assertEqual(data["status"], "pending")
+
+    def test_05_post_invalido_no_gasta(self):
+        code, data, _ = _json_request(
+            "POST",
+            self.base + f"/api/submit/{self.token}",
+            valid_form(age=17),
+        )
+        self.assertEqual(code, 400)
+        self.assertIn("18", data.get("error", ""))
+        code, access, _ = _json_request("GET", self.base + f"/api/access/{self.token}")
+        self.assertEqual(code, 200)
+        self.assertEqual(access["status"], "pending")
+
+    def test_06_post_valido_sin_plan_en_web(self):
+        code, data, raw = _json_request(
+            "POST",
+            self.base + f"/api/submit/{self.token}",
+            valid_form(),
+        )
+        self.assertEqual(code, 200, data)
+        self.assertTrue(data.get("ok"))
+        low = raw.lower()
+        self.assertNotIn("kcal", low)
+        self.assertNotIn("menú", low)
+        self.assertNotIn("menu", low)
+        pdfs = list(Path(self.tmp.name).joinpath("pdfs").glob("*.pdf"))
+        self.assertTrue(pdfs, "no se generó PDF")
+        self.assertTrue(pdfs[0].read_bytes().startswith(b"%PDF-"))
+        type(self).pdf = pdfs[0]
+        type(self).pdf_hash = hashlib.sha256(pdfs[0].read_bytes()).hexdigest()
+
+    def test_07_segundo_submit_409(self):
+        code, data, _ = _json_request(
+            "POST",
+            self.base + f"/api/submit/{self.token}",
+            valid_form(),
+        )
+        self.assertEqual(code, 409)
+        self.assertIn("utilizado", data.get("error", "").lower())
+
+    def test_08_resend_mismo_pdf(self):
+        code, data, _ = _json_request(
+            "POST",
+            self.base + "/internal/resend-pdf",
+            {"payment_ref": PAYMENT_REF_MANUAL},
+            self.secret_h,
+        )
+        self.assertEqual(code, 200, data)
+        self.assertEqual(
+            hashlib.sha256(self.pdf.read_bytes()).hexdigest(),
+            self.pdf_hash,
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

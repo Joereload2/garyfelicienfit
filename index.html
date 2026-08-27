@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self';"
+/>
+
+<title>PlanFit — Plan Personalizado</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f3f5f8;
+        color: #17202a;
+    }
+
+    .container {
+        width: min(900px, calc(100% - 32px));
+        margin: 40px auto;
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .header h1 {
+        margin-bottom: 8px;
+        font-size: 34px;
+    }
+
+    .header p {
+        color: #667085;
+    }
+
+    .card {
+        background: white;
+        border-radius: 18px;
+        padding: 32px;
+        box-shadow: 0 10px 40px rgba(0,0,0,.07);
+    }
+
+    .progress {
+        height: 8px;
+        background: #e7eaf0;
+        border-radius: 20px;
+        overflow: hidden;
+        margin-bottom: 30px;
+    }
+
+    .progress-bar {
+        height: 100%;
+        width: 16.66%;
+        background: #2563eb;
+        transition: width .3s ease;
+    }
+
+    .step {
+        display: none;
+    }
+
+    .step.active {
+        display: block;
+    }
+
+    h2 {
+        margin-top: 0;
+        font-size: 25px;
+    }
+
+    .subtitle {
+        color: #667085;
+        margin-bottom: 25px;
+    }
+
+    .field {
+        margin-bottom: 22px;
+    }
+
+    label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    input,
+    select {
+        width: 100%;
+        padding: 13px 14px;
+        border: 1px solid #d5d9e0;
+        border-radius: 10px;
+        font-size: 16px;
+        outline: none;
+    }
+
+    input:focus,
+    select:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+    }
+
+    .options {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .option {
+        position: relative;
+    }
+
+    .option input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .option label {
+        padding: 16px;
+        border: 1px solid #d5d9e0;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: .2s;
+        margin: 0;
+    }
+
+    .option input:checked + label {
+        border-color: #2563eb;
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .food-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .food-item {
+        position: relative;
+    }
+
+    .food-item input {
+        position: absolute;
+        opacity: 0;
+    }
+
+    .food-item label {
+        display: block;
+        padding: 11px;
+        border: 1px solid #d5d9e0;
+        border-radius: 9px;
+        text-align: center;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .food-item input:checked + label {
+        background: #eff6ff;
+        border-color: #2563eb;
+        color: #1d4ed8;
+    }
+
+    .counter {
+        margin-top: 10px;
+        font-size: 14px;
+        color: #667085;
+    }
+
+    .error {
+        display: none;
+        background: #fef2f2;
+        color: #b42318;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-size: 14px;
+    }
+
+    .error.show {
+        display: block;
+    }
+
+    .buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 30px;
+        gap: 12px;
+    }
+
+    button {
+        border: 0;
+        border-radius: 10px;
+        padding: 13px 22px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-secondary {
+        background: #eef0f3;
+        color: #344054;
+    }
+
+    .btn-primary {
+        background: #2563eb;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #1d4ed8;
+    }
+
+    .summary {
+        background: #f8fafc;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 9px 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .summary-row:last-child {
+        border-bottom: 0;
+    }
+
+    .menu {
+        background: #f8fafc;
+        padding: 18px;
+        border-radius: 12px;
+        margin-top: 15px;
+    }
+
+    .menu h3 {
+        margin-top: 0;
+    }
+
+    .success {
+        text-align: center;
+        padding: 30px 0;
+    }
+
+    .success-icon {
+        font-size: 55px;
+    }
+
+    .disclaimer {
+        font-size: 12px;
+        color: #667085;
+        margin-top: 20px;
+        line-height: 1.5;
+    }
+
+    @media(max-width: 650px) {
+        .options,
+        .food-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .card {
+            padding: 22px;
+        }
+    }
+
+    @media(max-width: 430px) {
+        .options,
+        .food-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <h1>PlanFit</h1>
+        <p>Construye tu plan personalizado de alimentación y entrenamiento.</p>
+    </div>
+
+    <div class="card">
+
+        <div class="progress">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div id="errorBox" class="error"></div>
+
+        <!-- STEP 1 -->
+        <section class="step active" data-step="1">
+
+            <h2>Cuéntanos sobre ti</h2>
+
+            <p class="subtitle">
+                Primero necesitamos algunos datos básicos para personalizar tu plan.
+            </p>
+
+            <div class="field">
+                <label for="name">Nombre</label>
+                <input
+                    id="name"
+                    type="text"
+                    maxlength="60"
+                    autocomplete="name"
+                    required
+                >
+            </div>
+
+            <div class="field">
+                <label for="age">Edad</label>
+                <input
+                    id="age"
+                    type="number"
+                    min="18"
+                    max="100"
+                    required
+                >
+            </div>
+
+            <div class="field">
+                <label for="weight">Peso actual (kg)</label>
+                <input
+                    id="weight"
+                    type="number"
+                    min="30"
+                    max="400"
+                    step="0.1"
+                    required
+                >
+            </div>
+
+            <div class="field">
+                <label for="height">Altura (cm)</label>
+                <input
+                    id="height"
+                    type="number"
+                    min="120"
+                    max="230"
+                    step="1"
+                    required
+                >
+            </div>
+
+            <div class="field">
+                <label for="sex">Sexo</label>
+
+                <select id="sex" required>
+                    <option value="">Selecciona...</option>
+                    <option value="male">Hombre</option>
+                    <option value="female">Mujer</option>
+                </select>
+            </div>
+
+            <div class="buttons">
+                <span></span>
+                <button class="btn-primary" onclick="nextStep()">
+                    Continuar
+                </button>
+            </div>
+
+        </section>
+
+
+        <!-- STEP 2 -->
+        <section class="step" data-step="2">
+
+            <h2>¿Cuál es tu objetivo?</h2>
+
+            <p class="subtitle">
+                Elige el objetivo que mejor representa lo que quieres conseguir.
+            </p>
+
+            <div class="options">
+
+                <div class="option">
+                    <input type="radio" name="goal" id="lose" value="lose">
+                    <label for="lose">
+                        🔥 Bajar de peso
+                    </label>
+                </div>
+
+                <div class="option">
+                    <input type="radio" name="goal" id="gain" value="gain">
+                    <label for="gain">
+                        💪 Ganar masa muscular
+                    </label>
+                </div>
+
+                <div class="option">
+                    <input type="radio" name="goal" id="recomp" value="recomp">
+                    <label for="recomp">
+                        ⚡ Recomposición corporal
+                    </label>
+                </div>
+
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary" onclick="prevStep()">
+                    Atrás
+                </button>
+
+                <button class="btn-primary" onclick="nextStep()">
+                    Continuar
+                </button>
+            </div>
+
+        </section>
+
+
+        <!-- STEP 3 -->
+        <section class="step" data-step="3">
+
+            <h2>Tu meta de 3 meses</h2>
+
+            <p class="subtitle">
+                Queremos conocer una meta concreta y realista para las próximas 12 semanas.
+            </p>
+
+            <div class="field">
+                <label for="targetWeight">
+                    ¿Cuál es tu peso objetivo aproximado en 3 meses?
+                </label>
+
+                <input
+                    id="targetWeight"
+                    type="number"
+                    min="30"
+                    max="400"
+                    step="0.1"
+                    required
+                >
+            </div>
+
+            <div class="field">
+                <label for="motivation">
+                    ¿Qué te gustaría conseguir principalmente durante estos 3 meses?
+                </label>
+
+                <select id="motivation">
+                    <option value="">Selecciona...</option>
+                    <option value="appearance">Mejorar mi apariencia</option>
+                    <option value="strength">Ser más fuerte</option>
+                    <option value="health">Mejorar mi condición física</option>
+                    <option value="habit">Crear hábitos saludables</option>
+                    <option value="event">Prepararme para una fecha/evento</option>
+                </select>
+            </div>
+
+            <div class="buttons">
+
+                <button class="btn-secondary" onclick="prevStep()">
+                    Atrás
+                </button>
+
+                <button class="btn-primary" onclick="nextStep()">
+                    Continuar
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- STEP 4 -->
+        <section class="step" data-step="4">
+
+            <h2>Tu entrenamiento</h2>
+
+            <p class="subtitle">
+                Diseñaremos la rutina según el tiempo y lugar donde entrenas.
+            </p>
+
+            <div class="field">
+
+                <label>
+                    ¿Cuántos días puedes entrenar por semana?
+                </label>
+
+                <div class="options">
+
+                    <div class="option">
+                        <input type="radio" name="days" id="d2" value="2">
+                        <label for="d2">2 días</label>
+                    </div>
+
+                    <div class="option">
+                        <input type="radio" name="days" id="d3" value="3">
+                        <label for="d3">3 días</label>
+                    </div>
+
+                    <div class="option">
+                        <input type="radio" name="days" id="d4" value="4">
+                        <label for="d4">4 días</label>
+                    </div>
+
+                    <div class="option">
+                        <input type="radio" name="days" id="d5" value="5">
+                        <label for="d5">5 días</label>
+                    </div>
+
+                    <div class="option">
+                        <input type="radio" name="days" id="d6" value="6">
+                        <label for="d6">6 días</label>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="field">
+
+                <label>
+                    ¿Dónde quieres entrenar?
+                </label>
+
+                <div class="options">
+
+                    <div class="option">
+                        <input
+                            type="radio"
+                            name="location"
+                            id="gym"
+                            value="gym"
+                        >
+
+                        <label for="gym">
+                            🏋️ Gimnasio
+                        </label>
+                    </div>
+
+                    <div class="option">
+                        <input
+                            type="radio"
+                            name="location"
+                            id="home"
+                            value="home"
+                        >
+
+                        <label for="home">
+                            🏠 Casa
+                        </label>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="field">
+
+                <label for="duration">
+                    ¿Cuánto tiempo tienes por sesión?
+                </label>
+
+                <select id="duration">
+
+                    <option value="">Selecciona...</option>
+                    <option value="30">30 minutos</option>
+                    <option value="45">45 minutos</option>
+                    <option value="60">60 minutos</option>
+                    <option value="75">75 minutos</option>
+                    <option value="90">90 minutos o más</option>
+
+                </select>
+
+            </div>
+
+            <div class="field">
+
+                <label for="experience">
+                    Nivel de experiencia
+                </label>
+
+                <select id="experience">
+
+                    <option value="">Selecciona...</option>
+                    <option value="beginner">Principiante</option>
+                    <option value="intermediate">Intermedio</option>
+                    <option value="advanced">Avanzado</option>
+
+                </select>
+
+            </div>
+
+            <div class="buttons">
+
+                <button class="btn-secondary" onclick="prevStep()">
+                    Atrás
+                </button>
+
+                <button class="btn-primary" onclick="nextStep()">
+                    Continuar
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- STEP 5 -->
+        <section class="step" data-step="5">
+
+            <h2>Especialización muscular</h2>
+
+            <p class="subtitle">
+                Durante los próximos 3 meses puedes dar algo más de atención a un grupo muscular.
+            </p>
+
+            <div class="options">
+
+                <div class="option">
+
+                    <input
+                        type="radio"
+                        name="focusMuscle"
+                        id="balanced"
+                        value="balanced"
+                    >
+
+                    <label for="balanced">
+                        ⚖️ No, quiero trabajar todo equilibradamente
+                    </label>
+
+                </div>
+
+                <div class="option">
+
+                    <input
+                        type="radio"
+                        name="focusMuscle"
+                        id="chest"
+                        value="chest"
+                    >
+
+                    <label for="chest">
+                        🫀 Pecho
+                    </label>
+
+                </div>
+
+                <div class="option">
+
+                    <input
+                        type="radio"
+                        name="focusMuscle"
+                        id="back"
+                        value="back"
+                    >
+
+                    <label for="back">
+                        🪽 Espalda
+                    </label>
+
+                </div>
+
+                <div class="option">
+
+                    <input
+                        type="radio"
+                        name="focusMuscle"
+                        id="legs"
+                        value="legs"
+                    >
+
+                    <label for="legs">
+                        🦵 Piernas
+                    </label>
+
+                </div>
+
+                <div class="option">
+
+                    <input
+                        type="radio"
+                        name="focusMuscle"
+                        id="shoulders"
+                        value="shoulders"
+                    >
+
+                    <label for="shoulders">
+                        💪 Hombros
+                    </label>
+
+                </div>
+
+                <div class="option">
+
+                    <input
+                        type="radio"
+                        name="focusMuscle"
+                        id="arms"
+                        value="arms"
+                    >
+
+                    <label for="arms">
+                        💪 Brazos
+                    </label>
+
+                </div>
+
+                <div class="option">
+
+                    <input
+                        type="radio"
+                        name="focusMuscle"
+                        id="glutes"
+                        value="glutes"
+                    >
+
+                    <label for="glutes">
+                        🍑 Glúteos
+                    </label>
+
+                </div>
+
+            </div>
+
+            <div class="buttons">
+
+                <button class="btn-secondary" onclick="prevStep()">
+                    Atrás
+                </button>
+
+                <button class="btn-primary" onclick="nextStep()">
+                    Continuar
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- STEP 6 -->
+        <section class="step" data-step="6">
+
+            <h2>Elige tus alimentos</h2>
+
+            <p class="subtitle">
+                Selecciona los alimentos que te gustaría utilizar como base de tus menús.
+            </p>
+
+            <h3>🥦 Vegetales — mínimo 3</h3>
+
+            <div class="food-grid">
+
+                <div class="food-item">
+                    <input type="checkbox" id="broccoli" name="vegetable" value="Brócoli">
+                    <label for="broccoli">Brócoli</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" id="carrot" name="vegetable" value="Zanahoria">
+                    <label for="carrot">Zanahoria</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" id="tomato" name="vegetable" value="Tomate">
+                    <label for="tomato">Tomate</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" id="lettuce" name="vegetable" value="Lechuga">
+                    <label for="lettuce">Lechuga</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" id="spinach" name="vegetable" value="Espinaca">
+                    <label for="spinach">Espinaca</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" id="pepper" name="vegetable" value="Pimentón">
+                    <label for="pepper">Pimentón</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" id="cucumber" name="vegetable" value="Pepino">
+                    <label for="cucumber">Pepino</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" id="zucchini" name="vegetable" value="Calabacín">
+                    <label for="zucchini">Calabacín</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" id="onion" name="vegetable" value="Cebolla">
+                    <label for="onion">Cebolla</label>
+                </div>
+
+            </div>
+
+            <div class="counter">
+                Seleccionados:
+                <strong id="vegetableCount">0</strong>/3 mínimo
+            </div>
+
+
+            <h3 style="margin-top:30px;">🍎 Frutas — mínimo 3</h3>
+
+            <div class="food-grid">
+
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="banana" value="Plátano">
+                    <label for="banana">Plátano</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="apple" value="Manzana">
+                    <label for="apple">Manzana</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="orange" value="Naranja">
+                    <label for="orange">Naranja</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="strawberry" value="Frutilla">
+                    <label for="strawberry">Frutilla</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="blueberry" value="Arándanos">
+                    <label for="blueberry">Arándanos</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="pear" value="Pera">
+                    <label for="pear">Pera</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="pineapple" value="Piña">
+                    <label for="pineapple">Piña</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="kiwi" value="Kiwi">
+                    <label for="kiwi">Kiwi</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="grapes" value="Uvas">
+                    <label for="grapes">Uvas</label>
+                </div>
+
+            </div>
+
+            <div class="counter">
+                Seleccionadas:
+                <strong id="fruitCount">0</strong>/3 mínimo
+            </div>
+
+
+            <h3 style="margin-top:30px;">🥩 Proteínas</h3>
+
+            <div class="food-grid">
+
+                <div class="food-item">
+                    <input type="checkbox" name="protein" value="Pollo">
+                    <label>Pollo</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="protein" value="Carne magra">
+                    <label>Carne magra</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="protein" value="Huevos">
+                    <label>Huevos</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="protein" value="Pavo">
+                    <label>Pavo</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="protein" value="Yogurt griego">
+                    <label>Yogurt griego</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="protein" value="Legumbres">
+                    <label>Legumbres</label>
+                </div>
+
+            </div>
+
+
+            <h3 style="margin-top:30px;">🍚 Carbohidratos</h3>
+
+            <div class="food-grid">
+
+                <div class="food-item">
+                    <input type="checkbox" name="carb" value="Arroz">
+                    <label>Arroz</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="carb" value="Papa">
+                    <label>Papa</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="carb" value="Avena">
+                    <label>Avena</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="carb" value="Pasta">
+                    <label>Pasta</label>
+                </div>
+
+                <div class="food-item">
+                    <input type="checkbox" name="carb" value="Pan integral">
+                    <label>Pan integral</label>
+                </div>
+
+            </div>
+
+
+            <div class="buttons">
+
+                <button class="btn-secondary" onclick="prevStep()">
+                    Atrás
+                </button>
+
+                <button class="btn-primary" onclick="nextStep()">
+                    Revisar plan
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- STEP 7 -->
+        <section class="step" data-step="7">
+
+            <h2>Revisa tus respuestas</h2>
+
+            <p class="subtitle">
+                Comprueba que los datos sean correctos antes de generar tu plan.
+            </p>
+
+            <div id="summary" class="summary"></div>
+
+            <div class="buttons">
+
+                <button class="btn-secondary" onclick="prevStep()">
+                    Atrás
+                </button>
+
+                <button class="btn-primary" onclick="generatePlan()">
+                    Generar mi plan
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- RESULT -->
+        <section class="step" data-step="8">
+
+            <div class="success">
+
+                <div class="success-icon">
+                    🎉
+                </div>
+
+                <h2 id="resultTitle">
+                    Tu plan está listo
+                </h2>
+
+                <p class="subtitle">
+                    Hemos creado una guía personalizada basada en tus respuestas.
+                </p>
+
+                <div id="planPreview"></div>
+
+                <button
+                    class="btn-primary"
+                    onclick="generatePDF()"
+                    style="margin-top:20px;"
+                >
+                    📄 Descargar PDF
+                </button>
+
+                <p class="disclaimer">
+                    Este documento es una guía general y no sustituye la evaluación
+                    de un médico, nutricionista o profesional del ejercicio.
+                    Si tienes una condición médica, lesión, embarazo, trastorno
+                    alimentario o tomas medicamentos, consulta a un profesional
+                    antes de realizar cambios importantes en alimentación o ejercicio.
+                </p>
+
+            </div>
+
+        </section>
+
+    </div>
+
+</div>
+
+
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+
+"use strict";
+
+/* =========================================================
+   ESTADO DE LA APLICACIÓN
+========================================================= */
+
+const state = {
+    step: 1,
+    totalSteps: 7,
+    user: {},
+    plan: {}
+};
+
+
+/* =========================================================
+   HELPERS DE SEGURIDAD
+========================================================= */
+
+function cleanText(value, maxLength = 100) {
+
+    if (typeof value !== "string") {
+        return "";
+    }
+
+    return value
+        .replace(/[<>]/g, "")
+        .trim()
+        .slice(0, maxLength);
+}
+
+
+function getValue(id) {
+
+    const element = document.getElementById(id);
+
+    if (!element) {
+        return "";
+    }
+
+    return cleanText(element.value);
+}
+
+
+function getRadio(name) {
+
+    const selected = document.querySelector(
+        `input[name="${name}"]:checked`
+    );
+
+    return selected ? cleanText(selected.value) : "";
+}
+
+
+function getChecked(name) {
+
+    return Array.from(
+        document.querySelectorAll(
+            `input[name="${name}"]:checked`
+        )
+    ).map(input => cleanText(input.value));
+}
+
+
+/* =========================================================
+   VALIDACIÓN
+========================================================= */
+
+function showError(message) {
+
+    const box = document.getElementById("errorBox");
+
+    box.textContent = message;
+    box.classList.add("show");
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+}
+
+
+function clearError() {
+
+    const box = document.getElementById("errorBox");
+
+    box.textContent = "";
+    box.classList.remove("show");
+}
+
+
+function validateStep(step) {
+
+    clearError();
+
+    if (step === 1) {
+
+        const name = getValue("name");
+        const age = Number(getValue("age"));
+        const weight = Number(getValue("weight"));
+        const height = Number(getValue("height"));
+        const sex = getValue("sex");
+
+        if (!name) {
+            showError("Introduce tu nombre.");
+            return false;
+        }
+
+        if (!Number.isInteger(age) || age < 18 || age > 100) {
+            showError("La edad debe estar entre 18 y 100 años.");
+            return false;
+        }
+
+        if (!Number.isFinite(weight) || weight < 30 || weight > 400) {
+            showError("Introduce un peso válido.");
+            return false;
+        }
+
+        if (!Number.isFinite(height) || height < 120 || height > 230) {
+            showError("Introduce una altura válida.");
+            return false;
+        }
+
+        if (!["male", "female"].includes(sex)) {
+            showError("Selecciona tu sexo.");
+            return false;
+        }
+
+        state.user.name = name;
+        state.user.age = age;
+        state.user.weight = weight;
+        state.user.height = height;
+        state.user.sex = sex;
+
+        return true;
+    }
+
+
+    if (step === 2) {
+
+        const goal = getRadio("goal");
+
+        if (!["lose", "gain", "recomp"].includes(goal)) {
+            showError("Selecciona un objetivo.");
+            return false;
+        }
+
+        state.user.goal = goal;
+
+        return true;
+    }
+
+
+    if (step === 3) {
+
+        const target = Number(getValue("targetWeight"));
+
+        if (!Number.isFinite(target) || target < 30 || target > 400) {
+            showError("Introduce un peso objetivo válido.");
+            return false;
+        }
+
+        state.user.targetWeight = target;
+        state.user.motivation = getValue("motivation");
+
+        return true;
+    }
+
+
+    if (step === 4) {
+
+        const days = getRadio("days");
+        const location = getRadio("location");
+        const duration = getValue("duration");
+        const experience = getValue("experience");
+
+        if (!days) {
+            showError("Selecciona cuántos días puedes entrenar.");
+            return false;
+        }
+
+        if (!location) {
+            showError("Selecciona dónde quieres entrenar.");
+            return false;
+        }
+
+        if (!duration) {
+            showError("Selecciona la duración de tus sesiones.");
+            return false;
+        }
+
+        if (!experience) {
+            showError("Selecciona tu nivel de experiencia.");
+            return false;
+        }
+
+        state.user.days = Number(days);
+        state.user.location = location;
+        state.user.duration = duration;
+        state.user.experience = experience;
+
+        return true;
+    }
+
+
+    if (step === 5) {
+
+        const focus = getRadio("focusMuscle");
+
+        if (!focus) {
+            showError(
+                "Indica si quieres enfocarte en algún músculo."
+            );
+
+            return false;
+        }
+
+        state.user.focusMuscle = focus;
+
+        return true;
+    }
+
+
+    if (step === 6) {
+
+        const vegetables = getChecked("vegetable");
+        const fruits = getChecked("fruit");
+
+        if (vegetables.length < 3) {
+            showError(
+                "Debes seleccionar al menos 3 vegetales."
+            );
+
+            return false;
+        }
+
+        if (fruits.length < 3) {
+            showError(
+                "Debes seleccionar al menos 3 frutas."
+            );
+
+            return false;
+        }
+
+        state.user.vegetables = vegetables;
+        state.user.fruits = fruits;
+        state.user.proteins = getChecked("protein");
+        state.user.carbs = getChecked("carb");
+
+        return true;
+    }
+
+
+    return true;
+}
+
+
+/* =========================================================
+   NAVEGACIÓN
+========================================================= */
+
+function updateProgress() {
+
+    const percentage =
+        Math.min(state.step, 7) / 7 * 100;
+
+    document.getElementById("progressBar")
+        .style.width = percentage + "%";
+}
+
+
+function showStep(step) {
+
+    document
+        .querySelectorAll(".step")
+        .forEach(section => {
+            section.classList.remove("active");
+        });
+
+    const target = document.querySelector(
+        `.step[data-step="${step}"]`
+    );
+
+    if (target) {
+        target.classList.add("active");
+    }
+
+    state.step = step;
+
+    updateProgress();
+
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    });
+}
+
+
+function nextStep() {
+
+    if (!validateStep(state.step)) {
+        return;
+    }
+
+    if (state.step === 6) {
+        createSummary();
+    }
+
+    showStep(state.step + 1);
+}
+
+
+function prevStep() {
+
+    if (state.step > 1) {
+        showStep(state.step - 1);
+    }
+
+}
+
+
+/* =========================================================
+   CONTADORES
+========================================================= */
+
+function updateCounters() {
+
+    const vegetables =
+        document.querySelectorAll(
+            'input[name="vegetable"]:checked'
+        ).length;
+
+    const fruits =
+        document.querySelectorAll(
+            'input[name="fruit"]:checked'
+        ).length;
+
+    document.getElementById("vegetableCount")
+        .textContent = vegetables;
+
+    document.getElementById("fruitCount")
+        .textContent = fruits;
+}
+
+
+document.addEventListener("change", function(event) {
+
+    if (
+        event.target.matches(
+            'input[type="checkbox"]'
+        )
+    ) {
+        updateCounters();
+    }
+
+});
+
+
+/* =========================================================
+   RESUMEN
+========================================================= */
+
+function safeDisplay(value) {
+
+    return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+
+function createSummary() {
+
+    const u = state.user;
+
+    const goalNames = {
+        lose: "Bajar de peso",
+        gain: "Ganar masa muscular",
+        recomp: "Recomposición corporal"
+    };
+
+    const focusNames = {
+        balanced: "Trabajo equilibrado",
+        chest: "Pecho",
+        back: "Espalda",
+        legs: "Piernas",
+        shoulders: "Hombros",
+        arms: "Brazos",
+        glutes: "Glúteos"
+    };
+
+    const locationNames = {
+        gym: "Gimnasio",
+        home: "Casa"
+    };
+
+    document.getElementById("summary").innerHTML = `
+
+        <div class="summary-row">
+            <strong>Nombre</strong>
+            <span>${safeDisplay(u.name)}</span>
+        </div>
+
+        <div class="summary-row">
+            <strong>Edad</strong>
+            <span>${u.age}</span>
+        </div>
+
+        <div class="summary-row">
+            <strong>Peso</strong>
+            <span>${u.weight} kg</span>
+        </div>
+
+        <div class="summary-row">
+            <strong>Altura</strong>
+            <span>${u.height} cm</span>
+        </div>
+
+        <div class="summary-row">
+            <strong>Objetivo</strong>
+            <span>${goalNames[u.goal]}</span>
+        </div>
+
+        <div class="summary-row">
+            <strong>Meta</strong>
+            <span>${u.targetWeight} kg</span>
+        </div>
+
+        <div class="summary-row">
+            <strong>Entrenamiento</strong>
+            <span>${u.days} días / ${locationNames[u.location]}</span>
+        </div>
+
+        <div class="summary-row">
+            <strong>Especialización</strong>
+            <span>${focusNames[u.focusMuscle]}</span>
+        </div>
+
+        <div class="summary-row">
+            <strong>Vegetales</strong>
+            <span>${u.vegetables.join(", ")}</span>
+        </div>
+
+        <div class="summary-row">
+            <strong>Frutas</strong>
+            <span>${u.fruits.join(", ")}</span>
+        </div>
+
+    `;
+}
+
+
+/* =========================================================
+   GENERADOR DE PLAN
+========================================================= */
+
+function calculateCalories() {
+
+    const u = state.user;
+
+    let bmr;
+
+    if (u.sex === "male") {
+
+        bmr =
+            (10 * u.weight) +
+            (6.25 * u.height) -
+            (5 * u.age) +
+            5;
+
+    } else {
+
+        bmr =
+            (10 * u.weight) +
+            (6.25 * u.height) -
+            (5 * u.age) -
+            161;
+
+    }
+
+    const activityFactors = {
+        2: 1.35,
+        3: 1.45,
+        4: 1.50,
+        5: 1.55,
+        6: 1.60
+    };
+
+    const tdee =
+        bmr * (activityFactors[u.days] || 1.4);
+
+    let calories = tdee;
+
+    if (u.goal === "lose") {
+        calories = tdee * 0.80;
+    }
+
+    if (u.goal === "gain") {
+        calories = tdee * 1.10;
+    }
+
+    if (u.goal === "recomp") {
+        calories = tdee * 0.90;
+    }
+
+    return Math.round(calories);
+}
+
+
+function generateMenus() {
+
+    const u = state.user;
+
+    const proteins =
+        u.proteins.length
+            ? u.proteins
+            : ["Pollo", "Huevos"];
+
+    const carbs =
+        u.carbs.length
+            ? u.carbs
+            : ["Arroz", "Papa"];
+
+    const v = u.vegetables;
+    const f = u.fruits;
+
+    return [
+
+        {
+            name: "Menú 1",
+            breakfast:
+                `Avena + ${proteins[1] || proteins[0]} + ${f[0]}`,
+
+            lunch:
+                `${proteins[0]} + ${carbs[0]} + ${v[0]} + ${v[1]}`,
+
+            snack:
+                `${f[1]} + yogurt griego`,
+
+            dinner:
+                `${proteins[1] || proteins[0]} + ${carbs[1] || carbs[0]} + ${v[2]}`
+        },
+
+        {
+            name: "Menú 2",
+            breakfast:
+                `Huevos + pan integral + ${f[1]}`,
+
+            lunch:
+                `${proteins[0]} + ${carbs[1] || carbs[0]} + ${v[2]} + ${v[0]}`,
+
+            snack:
+                `${f[2]} + yogurt griego`,
+
+            dinner:
+                `${proteins[1] || proteins[0]} + ${carbs[0]} + ${v[1]}`
+        },
+
+        {
+            name: "Menú 3",
+            breakfast:
+                `Avena + yogurt griego + ${f[2]}`,
+
+            lunch:
+                `${proteins[1] || proteins[0]} + ${carbs[0]} + ${v[1]} + ${v[2]}`,
+
+            snack:
+                `${f[0]} + yogurt griego`,
+
+            dinner:
+                `${proteins[0]} + ${carbs[1] || carbs[0]} + ${v[0]}`
+        }
+
+    ];
+}
+
+
+function generateWorkout() {
+
+    const u = state.user;
+
+    const focusNames = {
+        balanced: "trabajo equilibrado",
+        chest: "pecho",
+        back: "espalda",
+        legs: "piernas",
+        shoulders: "hombros",
+        arms: "brazos",
+        glutes: "glúteos"
+    };
+
+    const focus =
+        focusNames[u.focusMuscle];
+
+    const location =
+        u.location === "gym"
+            ? "gimnasio"
+            : "casa";
+
+    return {
+        days: u.days,
+        location,
+        focus
+    };
+}
+
+
+function generatePlan() {
+
+    state.plan = {
+
+        calories: calculateCalories(),
+
+        menus: generateMenus(),
+
+        workout: generateWorkout()
+
+    };
+
+    renderPlan();
+
+    showStep(8);
+}
+
+
+/* =========================================================
+   MOSTRAR RESULTADO
+========================================================= */
+
+function renderPlan() {
+
+    const u = state.user;
+    const p = state.plan;
+
+    const menuHTML = p.menus.map(menu => `
+
+        <div class="menu">
+
+            <h3>${safeDisplay(menu.name)}</h3>
+
+            <p>
+                <strong>Desayuno:</strong>
+                ${safeDisplay(menu.breakfast)}
+            </p>
+
+            <p>
+                <strong>Almuerzo:</strong>
+                ${safeDisplay(menu.lunch)}
+            </p>
+
+            <p>
+                <strong>Merienda:</strong>
+                ${safeDisplay(menu.snack)}
+            </p>
+
+            <p>
+                <strong>Cena:</strong>
+                ${safeDisplay(menu.dinner)}
+            </p>
+
+        </div>
+
+    `).join("");
+
+    document.getElementById("planPreview").innerHTML = `
+
+        <div class="summary">
+
+            <div class="summary-row">
+                <strong>Calorías orientativas</strong>
+                <span>${p.calories} kcal/día</span>
+            </div>
+
+            <div class="summary-row">
+                <strong>Entrenamiento</strong>
+                <span>
+                    ${u.days} días — ${p.workout.location}
+                </span>
+            </div>
+
+            <div class="summary-row">
+                <strong>Especialización</strong>
+                <span>
+                    ${safeDisplay(p.workout.focus)}
+                </span>
+            </div>
+
+        </div>
+
+        <h3 style="margin-top:30px;">
+            🍽️ Tus 3 menús guía
+        </h3>
+
+        ${menuHTML}
+
+        <div class="menu">
+
+            <h3>🏋️ Entrenamiento</h3>
+
+            <p>
+                Entrenarás <strong>${u.days} días por semana</strong>
+                durante aproximadamente
+                <strong>${safeDisplay(u.duration)} minutos</strong>.
+            </p>
+
+            <p>
+                La rutina dará especial atención a
+                <strong>${safeDisplay(p.workout.focus)}</strong>.
+            </p>
+
+            <p>
+                El programa debe progresar gradualmente en volumen,
+                técnica o carga según tu nivel.
+            </p>
+
+        </div>
+
+    `;
+
+    document.getElementById("resultTitle").textContent =
+        `${u.name}, tu plan está listo 🎯`;
+}
+
+
+/* =========================================================
+   GENERACIÓN DEL PDF
+========================================================= */
+
+function generatePDF() {
+
+    if (
+        !window.jspdf ||
+        !window.jspdf.jsPDF
+    ) {
+
+        alert(
+            "No se pudo cargar el generador PDF."
+        );
+
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+
+    const doc = new jsPDF();
+
+    const u = state.user;
+    const p = state.plan;
+
+    let y = 20;
+
+    function text(text, x = 20, size = 11) {
+
+        doc.setFontSize(size);
+
+        const lines =
+            doc.splitTextToSize(
+                String(text),
+                170
+            );
+
+        doc.text(lines, x, y);
+
+        y +=
+            lines.length * (size * 0.45) +
+            7;
+
+        if (y > 270) {
+
+            doc.addPage();
+
+            y = 20;
+        }
+    }
+
+    text(
+        "PLAN PERSONALIZADO — 12 SEMANAS",
+        20,
+        18
+    );
+
+    text(
+        `Preparado para: ${u.name}`,
+        20,
+        12
+    );
+
+    text(
+        `Peso inicial: ${u.weight} kg`
+    );
+
+    text(
+        `Altura: ${u.height} cm`
+    );
+
+    text(
+        `Meta aproximada: ${u.targetWeight} kg`
+    );
+
+    text(
+        `Calorías orientativas: ${p.calories} kcal/día`
+    );
+
+    text(
+        "--------------------------------"
+    );
+
+    text(
+        "ALIMENTACIÓN",
+        20,
+        15
+    );
+
+    text(
+        "Utiliza los siguientes 3 menús como guía y alterna entre ellos según tus preferencias."
+    );
+
+    p.menus.forEach(menu => {
+
+        text(menu.name, 20, 13);
+
+        text(
+            `Desayuno: ${menu.breakfast}`
+        );
+
+        text(
+            `Almuerzo: ${menu.lunch}`
+        );
+
+        text(
+            `Merienda: ${menu.snack}`
+        );
+
+        text(
+            `Cena: ${menu.dinner}`
+        );
+
+    });
+
+    text(
+        "--------------------------------"
+    );
+
+    text(
+        "ENTRENAMIENTO",
+        20,
+        15
+    );
+
+    text(
+        `Frecuencia: ${u.days} días por semana`
+    );
+
+    text(
+        `Lugar: ${p.workout.location}`
+    );
+
+    text(
+        `Duración: ${u.duration} minutos`
+    );
+
+    text(
+        `Nivel: ${u.experience}`
+    );
+
+    text(
+        `Especialización: ${p.workout.focus}`
+    );
+
+    text(
+        "La rutina debe progresar gradualmente y respetar la técnica adecuada."
+    );
+
+    text(
+        "--------------------------------"
+    );
+
+    text(
+        "IMPORTANTE",
+        20,
+        15
+    );
+
+    text(
+        "Este documento es una guía general y no sustituye la evaluación de un médico, nutricionista o profesional del ejercicio."
+    );
+
+    text(
+        "Si tienes una condición médica, lesión, embarazo, trastorno alimentario o tomas medicamentos, consulta a un profesional antes de realizar cambios importantes."
+    );
+
+    const filename =
+        `plan-personal-${sanitizeFilename(u.name)}.pdf`;
+
+    doc.save(filename);
+}
+
+
+function sanitizeFilename(value) {
+
+    return String(value)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9-_]/g, "-")
+        .replace(/-+/g, "-")
+        .slice(0, 40);
+}
+
+
+/* =========================================================
+   INICIALIZACIÓN
+========================================================= */
+
+updateCounters();
+updateProgress();
+
+</script>
+
+</body>
+</html>

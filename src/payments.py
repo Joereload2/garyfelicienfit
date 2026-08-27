@@ -48,6 +48,23 @@ def issue_paid_access(email: str, payment_ref: str) -> dict:
         mail = send_access_link(email, url, payment_ref)
     except Exception as exc:
         mail = f"error:{exc}"
+    try:
+        import supabase_db
+
+        if supabase_db.enabled():
+            supabase_db.log_payment(
+                {
+                    "provider": "checkout",
+                    "provider_id": payment_ref,
+                    "email": email,
+                    "payment_ref": payment_ref,
+                    "amount_cents": price_usd() * 100,
+                    "currency": "usd",
+                    "status": "approved",
+                }
+            )
+    except Exception:
+        pass
     return {
         "token": ent["token"],
         "url": url,

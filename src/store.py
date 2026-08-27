@@ -11,6 +11,7 @@ from pathlib import Path
 import os
 
 from envload import ROOT
+import supabase_db
 
 DATA_DIR = ROOT / "data"
 STORE_PATH = DATA_DIR / "store.json"
@@ -67,12 +68,16 @@ def _read() -> dict:
 
 
 def get_by_token(token: str) -> dict | None:
+    if supabase_db.enabled():
+        return supabase_db.get_entitlement_by_token(token)
     with _lock:
         ent = _read()["entitlements"].get(token)
         return deepcopy(ent) if ent else None
 
 
 def get_by_payment_ref(payment_ref: str) -> dict | None:
+    if supabase_db.enabled():
+        return supabase_db.get_entitlement_by_payment_ref(payment_ref)
     with _lock:
         data = _read()
         token = data["by_payment_ref"].get(payment_ref)
@@ -83,6 +88,8 @@ def get_by_payment_ref(payment_ref: str) -> dict | None:
 
 
 def list_all() -> list[dict]:
+    if supabase_db.enabled():
+        return supabase_db.list_entitlements()
     with _lock:
         items = list(_read()["entitlements"].values())
         items.sort(key=lambda e: e.get("created_at") or "", reverse=True)
@@ -90,24 +97,26 @@ def list_all() -> list[dict]:
 
 
 def create_entitlement(token: str, email: str, payment_ref: str, url: str) -> dict:
+    ent = {
+        "token": token,
+        "email": email,
+        "payment_ref": payment_ref,
+        "status": "pending",
+        "url": url,
+        "created_at": now_iso(),
+        "used_at": None,
+        "pdf_path": None,
+        "pdf_filename": None,
+        "submission": None,
+    }
+    if supabase_db.enabled():
+        return supabase_db.insert_entitlement(ent)
     with _lock:
         data = _read()
         if payment_ref in data["by_payment_ref"]:
             raise ValueError("payment_ref_used")
         if token in data["entitlements"]:
             raise ValueError("token_collision")
-        ent = {
-            "token": token,
-            "email": email,
-            "payment_ref": payment_ref,
-            "status": "pending",
-            "url": url,
-            "created_at": now_iso(),
-            "used_at": None,
-            "pdf_path": None,
-            "pdf_filename": None,
-            "submission": None,
-        }
         data["entitlements"][token] = ent
         data["by_payment_ref"][payment_ref] = token
         _atomic_write(data)
@@ -115,6 +124,16 @@ def create_entitlement(token: str, email: str, payment_ref: str, url: str) -> di
 
 
 def save_coaching(entry: dict) -> dict:
+    if supabase_db.enabled():
+        payload = {
+            "name": entry.get("name"),
+            "email": entry.get("email"),
+            "phone": entry.get("phone") or "",
+            "message": entry.get("message"),
+        }
+        saved = supabase_db.insert_coaching(payload)
+        entry.update({k: saved[k] for k in saved if k in entry or k == "id"})
+        return entry
     with _lock:
         ensure_dirs()
         path = DATA_DIR / "coaching.json"
@@ -133,6 +152,15 @@ def save_coaching(entry: dict) -> dict:
 
 def consume_pending(token: str, pdf_path: str, pdf_filename: str, submission: dict) -> dict:
     """Spend the token only after a valid submission. Raises KeyError/ValueError."""
+    stored_path = pdf_path
+    if supabase_db.enabled():
+        local = Path(pdf_path)
+        if local.is_file():
+            try:
+                stored_path = supabase_db.upload_pdf(pdf_filename, local.read_bytes())
+            except Exception:
+                stored_path = pdf_path
+        return supabase_db.consume_entitlement(token, stored_path, pdf_filename, submission)
     with _lock:
         data = _read()
         ent = data["entitlements"].get(token)
@@ -142,9 +170,29 @@ def consume_pending(token: str, pdf_path: str, pdf_filename: str, submission: di
             raise ValueError("used")
         ent["status"] = "used"
         ent["used_at"] = now_iso()
-        ent["pdf_path"] = pdf_path
+        ent["pdf_path"] = stored_path
         ent["pdf_filename"] = pdf_filename
         ent["submission"] = submission
         data["entitlements"][token] = ent
         _atomic_write(data)
         return deepcopy(ent)
+
+
+def resolve_pdf(ent: dict) -> Path | None:
+    """Local path to the PDF, downloading from Supabase Storage if needed."""
+    filename = ent.get("pdf_filename")
+    raw = ent.get("pdf_path") or ""
+    local = Path(raw) if raw and not str(raw).startswith("storage://") else None
+    if local and local.is_file():
+        return local
+    if filename:
+        fallback = PDF_DIR / filename
+        if fallback.is_file():
+            return fallback
+        if supabase_db.enabled() and (str(raw).startswith("storage://") or not local):
+            ensure_dirs()
+            try:
+                return supabase_db.download_pdf(filename, fallback)
+            except Exception:
+                return None
+    return None

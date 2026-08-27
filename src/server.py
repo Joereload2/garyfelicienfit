@@ -433,7 +433,7 @@ class Handler(BaseHTTPRequestHandler):
         if not ent:
             self._json(404, {"ok": False, "error": "No hay un acceso con esa referencia."})
             return
-        pdf_path = Path(ent["pdf_path"]) if ent.get("pdf_path") else None
+        pdf_path = store.resolve_pdf(ent)
         if not pdf_path or not pdf_path.is_file():
             self._json(409, {"ok": False, "error": "Aún no hay PDF para reenviar."})
             return

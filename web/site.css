@@ -90,8 +90,8 @@ a { color: var(--gold-2); text-decoration: none; }
 }
 
 .hero img.gary-hero {
-    object-position: 70% 20%;
-    filter: saturate(0.9) contrast(1.05);
+    object-position: 50% 18%;
+    filter: saturate(0.92) contrast(1.04);
 }
 
 .hero::after {

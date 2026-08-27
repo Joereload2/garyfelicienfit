@@ -48,9 +48,12 @@ Tras el pago, el backend emite el enlace de un solo uso y envía el correo.
 
 - Local: `ALLOW_TEST_CHECKOUT=1` simula el pago y dispara el envío.
 - Producción: `STRIPE_SECRET_KEY` + webhook `/webhooks/stripe`.
-- Netlify: publica `public/` (ver `netlify.toml`). El generador de PDF sigue en Python; configura `PLANFIT_API_URL` y `ADMIN_SECRET` en Netlify.
+- Netlify: **solo la carpeta `web/`** (landing). No sube el Python.
+  - Build command: `echo landing-static` (o vacío)
+  - Publish directory: `web`
+- Python (tu PC): `python src/server.py` → formulario, PDF, admin, SQLite.
 
-Fotos de prueba en `public/img/` (el retrato de Gary está en `public/img/gary.jpg`). Videos en `public/videos.json`.
+Fotos de la landing en `web/img/` (retrato de Gary: `web/img/gary.jpg`). Videos: `web/videos.json`.
 
 ## Base de datos (gratis)
 

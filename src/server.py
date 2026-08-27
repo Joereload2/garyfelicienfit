@@ -44,6 +44,14 @@ from store import (  # noqa: E402
 from validate import ValidationError, normalize_email, normalize_payment_ref, validate_payload  # noqa: E402
 
 PUBLIC = ROOT / "public"
+WEB = ROOT / "web"
+LANDING = {
+    "index.html",
+    "gracias.html",
+    "site.css",
+    "site.js",
+    "videos.json",
+}
 MAX_BODY = 200_000
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
 
@@ -105,23 +113,26 @@ class Handler(BaseHTTPRequestHandler):
         raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self._send(code, raw, "application/json; charset=utf-8")
 
-    def _html_file(self, name: str, code: int = 200) -> None:
-        path = (PUBLIC / name).resolve()
-        if not str(path).startswith(str(PUBLIC.resolve())) or not path.is_file():
-            self._json(404, {"ok": False, "error": "No encontrado"})
-            return
-        self._send(code, path.read_bytes(), MIME.get(path.suffix, "application/octet-stream"))
-
-    def _static(self, rel: str) -> None:
-        path = (PUBLIC / rel).resolve()
-        public = PUBLIC.resolve()
-        if public not in path.parents and path != public:
+    def _file_from(self, folder: Path, rel: str, code: int = 200) -> None:
+        root = folder.resolve()
+        path = (folder / rel).resolve()
+        if root not in path.parents and path != root:
             self._json(404, {"ok": False, "error": "No encontrado"})
             return
         if not path.is_file():
             self._json(404, {"ok": False, "error": "No encontrado"})
             return
-        self._send(200, path.read_bytes(), MIME.get(path.suffix, "application/octet-stream"))
+        self._send(code, path.read_bytes(), MIME.get(path.suffix, "application/octet-stream"))
+
+    def _html_file(self, name: str, code: int = 200) -> None:
+        folder = WEB if name in LANDING else PUBLIC
+        self._file_from(folder, name, code)
+
+    def _static(self, rel: str) -> None:
+        if rel in LANDING or rel.startswith("img/"):
+            self._file_from(WEB, rel)
+            return
+        self._file_from(PUBLIC, rel)
 
     def _read_json(self) -> dict:
         length = int(self.headers.get("Content-Length") or "0")

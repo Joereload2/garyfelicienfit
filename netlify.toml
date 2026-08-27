@@ -1,36 +1,4 @@
+# Solo la landing. El Python NO se publica aquí.
 [build]
-  publish = "public"
-  functions = "netlify/functions"
-
-[functions]
-  node_bundler = "esbuild"
-
-[[redirects]]
-  from = "/api/checkout"
-  to = "/.netlify/functions/checkout"
-  status = 200
-
-[[redirects]]
-  from = "/api/coaching"
-  to = "/.netlify/functions/coaching"
-  status = 200
-
-[[redirects]]
-  from = "/api/product"
-  to = "/.netlify/functions/product"
-  status = 200
-
-[[redirects]]
-  from = "/webhooks/stripe"
-  to = "/.netlify/functions/stripe-webhook"
-  status = 200
-
-[[redirects]]
-  from = "/usar/*"
-  to = "/.netlify/functions/proxy-usar"
-  status = 200
-
-[[redirects]]
-  from = "/admin"
-  to = "/.netlify/functions/proxy-admin"
-  status = 200
+  command = "echo landing-static"
+  publish = "web"

@@ -2,6 +2,11 @@
 
 const PRICE = 40;
 
+function isLocalApp() {
+    const h = location.hostname;
+    return h === "localhost" || h === "127.0.0.1";
+}
+
 function showTab(id) {
     document.querySelectorAll(".panel").forEach(function (p) {
         p.classList.toggle("active", p.id === "panel-" + id);
@@ -36,6 +41,12 @@ async function buyGuide(ev) {
     err.classList.remove("show");
     const email = document.getElementById("buyEmail").value.trim();
     const btn = document.getElementById("buySubmit");
+    if (!isLocalApp()) {
+        err.textContent =
+            "Esta web es la vitrina. El pago lo confirma Gary y te envía el enlace de la guía por correo o WhatsApp.";
+        err.classList.add("show");
+        return;
+    }
     btn.disabled = true;
     try {
         const res = await fetch("/api/checkout", {
@@ -63,6 +74,9 @@ async function buyGuide(ev) {
 }
 
 async function sendCoaching(ev) {
+    if (!isLocalApp()) {
+        return;
+    }
     ev.preventDefault();
     const err = document.getElementById("coachError");
     const ok = document.getElementById("coachOk");

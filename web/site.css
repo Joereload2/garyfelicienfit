@@ -210,6 +210,32 @@ h1 { font-size: clamp(36px, 6vw, 64px); line-height: 1.05; }
     margin-top: 8px;
 }
 
+.certs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.certs figure { margin: 0; }
+
+.certs img {
+    width: 100%;
+    height: 200px;
+    object-fit: contain;
+    background: #f6f1e8;
+    border-radius: 14px;
+    padding: 10px;
+    border: 1px solid var(--line);
+}
+
+.certs figcaption {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 8px;
+    text-align: center;
+}
+
 .videos {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -295,7 +321,7 @@ textarea { min-height: 120px; resize: vertical; }
 }
 
 @media (max-width: 860px) {
-    .grid-2, .photo-grid { grid-template-columns: 1fr; }
+    .grid-2, .photo-grid, .certs { grid-template-columns: 1fr; }
     .photo-grid .tall { height: 240px; grid-row: auto; }
     .top { flex-direction: column; align-items: flex-start; }
     .hero { min-height: 70vh; }

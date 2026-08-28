@@ -146,8 +146,6 @@ document.querySelectorAll(".tabs button").forEach(function (b) {
     });
 });
 window.addEventListener("hashchange", tabFromHash);
-document.getElementById("openBuy").addEventListener("click", openModal);
-document.getElementById("openBuy2").addEventListener("click", openModal);
 document.getElementById("closeBuy").addEventListener("click", closeModal);
 document.getElementById("buyForm").addEventListener("submit", buyGuide);
 document.getElementById("coachForm").addEventListener("submit", sendCoaching);

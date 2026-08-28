@@ -70,6 +70,8 @@ class FlujoTests(unittest.TestCase):
         self.assertEqual(resp.status, 200)
         self.assertIn("GaryFelicienFit", html)
         self.assertIn("USD $40", html)
+        self.assertIn("wa.me/56959128603", html)
+        self.assertIn("estoy%20interesado%20en%20el%20plan", html)
         self.assertIn("no se muestra en esta web", html.lower())
         self.assertNotIn("jspdf", html.lower())
         self.assertNotIn("generatePlan", html)

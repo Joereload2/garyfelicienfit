@@ -136,6 +136,9 @@ h1 { font-size: clamp(36px, 6vw, 64px); line-height: 1.05; }
     font-size: 15px;
     font-weight: 700;
     cursor: pointer;
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
 }
 
 .btn-gold { background: var(--gold); color: #1a1404; }

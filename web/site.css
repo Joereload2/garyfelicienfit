@@ -180,6 +180,13 @@ h1 { font-size: clamp(36px, 6vw, 64px); line-height: 1.05; }
     background: #0b0c0f;
 }
 
+.card img.mockup {
+    max-height: 560px;
+    padding: 12px 18px 8px;
+    object-fit: contain;
+    background: radial-gradient(ellipse at 50% 70%, #1a1c22 0%, #0b0c0f 70%);
+}
+
 .muted { color: var(--muted); line-height: 1.6; }
 
 .list { margin: 16px 0 0; padding: 0; list-style: none; }

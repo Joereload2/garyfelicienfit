@@ -26,6 +26,9 @@ Usa **siempre** este par en el admin cuando pruebes a mano:
 | Email | `prueba@planfit.local` |
 | payment_ref | `pay_prueba_manual` |
 
+Tras un pago real de Mercado Pago, en el panel usas el **email del comprador** y
+`payment_ref` = `mp_` + el id del pago (lo ves en Mercado Pago → Actividad).
+
 `pay_prueba_manual` está reservado para el panel. **Un payment_ref = un plan.** Si ya aparece como *usado*, el siguiente de la serie es:
 
 - `pay_prueba_manual_2`

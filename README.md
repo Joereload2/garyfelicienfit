@@ -48,11 +48,11 @@ Tras el pago, el backend emite el enlace de un solo uso y envía el correo.
 
 - Local: `ALLOW_TEST_CHECKOUT=1` simula el pago y dispara el envío.
 - Mercado Pago (Chile, CLP): `MP_ACCESS_TOKEN` + `PRICE_CLP` (default 38000).
-  Webhook: `POST/GET /webhooks/mercadopago`. En Netlify apunta a la función `mp-webhook`.
-- Stripe (opcional, USD): `STRIPE_SECRET_KEY` + webhook `/webhooks/stripe`.
-- Netlify: landing `web/` + funciones en `tools/netlify-functions`.
-  Variables: `MP_ACCESS_TOKEN`, `PRICE_CLP`, `PLANFIT_API_URL` (Python público), `ADMIN_SECRET`.
-  En Mercado Pago → Webhooks: `https://TU-SITIO.netlify.app/webhooks/mercadopago` (evento Payments).
+  El cobro lo hace la landing. Por ahora el enlace se emite **a mano** en `/admin`
+  (email del pagador + `payment_ref` = `mp_` + id del pago en Mercado Pago).
+  Webhook: `https://TU-SITIO.netlify.app/webhooks/mercadopago` (evento Payments).
+  `PLANFIT_API_URL` es opcional: si un día el Python está en https, el webhook
+  puede emitir el acceso solo.
   - Build command: `echo landing-static` (o vacío)
   - Publish directory: `web`
 - Python (tu PC): `python src/server.py` → formulario, PDF, admin, SQLite.

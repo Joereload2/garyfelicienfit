@@ -54,10 +54,20 @@ exports.handler = async (event) => {
       return json(200, { ok: true, ignored: payment.status || "unknown" });
     }
     const email = emailFromPayment(payment);
-    if (!email || email.indexOf("@") < 1) {
-      return json(400, { ok: false, error: "El pago no trajo email" });
-    }
     const payment_ref = "mp_" + payment.id;
+    if (!process.env.PLANFIT_API_URL) {
+      return json(200, {
+        ok: true,
+        manual: true,
+        email: email || null,
+        payment_ref,
+        amount: payment.transaction_amount,
+        currency: payment.currency_id,
+      });
+    }
+    if (!email || email.indexOf("@") < 1) {
+      return json(200, { ok: true, manual: true, payment_ref, error: "sin-email" });
+    }
     const { status, data } = await api("/internal/entitlements", {
       method: "POST",
       body: JSON.stringify({ email, payment_ref }),

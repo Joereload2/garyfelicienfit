@@ -1,4 +1,20 @@
-# Solo la landing. El Python NO se publica aquí.
+# Landing estática + funciones de pago. El Python NO se publica aquí.
 [build]
   command = "echo landing-static"
   publish = "web"
+  functions = "tools/netlify-functions"
+
+[[redirects]]
+  from = "/api/checkout"
+  to = "/.netlify/functions/checkout"
+  status = 200
+
+[[redirects]]
+  from = "/api/product"
+  to = "/.netlify/functions/product"
+  status = 200
+
+[[redirects]]
+  from = "/webhooks/mercadopago"
+  to = "/.netlify/functions/mp-webhook"
+  status = 200

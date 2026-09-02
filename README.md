@@ -1,7 +1,7 @@
 # PlanFit
 
 Entrega de un plan de alimentación y entrenamiento de **un solo uso**.
-El pago se verifica en otra plataforma. Aquí no hay Stripe ni cobros.
+El cobro en Chile va por **Mercado Pago** (Checkout Pro, CLP). Stripe queda como opción USD. El PDF nunca se muestra en la web.
 
 ## Flujo
 
@@ -47,8 +47,12 @@ La portada en `/` es la tienda: guía **USD $40**, pestañas El coach / Videos /
 Tras el pago, el backend emite el enlace de un solo uso y envía el correo.
 
 - Local: `ALLOW_TEST_CHECKOUT=1` simula el pago y dispara el envío.
-- Producción: `STRIPE_SECRET_KEY` + webhook `/webhooks/stripe`.
-- Netlify: **solo la carpeta `web/`** (landing). No sube el Python.
+- Mercado Pago (Chile, CLP): `MP_ACCESS_TOKEN` + `PRICE_CLP` (default 38000).
+  Webhook: `POST/GET /webhooks/mercadopago`. En Netlify apunta a la función `mp-webhook`.
+- Stripe (opcional, USD): `STRIPE_SECRET_KEY` + webhook `/webhooks/stripe`.
+- Netlify: landing `web/` + funciones en `tools/netlify-functions`.
+  Variables: `MP_ACCESS_TOKEN`, `PRICE_CLP`, `PLANFIT_API_URL` (Python público), `ADMIN_SECRET`.
+  En Mercado Pago → Webhooks: `https://TU-SITIO.netlify.app/webhooks/mercadopago` (evento Payments).
   - Build command: `echo landing-static` (o vacío)
   - Publish directory: `web`
 - Python (tu PC): `python src/server.py` → formulario, PDF, admin, SQLite.

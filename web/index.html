@@ -34,7 +34,7 @@
             <div class="price">USD $40 <small>pago único</small></div>
         </div>
         <div class="actions">
-            <a class="btn btn-gold" id="openBuy" href="https://wa.me/56959128603?text=Hola%2C%20estoy%20interesado%20en%20el%20plan" target="_blank" rel="noopener noreferrer">Comprar la guía</a>
+            <button type="button" class="btn btn-gold" id="openBuy">Comprar la guía</button>
             <button type="button" class="btn btn-ghost" onclick="showTab('coaching')">Coaching personalizado</button>
         </div>
     </div>
@@ -61,9 +61,9 @@
                     <li>Un solo pago. El mismo pago no genera otro plan.</li>
                 </ul>
                 <div class="actions">
-                    <a class="btn btn-gold" id="openBuy2" href="https://wa.me/56959128603?text=Hola%2C%20estoy%20interesado%20en%20el%20plan" target="_blank" rel="noopener noreferrer">Comprar · USD $40</a>
+                    <button type="button" class="btn btn-gold" id="openBuy2">Comprar · USD $40</button>
                 </div>
-                <p class="note">Por ahora el pago se coordina por WhatsApp. En unos días vuelve el botón de compra en la web.</p>
+                <p class="note">Pagas con Mercado Pago (Chile, CLP). El enlace de la guía llega al correo cuando el pago está aprobado.</p>
             </div>
             <article class="card">
                 <img class="mockup" src="/img/guia-mockup.jpg" alt="Mockup de la guía personalizada de 12 semanas">
@@ -213,15 +213,18 @@
 <div class="modal" id="buyModal">
     <form class="card" id="buyForm">
         <h3>Comprar la guía · USD $40</h3>
-        <p class="muted">El enlace de un solo uso se envía a este email cuando el pago está confirmado.</p>
+        <p class="muted">Pagas en Chile con Mercado Pago (CLP). El enlace de un solo uso llega a este email cuando el pago está aprobado.</p>
         <div id="buyError" class="error"></div>
         <label for="buyEmail">Email</label>
         <input id="buyEmail" type="email" required autocomplete="email">
         <div class="actions">
             <button type="button" class="btn btn-ghost" id="closeBuy">Cancelar</button>
-            <button type="submit" class="btn btn-gold" id="buySubmit">Pagar USD $40</button>
+            <button type="submit" class="btn btn-gold" id="buySubmit">Pagar con Mercado Pago</button>
         </div>
-        <p class="note">En Netlify esto es la vitrina. Gary confirma el pago y te envía el enlace. En el PC (localhost) el botón sí dispara la guía.</p>
+        <p class="note">
+            ¿Problemas para pagar?
+            <a href="https://wa.me/56959128603?text=Hola%2C%20estoy%20interesado%20en%20el%20plan" target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a>.
+        </p>
     </form>
 </div>
 

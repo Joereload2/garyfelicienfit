@@ -41,12 +41,6 @@ async function buyGuide(ev) {
     err.classList.remove("show");
     const email = document.getElementById("buyEmail").value.trim();
     const btn = document.getElementById("buySubmit");
-    if (!isLocalApp()) {
-        err.textContent =
-            "Esta web es la vitrina. El pago lo confirma Gary y te envía el enlace de la guía por correo o WhatsApp.";
-        err.classList.add("show");
-        return;
-    }
     btn.disabled = true;
     try {
         const res = await fetch("/api/checkout", {
@@ -61,13 +55,13 @@ async function buyGuide(ev) {
             btn.disabled = false;
             return;
         }
-        if (data.mode === "stripe" && data.url) {
+        if ((data.mode === "mp" || data.mode === "stripe") && data.url) {
             window.location.href = data.url;
             return;
         }
-        window.location.href = "/gracias?test=1";
+        window.location.href = isLocalApp() ? "/gracias?test=1" : "/gracias.html?test=1";
     } catch (e) {
-        err.textContent = "Sin conexión con el servidor.";
+        err.textContent = "Sin conexión con el servidor de pago.";
         err.classList.add("show");
         btn.disabled = false;
     }
@@ -146,6 +140,8 @@ document.querySelectorAll(".tabs button").forEach(function (b) {
     });
 });
 window.addEventListener("hashchange", tabFromHash);
+document.getElementById("openBuy").addEventListener("click", openModal);
+document.getElementById("openBuy2").addEventListener("click", openModal);
 document.getElementById("closeBuy").addEventListener("click", closeModal);
 document.getElementById("buyForm").addEventListener("submit", buyGuide);
 document.getElementById("coachForm").addEventListener("submit", sendCoaching);

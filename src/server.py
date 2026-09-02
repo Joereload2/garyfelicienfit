@@ -10,7 +10,7 @@ import sys
 from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -21,9 +21,14 @@ load_env()
 
 from mailer import send_plan_pdf  # noqa: E402
 from payments import (  # noqa: E402
+    create_mp_preference,
     create_stripe_checkout,
     email_from_stripe_session,
+    fetch_mp_payment,
+    fulfill_mp_payment,
     issue_paid_access,
+    mp_configured,
+    price_clp,
     price_usd,
     stripe_configured,
     test_checkout_allowed,
@@ -169,6 +174,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/gracias":
             self._html_file("gracias.html")
             return
+        if path == "/webhooks/mercadopago":
+            self._mp_webhook()
+            return
         if path in ("/styles.css", "/form.js", "/site.css", "/site.js", "/videos.json"):
             self._static(path.lstrip("/"))
             return
@@ -181,7 +189,9 @@ class Handler(BaseHTTPRequestHandler):
                 {
                     "ok": True,
                     "price_usd": price_usd(),
+                    "price_clp": price_clp(),
                     "stripe": stripe_configured(),
+                    "mp": mp_configured(),
                     "test_checkout": test_checkout_allowed(),
                 },
             )
@@ -237,6 +247,9 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/webhooks/stripe":
                 self._stripe_webhook()
                 return
+            if path == "/webhooks/mercadopago":
+                self._mp_webhook()
+                return
         except ValidationError as exc:
             self._json(400, {"ok": False, "error": exc.message, "field": exc.field})
             return
@@ -281,9 +294,18 @@ class Handler(BaseHTTPRequestHandler):
     def _checkout(self) -> None:
         data = self._read_json()
         email = normalize_email(data.get("email"))
+        success = f"{_app_url()}/gracias?paid=1"
+        cancel = f"{_app_url()}/#guia"
+        if mp_configured():
+            notify = f"{_app_url()}/webhooks/mercadopago"
+            try:
+                url = create_mp_preference(email, success, cancel, notify)
+            except Exception as exc:
+                self._json(502, {"ok": False, "error": str(exc)})
+                return
+            self._json(200, {"ok": True, "mode": "mp", "url": url})
+            return
         if stripe_configured():
-            success = f"{_app_url()}/gracias?paid=1"
-            cancel = f"{_app_url()}/#guia"
             try:
                 url = create_stripe_checkout(email, success, cancel)
             except Exception as exc:
@@ -352,6 +374,45 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, {"ok": True, "duplicate": True})
             return
         self._json(200, {"ok": True, **issued})
+
+    def _mp_webhook(self) -> None:
+        qs = parse_qs(urlparse(self.path).query)
+        payment_id = ""
+        if qs.get("data.id"):
+            payment_id = qs["data.id"][0]
+        elif qs.get("id") and (qs.get("topic") or [""])[0] == "payment":
+            payment_id = qs["id"][0]
+        elif qs.get("id") and (qs.get("type") or [""])[0] == "payment":
+            payment_id = qs["id"][0]
+        if self.command == "POST":
+            length = int(self.headers.get("Content-Length") or "0")
+            if 0 < length <= 400_000:
+                raw = self.rfile.read(length)
+                try:
+                    body = json.loads(raw.decode("utf-8") or "{}")
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    body = {}
+                if isinstance(body, dict):
+                    data = body.get("data") or {}
+                    topic = str(body.get("type") or body.get("topic") or "")
+                    if topic in {"", "payment"}:
+                        payment_id = str(data.get("id") or body.get("id") or payment_id)
+        if not payment_id:
+            self._json(200, {"ok": True, "ignored": "no-id"})
+            return
+        if not mp_configured():
+            self._json(503, {"ok": False, "error": "Mercado Pago no está configurado"})
+            return
+        try:
+            payment = fetch_mp_payment(str(payment_id))
+            result = fulfill_mp_payment(payment)
+        except ValidationError as exc:
+            self._json(400, {"ok": False, "error": exc.message})
+            return
+        except Exception as exc:
+            self._json(502, {"ok": False, "error": str(exc)[:300]})
+            return
+        self._json(200, result)
 
     def _coaching(self) -> None:
         data = self._read_json()

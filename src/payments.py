@@ -316,12 +316,29 @@ def order_matches_shopify_product(order: dict) -> bool:
     return False
 
 
+def _shopify_unwrap_order(payload: dict) -> dict:
+    inner = payload.get("order")
+    if isinstance(inner, dict) and (inner.get("id") or inner.get("line_items")):
+        return inner
+    return payload
+
+
+def shopify_order_id(order: dict) -> str:
+    raw = str(order.get("id") or order.get("admin_graphql_api_id") or "").strip()
+    if "/Order/" in raw:
+        raw = raw.rsplit("/", 1)[-1]
+    return raw.strip()
+
+
 def email_from_shopify_order(order: dict) -> str:
     customer = order.get("customer") or {}
+    billing = order.get("billing_address") or {}
     email = (
         order.get("email")
         or order.get("contact_email")
         or customer.get("email")
+        or billing.get("email")
+        or order.get("customer_email")
     )
     if not email:
         raise ValidationError("El pedido de Shopify no trajo email.")
@@ -330,12 +347,13 @@ def email_from_shopify_order(order: dict) -> str:
 
 def fulfill_shopify_order(order: dict) -> dict:
     """Issue one-shot access for a paid Shopify order. Idempotent via shopify_{order_id}."""
+    order = _shopify_unwrap_order(order)
     financial = str(order.get("financial_status") or "").lower()
     if financial and financial not in {"paid", "partially_paid"}:
         return {"ok": True, "ignored": financial}
     if not order_matches_shopify_product(order):
         return {"ok": True, "ignored": "product-filter"}
-    order_id = str(order.get("id") or "").strip()
+    order_id = shopify_order_id(order)
     if not order_id:
         raise ValidationError("Pedido de Shopify sin id.")
     email = email_from_shopify_order(order)

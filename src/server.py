@@ -77,7 +77,12 @@ MIME = {
 
 
 def _app_url() -> str:
-    return get("APP_URL", "http://localhost:3000").rstrip("/")
+    url = get("APP_URL") or ""
+    if (not url) or ("localhost" in url):
+        domain = get("RAILWAY_PUBLIC_DOMAIN")
+        if domain:
+            url = f"https://{domain}"
+    return (url or "http://localhost:3000").rstrip("/")
 
 
 def _admin_secret() -> str:
@@ -421,15 +426,29 @@ class Handler(BaseHTTPRequestHandler):
 
     def _shopify_webhook(self) -> None:
         length = int(self.headers.get("Content-Length") or "0")
-        if length <= 0 or length > 400_000:
+        if length < 0 or length > 400_000:
+            print("shopify webhook: cuerpo inválido length=", length)
             self._json(400, {"ok": False, "error": "Cuerpo inválido"})
             return
-        raw = self.rfile.read(length)
+        if length == 0:
+            raw = self.rfile.read(400_000)
+        else:
+            raw = self.rfile.read(length)
+        if not raw:
+            print("shopify webhook: cuerpo vacío")
+            self._json(400, {"ok": False, "error": "Cuerpo inválido"})
+            return
         secret = get("SHOPIFY_WEBHOOK_SECRET")
-        sig = self.headers.get("X-Shopify-Hmac-Sha256") or ""
+        sig = (
+            self.headers.get("X-Shopify-Hmac-Sha256")
+            or self.headers.get("X-Shopify-Hmac-SHA256")
+            or ""
+        )
+        topic = self.headers.get("X-Shopify-Topic") or ""
         # Require secret in production paths: if set, signature must match.
         if secret:
             if not verify_shopify_webhook(raw, sig, secret):
+                print("shopify webhook: firma inválida topic=", topic)
                 self._json(401, {"ok": False, "error": "Firma Shopify inválida"})
                 return
         elif not test_checkout_allowed():
@@ -438,19 +457,31 @@ class Handler(BaseHTTPRequestHandler):
         try:
             order = json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError):
+            print("shopify webhook: JSON inválido topic=", topic)
             self._json(400, {"ok": False, "error": "JSON inválido"})
             return
         if not isinstance(order, dict):
+            print("shopify webhook: pedido no es objeto topic=", topic)
             self._json(400, {"ok": False, "error": "Pedido inválido"})
             return
         try:
             result = fulfill_shopify_order(order)
         except ValidationError as exc:
+            print(
+                "shopify webhook 400:",
+                exc.message,
+                "topic=",
+                topic,
+                "keys=",
+                list(order.keys())[:12],
+            )
             self._json(400, {"ok": False, "error": exc.message})
             return
         except Exception as exc:
+            print("shopify webhook 502:", str(exc)[:300])
             self._json(502, {"ok": False, "error": str(exc)[:300]})
             return
+        print("shopify webhook ok:", result)
         self._json(200, result)
 
     def _coaching(self) -> None:

@@ -13,6 +13,7 @@ from payments import (
     email_from_shopify_order,
     fulfill_shopify_order,
     order_matches_shopify_product,
+    shopify_order_id,
     verify_shopify_webhook,
 )
 from validate import ValidationError
@@ -86,6 +87,17 @@ class ShopifyProductFilterTests(unittest.TestCase):
                 os.environ.pop("SHOPIFY_VARIANT_ID", None)
             else:
                 os.environ["SHOPIFY_VARIANT_ID"] = prev_v
+
+
+class ShopifyIdTests(unittest.TestCase):
+    def test_numeric_id(self):
+        self.assertEqual(shopify_order_id({"id": 1001}), "1001")
+
+    def test_gid(self):
+        self.assertEqual(
+            shopify_order_id({"admin_graphql_api_id": "gid://shopify/Order/1001"}),
+            "1001",
+        )
 
 
 class ShopifyFulfillTests(unittest.TestCase):

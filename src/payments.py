@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import hmac
 import hashlib
 import json
@@ -280,3 +281,82 @@ def email_from_stripe_session(session: dict) -> str:
     if not email:
         raise ValidationError("El pago no trajo email.")
     return normalize_email(email)
+
+
+def verify_shopify_webhook(payload: bytes, hmac_header: str, secret: str) -> bool:
+    """Shopify sends X-Shopify-Hmac-Sha256 as base64(HMAC-SHA256(raw_body, secret))."""
+    if not secret or not hmac_header:
+        return False
+    digest = hmac.new(secret.encode("utf-8"), payload, hashlib.sha256).digest()
+    expected = base64.b64encode(digest).decode("utf-8")
+    return hmac.compare_digest(expected, hmac_header.strip())
+
+
+def shopify_product_filter_ids() -> set[str]:
+    """Optional allow-list from SHOPIFY_PRODUCT_ID / SHOPIFY_VARIANT_ID (comma-separated)."""
+    ids: set[str] = set()
+    for key in ("SHOPIFY_PRODUCT_ID", "SHOPIFY_VARIANT_ID"):
+        raw = get(key) or ""
+        for part in raw.split(","):
+            part = part.strip()
+            if part:
+                ids.add(part)
+    return ids
+
+
+def order_matches_shopify_product(order: dict) -> bool:
+    allowed = shopify_product_filter_ids()
+    if not allowed:
+        return True
+    for item in order.get("line_items") or []:
+        pid = str(item.get("product_id") or "")
+        vid = str(item.get("variant_id") or "")
+        if pid in allowed or vid in allowed:
+            return True
+    return False
+
+
+def email_from_shopify_order(order: dict) -> str:
+    customer = order.get("customer") or {}
+    email = (
+        order.get("email")
+        or order.get("contact_email")
+        or customer.get("email")
+    )
+    if not email:
+        raise ValidationError("El pedido de Shopify no trajo email.")
+    return normalize_email(email)
+
+
+def fulfill_shopify_order(order: dict) -> dict:
+    """Issue one-shot access for a paid Shopify order. Idempotent via shopify_{order_id}."""
+    financial = str(order.get("financial_status") or "").lower()
+    if financial and financial not in {"paid", "partially_paid"}:
+        return {"ok": True, "ignored": financial}
+    if not order_matches_shopify_product(order):
+        return {"ok": True, "ignored": "product-filter"}
+    order_id = str(order.get("id") or "").strip()
+    if not order_id:
+        raise ValidationError("Pedido de Shopify sin id.")
+    email = email_from_shopify_order(order)
+    payment_ref = normalize_payment_ref(f"shopify_{order_id}")
+    if get_by_payment_ref(payment_ref):
+        return {"ok": True, "duplicate": True, "payment_ref": payment_ref}
+    total = order.get("total_price") or order.get("current_total_price") or "0"
+    try:
+        # Same convention as MP fulfill: store major units (CLP pesos) in amount_cents field.
+        amount_cents = int(round(float(total)))
+    except (TypeError, ValueError):
+        amount_cents = price_clp()
+    currency = str(order.get("currency") or "CLP").lower()
+    try:
+        issued = issue_paid_access(
+            email,
+            payment_ref,
+            provider="shopify",
+            amount_cents=amount_cents,
+            currency=currency,
+        )
+    except ValueError:
+        return {"ok": True, "duplicate": True, "payment_ref": payment_ref}
+    return {"ok": True, **issued}

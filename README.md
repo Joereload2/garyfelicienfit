@@ -1,17 +1,19 @@
 # PlanFit
 
 Entrega de un plan de alimentación y entrenamiento de **un solo uso**.
-El cobro en Chile va por **Mercado Pago** (Checkout Pro, CLP). Stripe queda como opción USD. El PDF nunca se muestra en la web.
+El cobro objetivo es **Shopify** (Mercado Pago en el checkout, CLP). El backend emite el enlace tras el webhook `orders/paid`. Stripe / MP directo en Netlify quedan como legado. El PDF nunca se muestra en la web.
 
-## Flujo
+Guía de migración y checklist: **[docs/SHOPIFY.md](docs/SHOPIFY.md)**.
 
-1. Verificas el pago fuera.
-2. En `/admin` emites un enlace atado a email + `payment_ref`.
+## Flujo (Shopify)
+
+1. El cliente paga el producto en Shopify.
+2. Shopify llama `POST /webhooks/shopify` → se emite acceso con `payment_ref = shopify_{order_id}` y se envía el correo.
 3. El usuario abre `/usar/TOKEN` y envía el formulario **una vez**.
 4. El servidor genera el PDF y lo manda en un **segundo correo**.
 5. La web **no** muestra calorías, menús ni PDF.
 6. El mismo `payment_ref` no puede generar otro plan.
-7. Si se equivocó, el enlace no se reabre; corrección solo por soporte (`/internal/resend-pdf` reenvía el mismo PDF).
+7. Respaldo manual: `/admin` con email + `shopify_{order_id}`. Reenvío PDF: `/internal/resend-pdf`.
 
 ## Arranque
 
@@ -38,6 +40,7 @@ Si `SMTP_HOST` está vacío, los correos se guardan en `data/outbox/` y los PDF 
 | POST | `/internal/entitlements` | Header `X-Admin-Secret`. |
 | GET | `/internal/entitlements` | Lista. Mismo header. |
 | POST | `/internal/resend-pdf` | Reenvía el mismo PDF. No regenera. |
+| POST | `/webhooks/shopify` | Pedido pagado (HMAC). Emite acceso + mail. |
 
 El `index.html` de la raíz es el prototipo viejo y **no** es la entrada pública.
 

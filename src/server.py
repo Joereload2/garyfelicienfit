@@ -26,6 +26,7 @@ from payments import (  # noqa: E402
     email_from_stripe_session,
     fetch_mp_payment,
     fulfill_mp_payment,
+    fulfill_shopify_order,
     issue_paid_access,
     mp_configured,
     price_clp,
@@ -33,6 +34,7 @@ from payments import (  # noqa: E402
     stripe_configured,
     test_checkout_allowed,
     unique_ref,
+    verify_shopify_webhook,
     verify_stripe_signature,
 )
 from pdf_builder import build_pdf  # noqa: E402
@@ -250,6 +252,9 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/webhooks/mercadopago":
                 self._mp_webhook()
                 return
+            if path == "/webhooks/shopify":
+                self._shopify_webhook()
+                return
         except ValidationError as exc:
             self._json(400, {"ok": False, "error": exc.message, "field": exc.field})
             return
@@ -406,6 +411,40 @@ class Handler(BaseHTTPRequestHandler):
         try:
             payment = fetch_mp_payment(str(payment_id))
             result = fulfill_mp_payment(payment)
+        except ValidationError as exc:
+            self._json(400, {"ok": False, "error": exc.message})
+            return
+        except Exception as exc:
+            self._json(502, {"ok": False, "error": str(exc)[:300]})
+            return
+        self._json(200, result)
+
+    def _shopify_webhook(self) -> None:
+        length = int(self.headers.get("Content-Length") or "0")
+        if length <= 0 or length > 400_000:
+            self._json(400, {"ok": False, "error": "Cuerpo inválido"})
+            return
+        raw = self.rfile.read(length)
+        secret = get("SHOPIFY_WEBHOOK_SECRET")
+        sig = self.headers.get("X-Shopify-Hmac-Sha256") or ""
+        # Require secret in production paths: if set, signature must match.
+        if secret:
+            if not verify_shopify_webhook(raw, sig, secret):
+                self._json(401, {"ok": False, "error": "Firma Shopify inválida"})
+                return
+        elif not test_checkout_allowed():
+            self._json(503, {"ok": False, "error": "Falta SHOPIFY_WEBHOOK_SECRET"})
+            return
+        try:
+            order = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            self._json(400, {"ok": False, "error": "JSON inválido"})
+            return
+        if not isinstance(order, dict):
+            self._json(400, {"ok": False, "error": "Pedido inválido"})
+            return
+        try:
+            result = fulfill_shopify_order(order)
         except ValidationError as exc:
             self._json(400, {"ok": False, "error": exc.message})
             return

@@ -24,8 +24,20 @@ Shopify checkout → orders/paid webhook → POST /webhooks/shopify
 1. [ ] Crear tienda Shopify (trial o plan Basic).
 2. [ ] Crear producto borrador: **Plan personalizado de 12 semanas** (precio CLP).
 3. [ ] Instalar pasarela **Mercado Pago** para Shopify (Chile) y hacer un pago de prueba.
-4. [ ] Desplegar este backend en un host **24/7 con HTTPS** (Railway, Render, Fly, VPS).
-5. [ ] En el host: `APP_URL=https://…`, `ADMIN_SECRET`, correo (`RESEND_API_KEY` o SMTP), disco persistente para SQLite (o Supabase).
+4. [ ] Desplegar este backend en **Railway** (u otro host 24/7 con HTTPS).
+5. [ ] Variables en el host (mínimo):
+
+| Variable | Valor |
+| --- | --- |
+| `ADMIN_SECRET` | un secreto largo (el de tu `.env` local o uno nuevo) |
+| `APP_URL` | la URL pública HTTPS que dé Railway (sin `/` final) |
+| `HOST` | `0.0.0.0` |
+| `ALLOW_TEST_CHECKOUT` | `0` en producción |
+| `SHOPIFY_PRODUCT_ID` | `10255880847600` |
+| `SHOPIFY_WEBHOOK_SECRET` | el de Shopify (cuando creemos el webhook) |
+| `RESEND_API_KEY` / SMTP | para correo real (si no, los mails van a log/outbox) |
+
+6. [ ] Volumen persistente o Supabase si no quieres perder la DB al redeploy.
 
 ## Fase 1 — Producto
 

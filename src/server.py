@@ -556,7 +556,8 @@ def main() -> None:
     os.chdir(ROOT)
     ensure_dirs()
     _admin_secret()
-    host = get("HOST") or "127.0.0.1"
+    # Railway/Render set PORT and need 0.0.0.0. Local .env can force HOST=127.0.0.1.
+    host = get("HOST") or "0.0.0.0"
     port = int(get("PORT") or "3000")
     httpd = ThreadingHTTPServer((host, port), Handler)
     print(f"GaryFelicienFit { _app_url() }")

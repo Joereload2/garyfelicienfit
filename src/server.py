@@ -555,10 +555,13 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> None:
     os.chdir(ROOT)
     ensure_dirs()
-    _admin_secret()
-    # Railway/Render set PORT and need 0.0.0.0. Local .env can force HOST=127.0.0.1.
-    host = get("HOST") or "0.0.0.0"
+    if not get("ADMIN_SECRET"):
+        print("WARN: falta ADMIN_SECRET; /admin y emisión interna no funcionarán")
+    # Railway injects PORT and RAILWAY_*; always bind publicly there.
+    # A copied local .env with HOST=127.0.0.1 would otherwise 502.
     port = int(get("PORT") or "3000")
+    on_railway = bool(get("RAILWAY_ENVIRONMENT") or get("RAILWAY_PUBLIC_DOMAIN") or get("RAILWAY_PROJECT_ID"))
+    host = "0.0.0.0" if on_railway else (get("HOST") or "0.0.0.0")
     httpd = ThreadingHTTPServer((host, port), Handler)
     print(f"GaryFelicienFit { _app_url() }")
     print(f"Admin            { _app_url() }/admin")

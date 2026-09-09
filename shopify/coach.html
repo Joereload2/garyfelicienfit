@@ -1,0 +1,57 @@
+<!-- Página Shopify: El coach (Custom Liquid o HTML de página). -->
+<div class="gff-coach">
+  <style>
+    .gff-coach { --gff-gold:#d4a017; --gff-cream:#f3ede2; --gff-muted:#9a9388; color:var(--gff-cream); font-family:Arial,Helvetica,sans-serif; max-width:980px; margin:0 auto; padding:24px 16px 48px; }
+    .gff-coach * { box-sizing:border-box; }
+    .gff-coach-kicker { letter-spacing:.18em; text-transform:uppercase; font-size:11px; color:var(--gff-gold); }
+    .gff-coach h2 { margin:8px 0 16px; }
+    .gff-coach-grid { display:grid; gap:22px; }
+    @media(min-width:800px){ .gff-coach-grid { grid-template-columns:1.1fr .9fr; } }
+    .gff-coach p { color:var(--gff-muted); line-height:1.6; }
+    .gff-coach-photos { display:grid; gap:10px; grid-template-columns:1fr 1fr; }
+    .gff-coach-photos img { width:100%; height:180px; object-fit:cover; border-radius:12px; display:block; }
+    .gff-coach-photos img.tall { grid-row:span 2; height:100%; min-height:280px; object-position:center 15%; }
+    .gff-certs { display:grid; gap:12px; grid-template-columns:1fr 1fr; }
+    @media(min-width:800px){ .gff-certs { grid-template-columns:repeat(4,1fr); } }
+    .gff-certs img { width:100%; border-radius:10px; display:block; }
+    .gff-certs figcaption { font-size:12px; color:var(--gff-muted); margin-top:6px; }
+    .gff-coach a.btn { display:inline-block; margin-top:18px; padding:12px 20px; border-radius:999px; background:#d4a017; color:#0b0c0f; font-weight:700; text-decoration:none; }
+  </style>
+  <p class="gff-coach-kicker">El coach</p>
+  <h2>Gary Felicien</h2>
+  <div class="gff-coach-grid">
+    <div>
+      <p style="color:#f3ede2;font-size:18px;">Gary Felicien, venezolano de 39 años, lleva más de 25 años en el entrenamiento, el deporte y el estudio del cuerpo.</p>
+      <p>Empezó joven, en el equipo juvenil de triatlón del estado Lara. Después vinieron décadas de gimnasio: métodos, sistemas y rutinas que fue probando en carne propia.</p>
+      <p>Se formó en culturismo con la IFBB. Nunca ha competido; la pasión lo llevó a estudiar qué funciona de verdad en entrenamiento y comida. Es <b style="color:#f3ede2;">ACE Certified Personal Trainer</b> y técnico en alimentos.</p>
+      <p>No se trata solo de músculo. Se trata de sentirse mejor, tener más energía y construir una versión más sana, da igual desde dónde se parta.</p>
+      <p style="color:#f3ede2;">No necesitas ser atleta para empezar. Solo un punto de partida.</p>
+      <a class="btn" href="/products/plan-personalizado-de-12-semanas">Quiero mi plan de 12 semanas</a>
+    </div>
+    <div class="gff-coach-photos">
+      <img class="tall" src="https://garyfelicienfit-production.up.railway.app/img/gary.jpg" alt="Gary Felicien">
+      <img src="https://garyfelicienfit-production.up.railway.app/img/gary-cable.jpg" alt="Gary en polea">
+      <img src="https://garyfelicienfit-production.up.railway.app/img/gary-deadlift.jpg" alt="Gary en peso muerto">
+    </div>
+  </div>
+  <p class="gff-coach-kicker" style="margin-top:36px;">Formación</p>
+  <h2>Certificados ACE</h2>
+  <div class="gff-certs">
+    <figure>
+      <img src="https://garyfelicienfit-production.up.railway.app/img/cert-ace-cpt.jpg" alt="ACE CPT">
+      <figcaption>ACE Certified Personal Trainer</figcaption>
+    </figure>
+    <figure>
+      <img src="https://garyfelicienfit-production.up.railway.app/img/cert-ift.jpg" alt="ACE IFT">
+      <figcaption>ACE IFT · diseño de programas</figcaption>
+    </figure>
+    <figure>
+      <img src="https://garyfelicienfit-production.up.railway.app/img/cert-athletic.jpg" alt="ACE Athletic">
+      <figcaption>ACE Athletic Performance</figcaption>
+    </figure>
+    <figure>
+      <img src="https://garyfelicienfit-production.up.railway.app/img/cert-lifestyle.jpg" alt="ACE Lifestyle">
+      <figcaption>ACE Lifestyle Medicine</figcaption>
+    </figure>
+  </div>
+</div>

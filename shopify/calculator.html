@@ -1,0 +1,349 @@
+<!--
+  GaryFelicienFit — calculadora (Custom Liquid / HTML personalizado)
+  Pega este bloque TAL CUAL en Shopify: sección "Custom Liquid"
+  o en Hostinger "Código personalizado".
+
+  Edita solo CTA_URL (enlace al producto).
+-->
+<div class="jg-calc" id="jg-calc-root">
+  <style>
+    .jg-calc {
+      --jg-bg: #0b0c0f;
+      --jg-card: #171a21;
+      --jg-gold: #d4a017;
+      --jg-gold-2: #f0c75e;
+      --jg-cream: #f3ede2;
+      --jg-muted: #9a9388;
+      --jg-line: rgba(212, 160, 23, 0.28);
+      --jg-danger: #e24b4b;
+      --jg-ok: #7dcea0;
+      --jg-blue: #5b8def;
+      --jg-yellow: #e0b44a;
+      --jg-red: #e24b4b;
+      box-sizing: border-box;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 20px 16px 32px;
+      color: var(--jg-cream);
+      background: var(--jg-bg);
+      font-family: Arial, Helvetica, sans-serif;
+      border-radius: 16px;
+      border: 1px solid var(--jg-line);
+    }
+    .jg-calc *, .jg-calc *::before, .jg-calc *::after { box-sizing: border-box; }
+    .jg-calc-kicker {
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-size: 11px;
+      color: var(--jg-gold);
+      margin: 0 0 8px;
+    }
+    .jg-calc h2 {
+      margin: 0 0 8px;
+      font-size: 1.45rem;
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--jg-cream);
+    }
+    .jg-calc-lead {
+      margin: 0 0 20px;
+      color: var(--jg-muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .jg-calc-form { display: grid; gap: 14px; }
+    .jg-calc-row { display: grid; gap: 14px; }
+    @media (min-width: 640px) {
+      .jg-calc-row { grid-template-columns: 1fr 1fr; }
+    }
+    .jg-calc label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 6px;
+      color: var(--jg-cream);
+    }
+    .jg-calc input,
+    .jg-calc select {
+      width: 100%;
+      padding: 12px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--jg-line);
+      background: #12141a;
+      color: var(--jg-cream);
+      font-size: 16px;
+      font-family: inherit;
+    }
+    .jg-calc select { min-height: 48px; }
+    .jg-calc input:focus,
+    .jg-calc select:focus {
+      outline: 2px solid var(--jg-gold);
+      outline-offset: 1px;
+    }
+    .jg-calc-hint {
+      display: block;
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--jg-muted);
+      line-height: 1.4;
+    }
+    .jg-calc-error {
+      display: none;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(226, 75, 75, 0.12);
+      color: #ffb4b4;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .jg-calc-error.jg-calc-show { display: block; }
+    .jg-calc-btn {
+      appearance: none;
+      border: 0;
+      cursor: pointer;
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 999px;
+      background: var(--jg-gold);
+      color: #0b0c0f;
+      font-weight: 700;
+      font-size: 15px;
+      font-family: inherit;
+    }
+    .jg-calc-btn:hover { background: var(--jg-gold-2); }
+    .jg-calc-results {
+      display: none;
+      margin-top: 22px;
+      gap: 12px;
+    }
+    .jg-calc-results.jg-calc-show { display: grid; }
+    .jg-calc-card {
+      background: var(--jg-card);
+      border: 1px solid var(--jg-line);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .jg-calc-card h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--jg-muted);
+      font-weight: 700;
+    }
+    .jg-calc-value {
+      font-size: 1.7rem;
+      font-weight: 700;
+      margin: 0 0 4px;
+      color: var(--jg-cream);
+    }
+    .jg-calc-badge {
+      display: inline-block;
+      margin: 6px 0 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .jg-calc-imc-bajo { background: rgba(91, 141, 239, 0.2); color: var(--jg-blue); }
+    .jg-calc-imc-ok { background: rgba(125, 206, 160, 0.18); color: var(--jg-ok); }
+    .jg-calc-imc-sobre { background: rgba(224, 180, 74, 0.2); color: var(--jg-yellow); }
+    .jg-calc-imc-obe { background: rgba(226, 75, 75, 0.18); color: var(--jg-red); }
+    .jg-calc-phrase {
+      margin: 0;
+      font-size: 13px;
+      color: var(--jg-muted);
+      line-height: 1.45;
+    }
+    .jg-calc-sugs { display: grid; gap: 8px; margin-top: 10px; }
+    .jg-calc-sug {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #12141a;
+    }
+    .jg-calc-sug span:last-child { color: var(--jg-gold-2); font-weight: 700; white-space: nowrap; }
+    .jg-calc-cta {
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      margin-top: 4px;
+      padding: 14px 18px;
+      border-radius: 999px;
+      background: var(--jg-gold);
+      color: #0b0c0f;
+      font-weight: 700;
+      font-size: 15px;
+    }
+    .jg-calc-legal {
+      margin: 12px 0 0;
+      font-size: 11px;
+      color: var(--jg-muted);
+      line-height: 1.4;
+    }
+  </style>
+
+  <p class="jg-calc-kicker">Calculadora</p>
+  <h2>Tus números de partida</h2>
+  <p class="jg-calc-lead">
+    IMC, calorías en reposo y gasto según tu actividad. Orientativo, no es un diagnóstico.
+    El plan personalizado de 12 semanas ajusta esto a tu meta y a lo que comes de verdad.
+  </p>
+
+  <form class="jg-calc-form" id="jg-calc-form" novalidate>
+    <div class="jg-calc-error" id="jg-calc-error" role="alert"></div>
+    <div class="jg-calc-row">
+      <div>
+        <label for="jg-calc-sex">Sexo</label>
+        <select id="jg-calc-sex" name="sex" required>
+          <option value="">Selecciona</option>
+          <option value="m">Hombre</option>
+          <option value="f">Mujer</option>
+        </select>
+      </div>
+      <div>
+        <label for="jg-calc-age">Edad (años)</label>
+        <input id="jg-calc-age" name="age" type="number" inputmode="numeric" min="15" max="80" step="1" required>
+      </div>
+    </div>
+    <div class="jg-calc-row">
+      <div>
+        <label for="jg-calc-height">Altura (cm)</label>
+        <input id="jg-calc-height" name="height" type="number" inputmode="decimal" min="120" max="230" step="0.1" required>
+        <span class="jg-calc-hint">Ejemplo: 170. Si pones 1.70, te avisamos.</span>
+      </div>
+      <div>
+        <label for="jg-calc-weight">Peso (kg)</label>
+        <input id="jg-calc-weight" name="weight" type="number" inputmode="decimal" min="30" max="250" step="0.1" required>
+      </div>
+    </div>
+    <div>
+      <label for="jg-calc-activity">Nivel de actividad física</label>
+      <select id="jg-calc-activity" name="activity" required>
+        <option value="">Selecciona</option>
+        <option value="1.2">Sedentario (1.2) — poco o ningún ejercicio, oficina, casi no caminas.</option>
+        <option value="1.375">Ligero (1.375) — ejercicio 1–3 días/semana (caminatas, yoga suave).</option>
+        <option value="1.55">Moderado (1.55) — 3–5 días/semana (gym, trote, deporte recreativo).</option>
+        <option value="1.725">Activo (1.725) — intenso 6–7 días/semana (fuerza o cardio casi diario).</option>
+        <option value="1.9">Muy activo (1.9) — diario muy intenso, o trabajo físico + entreno (doble sesión).</option>
+      </select>
+    </div>
+    <button class="jg-calc-btn" type="submit">Calcular</button>
+  </form>
+
+  <div class="jg-calc-results" id="jg-calc-results">
+    <article class="jg-calc-card">
+      <h3>IMC</h3>
+      <p class="jg-calc-value" id="jg-calc-imc-n"></p>
+      <span class="jg-calc-badge" id="jg-calc-imc-badge"></span>
+      <p class="jg-calc-phrase">Peso (kg) dividido por la altura en metros al cuadrado.</p>
+    </article>
+    <article class="jg-calc-card">
+      <h3>TMB</h3>
+      <p class="jg-calc-value" id="jg-calc-tmb-n"></p>
+      <p class="jg-calc-phrase">Estas son las calorías que tu cuerpo quema en reposo, solo para mantenerte vivo.</p>
+    </article>
+    <article class="jg-calc-card">
+      <h3>GET</h3>
+      <p class="jg-calc-value" id="jg-calc-get-n"></p>
+      <p class="jg-calc-phrase">Este es tu gasto total considerando tu nivel de actividad. Es tu punto de referencia para bajar, mantener o subir de peso.</p>
+      <div class="jg-calc-sugs">
+        <div class="jg-calc-sug"><span>Bajar de peso</span><span id="jg-calc-cut"></span></div>
+        <div class="jg-calc-sug"><span>Mantener peso</span><span id="jg-calc-hold"></span></div>
+        <div class="jg-calc-sug"><span>Ganar masa muscular</span><span id="jg-calc-gain"></span></div>
+      </div>
+    </article>
+    <a class="jg-calc-cta" id="jg-calc-cta" href="#">Quiero mi plan personalizado</a>
+    <p class="jg-calc-legal">Cifras orientativas (Mifflin-St Jeor). No sustituyen evaluación médica ni el plan completo de 12 semanas.</p>
+  </div>
+</div>
+<script>
+(function () {
+  var CTA_URL = "https://garyfelicien.myshopify.com/products/plan-personalizado-de-12-semanas";
+
+  var root = document.getElementById("jg-calc-root");
+  if (!root) return;
+  var form = document.getElementById("jg-calc-form");
+  var err = document.getElementById("jg-calc-error");
+  var results = document.getElementById("jg-calc-results");
+  var cta = document.getElementById("jg-calc-cta");
+  if (cta) cta.setAttribute("href", CTA_URL);
+
+  function showError(msg) {
+    err.textContent = msg;
+    err.classList.add("jg-calc-show");
+    results.classList.remove("jg-calc-show");
+  }
+  function clearError() {
+    err.textContent = "";
+    err.classList.remove("jg-calc-show");
+  }
+  function round1(n) {
+    return Math.round(n * 10) / 10;
+  }
+  function kcal(n) {
+    return Math.round(n) + " kcal/día";
+  }
+  function imcClass(imc) {
+    if (imc < 18.5) return { label: "Bajo peso", cls: "jg-calc-imc-bajo" };
+    if (imc < 25) return { label: "Peso normal", cls: "jg-calc-imc-ok" };
+    if (imc < 30) return { label: "Sobrepeso", cls: "jg-calc-imc-sobre" };
+    if (imc < 35) return { label: "Obesidad grado I", cls: "jg-calc-imc-obe" };
+    if (imc < 40) return { label: "Obesidad grado II", cls: "jg-calc-imc-obe" };
+    return { label: "Obesidad grado III", cls: "jg-calc-imc-obe" };
+  }
+
+  form.addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    clearError();
+
+    var sex = document.getElementById("jg-calc-sex").value;
+    var age = Number(document.getElementById("jg-calc-age").value);
+    var height = Number(document.getElementById("jg-calc-height").value);
+    var weight = Number(document.getElementById("jg-calc-weight").value);
+    var act = Number(document.getElementById("jg-calc-activity").value);
+
+    if (!sex || !age || !height || !weight || !act) {
+      showError("Completa todos los campos.");
+      return;
+    }
+    if (age < 15 || age > 80 || age !== Math.floor(age)) {
+      showError("La edad debe ser un número entero entre 15 y 80 años.");
+      return;
+    }
+    if (height > 0 && height < 3) {
+      showError("¿Quisiste decir " + Math.round(height * 100) + " cm? La altura va en centímetros, no en metros.");
+      return;
+    }
+    if (height < 120 || height > 230) {
+      showError("La altura debe estar entre 120 y 230 cm.");
+      return;
+    }
+    if (weight < 30 || weight > 250) {
+      showError("El peso debe estar entre 30 y 250 kg.");
+      return;
+    }
+
+    var meters = height / 100;
+    var imc = weight / (meters * meters);
+    var tmb = (10 * weight) + (6.25 * height) - (5 * age) + (sex === "m" ? 5 : -161);
+    var get = tmb * act;
+    var cat = imcClass(imc);
+
+    document.getElementById("jg-calc-imc-n").textContent = round1(imc);
+    var badge = document.getElementById("jg-calc-imc-badge");
+    badge.textContent = cat.label;
+    badge.className = "jg-calc-badge " + cat.cls;
+    document.getElementById("jg-calc-tmb-n").textContent = kcal(tmb);
+    document.getElementById("jg-calc-get-n").textContent = kcal(get);
+    document.getElementById("jg-calc-cut").textContent = Math.round(get - 500) + "–" + Math.round(get - 300) + " kcal";
+    document.getElementById("jg-calc-hold").textContent = kcal(get);
+    document.getElementById("jg-calc-gain").textContent = Math.round(get + 300) + "–" + Math.round(get + 500) + " kcal";
+    cta.setAttribute("href", CTA_URL);
+    results.classList.add("jg-calc-show");
+    results.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+})();
+</script>

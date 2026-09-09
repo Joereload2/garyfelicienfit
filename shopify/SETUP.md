@@ -1,5 +1,7 @@
 # Armar la tienda Shopify (páginas + calculadora)
 
+La descripción del producto **no cambia el color de la tienda**. El fondo blanco se quita en **Themes → Customize → Custom Liquid** (pasos abajo).
+
 Correo/Resend queda **pausado**. El cobro + webhook ya funcionan. Esto es la vitrina.
 
 Archivos en esta carpeta:

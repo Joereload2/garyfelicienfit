@@ -36,8 +36,8 @@
             <div class="price">USD $40 <small>pago único · cada modelo</small></div>
         </div>
         <div class="actions">
-            <button type="button" class="btn btn-gold" onclick="showTab('plan')">Ver los 2 modelos</button>
-            <button type="button" class="btn btn-ghost" onclick="showTab('calculadora')">Calculadora</button>
+            <a class="btn btn-gold" href="/bajar">Bajar de peso</a>
+            <a class="btn btn-ghost" href="/vitalidad">Recuperar vitalidad</a>
         </div>
     </div>
 </section>
@@ -60,7 +60,8 @@
                 </ul>
                 <div class="price-row"><div class="price" style="font-size:28px;">USD $40 <small>pago único</small></div></div>
                 <div class="actions">
-                    <button type="button" class="btn btn-gold" data-buy="bajar">Comprar este modelo</button>
+                    <a class="btn btn-ghost" href="/bajar">Ver esta página</a>
+                    <button type="button" class="btn btn-gold" data-buy="bajar">Comprar</button>
                 </div>
             </article>
             <article class="card model-card">
@@ -74,11 +75,12 @@
                 </ul>
                 <div class="price-row"><div class="price" style="font-size:28px;">USD $40 <small>pago único</small></div></div>
                 <div class="actions">
-                    <button type="button" class="btn btn-gold" data-buy="vitalidad">Comprar este modelo</button>
+                    <a class="btn btn-ghost" href="/vitalidad">Ver esta página</a>
+                    <button type="button" class="btn btn-gold" data-buy="vitalidad">Comprar</button>
                 </div>
             </article>
         </div>
-        <p class="note" style="margin-top:18px;">Pagas en Shopify con Mercado Pago (Chile, CLP). Después del pago, el enlace de un solo uso se emite para armar tu plan. El plan no se muestra en esta web.</p>
+        <p class="note" style="margin-top:18px;">Pagas con Mercado Pago (Chile, CLP). Después del pago, el enlace de un solo uso se emite para armar tu plan. El plan no se muestra en esta web.</p>
         <div class="grid-2" style="margin-top:40px;">
             <div>
                 <p class="kicker">Qué incluye</p>
@@ -309,18 +311,22 @@
 </footer>
 
 <div class="modal" id="buyModal">
-    <div class="card" id="buyForm">
+    <form class="card" id="buyForm">
         <h3 id="buyTitle">Comprar el plan personalizado · USD $40</h3>
-        <p class="muted" id="buyLead">Pagas en Shopify (Mercado Pago, Chile). Cuando el pago está aprobado, se emite el enlace de un solo uso para armar tu plan.</p>
+        <p class="muted" id="buyLead">Pagas con Mercado Pago (Chile, CLP). Cuando el pago está aprobado, se emite el enlace de un solo uso para armar tu plan.</p>
+        <div id="buyError" class="error"></div>
+        <input type="hidden" id="buyModelo" value="bajar">
+        <label for="buyEmail">Email</label>
+        <input id="buyEmail" type="email" required autocomplete="email">
         <div class="actions">
             <button type="button" class="btn btn-ghost" id="closeBuy">Cancelar</button>
-            <a class="btn btn-gold" id="buySubmit" href="#">Ir a pagar</a>
+            <button type="submit" class="btn btn-gold" id="buySubmit">Pagar</button>
         </div>
         <p class="note">
             ¿Problemas para pagar?
             <a href="https://wa.me/56959128603?text=Hola%2C%20estoy%20interesado%20en%20el%20plan%20personalizado" target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a>.
         </p>
-    </div>
+    </form>
 </div>
 
 <script src="/site.js"></script>

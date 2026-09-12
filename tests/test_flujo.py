@@ -76,6 +76,18 @@ class FlujoTests(unittest.TestCase):
         self.assertIn("no se muestra en esta web", html.lower())
         self.assertNotIn("jspdf", html.lower())
         self.assertNotIn("generatePlan", html)
+        self.assertNotIn("myshopify.com", html.lower())
+
+    def test_01b_paginas_de_anuncio(self):
+        for path, needle in (("/bajar", "Bajar de peso"), ("/vitalidad", "calidad de vida")):
+            req = urllib.request.Request(self.base + path)
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                html = resp.read().decode("utf-8")
+            self.assertEqual(resp.status, 200, path)
+            self.assertIn(needle, html)
+            self.assertIn("buyModal", html)
+            self.assertIn("Mercado Pago", html)
+            self.assertNotIn("myshopify.com", html.lower())
 
     def test_02_emitir_acceso(self):
         code, data, _ = _json_request(

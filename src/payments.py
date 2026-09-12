@@ -109,11 +109,11 @@ def create_stripe_checkout(email: str, success_url: str, cancel_url: str) -> str
             "customer_email": email,
             "client_reference_id": email,
             "metadata[email]": email,
-            "metadata[product]": "guia-12-semanas",
+            "metadata[product]": "plan-12-semanas",
             "line_items[0][quantity]": "1",
             "line_items[0][price_data][currency]": "usd",
             "line_items[0][price_data][unit_amount]": str(price_usd() * 100),
-            "line_items[0][price_data][product_data][name]": "Guía 12 semanas — GaryFelicienFit",
+            "line_items[0][price_data][product_data][name]": "Plan personalizado 12 semanas — GaryFelicienFit",
         }
     ).encode("utf-8")
     req = urllib.request.Request(
@@ -189,14 +189,20 @@ def create_mp_preference(
     success_url: str,
     failure_url: str,
     notification_url: str,
+    modelo: str = "",
 ) -> str:
     email = normalize_email(email)
     pending_url = success_url.replace("paid=1", "pending=1")
+    slug = "vitalidad" if modelo == "vitalidad" else "bajar"
+    titles = {
+        "bajar": "Plan personalizado 12 semanas — Bajar de peso",
+        "vitalidad": "Plan personalizado 12 semanas — Recuperar vitalidad",
+    }
     body = {
         "items": [
             {
-                "id": "guia-12-semanas",
-                "title": "Guía 12 semanas — GaryFelicienFit",
+                "id": f"plan-12-semanas-{slug}",
+                "title": titles[slug],
                 "description": "Plan personalizado de nutrición y entrenamiento. Un solo uso.",
                 "quantity": 1,
                 "currency_id": "CLP",
@@ -212,7 +218,7 @@ def create_mp_preference(
         "auto_return": "approved",
         "binary_mode": True,
         "external_reference": email,
-        "metadata": {"email": email, "product": "guia-12-semanas"},
+        "metadata": {"email": email, "product": f"plan-12-semanas-{slug}", "modelo": slug},
         "statement_descriptor": "GARYFELICIENFIT",
     }
     if notification_url.startswith("https://"):

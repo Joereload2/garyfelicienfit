@@ -55,6 +55,8 @@ WEB = ROOT / "web"
 LANDING = {
     "index.html",
     "gracias.html",
+    "bajar.html",
+    "vitalidad.html",
     "site.css",
     "site.js",
     "videos.json",
@@ -174,6 +176,12 @@ class Handler(BaseHTTPRequestHandler):
         path = unquote(urlparse(self.path).path)
         if path == "/":
             self._html_file("index.html")
+            return
+        if path in ("/bajar", "/bajar.html"):
+            self._html_file("bajar.html")
+            return
+        if path in ("/vitalidad", "/vitalidad.html"):
+            self._html_file("vitalidad.html")
             return
         if path == "/admin":
             self._html_file("admin.html")
@@ -304,12 +312,15 @@ class Handler(BaseHTTPRequestHandler):
     def _checkout(self) -> None:
         data = self._read_json()
         email = normalize_email(data.get("email"))
-        success = f"{_app_url()}/gracias?paid=1"
-        cancel = f"{_app_url()}/#guia"
+        modelo = str(data.get("modelo") or "").strip().lower()
+        if modelo not in {"bajar", "vitalidad"}:
+            modelo = "bajar"
+        success = f"{_app_url()}/gracias?paid=1&modelo={modelo}"
+        cancel = f"{_app_url()}/{modelo}"
         if mp_configured():
             notify = f"{_app_url()}/webhooks/mercadopago"
             try:
-                url = create_mp_preference(email, success, cancel, notify)
+                url = create_mp_preference(email, success, cancel, notify, modelo=modelo)
             except Exception as exc:
                 self._json(502, {"ok": False, "error": str(exc)})
                 return
@@ -328,7 +339,7 @@ class Handler(BaseHTTPRequestHandler):
                 503,
                 {
                     "ok": False,
-                    "error": "La pasarela de pago aún no está activa. Escribe para reservar tu guía.",
+                    "error": "La pasarela de pago aún no está activa. Escríbenos por WhatsApp.",
                 },
             )
             return

@@ -1,16 +1,15 @@
 "use strict";
 
 const PRICE = 40;
-const SHOPIFY_PLAN_URL = "https://garyfelicien.myshopify.com/products/plan-personalizado-de-12-semanas";
 
 const MODELS = {
     bajar: {
         title: "Bajar de peso · USD $40",
-        lead: "Vas a pagar el plan personalizado con enfoque en bajar de peso. Shopify abre Mercado Pago (Chile)."
+        lead: "Pagas el plan personalizado con enfoque en bajar de peso. Mercado Pago (Chile, CLP)."
     },
     vitalidad: {
         title: "Recuperar vitalidad · USD $40",
-        lead: "Vas a pagar el plan personalizado con enfoque en energía y calidad de vida. Shopify abre Mercado Pago (Chile)."
+        lead: "Pagas el plan personalizado con enfoque en energía y calidad de vida. Mercado Pago (Chile, CLP)."
     }
 };
 
@@ -39,22 +38,57 @@ function tabFromHash() {
     showTab(known.indexOf(id) >= 0 ? id : "plan");
 }
 
-function shopifyUrl(modelo) {
-    const url = new URL(SHOPIFY_PLAN_URL);
-    if (modelo) url.searchParams.set("modelo", modelo);
-    return url.toString();
-}
-
 function openBuy(modelo) {
     const info = MODELS[modelo] || MODELS.bajar;
-    document.getElementById("buyTitle").textContent = info.title;
-    document.getElementById("buyLead").textContent = info.lead;
-    document.getElementById("buySubmit").setAttribute("href", shopifyUrl(modelo));
+    const title = document.getElementById("buyTitle");
+    const lead = document.getElementById("buyLead");
+    const hidden = document.getElementById("buyModelo");
+    const err = document.getElementById("buyError");
+    if (title) title.textContent = info.title;
+    if (lead) lead.textContent = info.lead;
+    if (hidden) hidden.value = modelo;
+    if (err) err.classList.remove("show");
     document.getElementById("buyModal").classList.add("open");
 }
 
 function closeModal() {
     document.getElementById("buyModal").classList.remove("open");
+}
+
+async function buyPlan(ev) {
+    ev.preventDefault();
+    const err = document.getElementById("buyError");
+    const emailEl = document.getElementById("buyEmail");
+    const modeloEl = document.getElementById("buyModelo");
+    const btn = document.getElementById("buySubmit");
+    if (!emailEl || !err) return;
+    err.classList.remove("show");
+    const email = emailEl.value.trim();
+    const modelo = (modeloEl && modeloEl.value) || "bajar";
+    btn.disabled = true;
+    try {
+        const res = await fetch("/api/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, modelo: modelo }),
+        });
+        const data = await res.json().catch(function () { return {}; });
+        if (!res.ok || !data.ok) {
+            err.textContent = data.error || "No se pudo iniciar el pago.";
+            err.classList.add("show");
+            btn.disabled = false;
+            return;
+        }
+        if ((data.mode === "mp" || data.mode === "stripe") && data.url) {
+            window.location.href = data.url;
+            return;
+        }
+        window.location.href = isLocalApp() ? "/gracias?test=1" : "/gracias.html?test=1";
+    } catch (e) {
+        err.textContent = "Sin conexión con el servidor de pago.";
+        err.classList.add("show");
+        btn.disabled = false;
+    }
 }
 
 async function sendCoaching(ev) {
@@ -202,12 +236,28 @@ document.querySelectorAll("[data-buy]").forEach(function (el) {
         openBuy(el.getAttribute("data-buy"));
     });
 });
-document.getElementById("closeBuy").addEventListener("click", closeModal);
-document.getElementById("buyModal").addEventListener("click", function (e) {
-    if (e.target.id === "buyModal") closeModal();
-});
-document.getElementById("coachForm").addEventListener("submit", sendCoaching);
-document.getElementById("calcForm").addEventListener("submit", runCalculator);
-
-tabFromHash();
-loadVideos();
+var closeBuy = document.getElementById("closeBuy");
+if (closeBuy) closeBuy.addEventListener("click", closeModal);
+var buyModal = document.getElementById("buyModal");
+if (buyModal) {
+    buyModal.addEventListener("click", function (e) {
+        if (e.target.id === "buyModal") closeModal();
+    });
+}
+var buyForm = document.getElementById("buyForm");
+if (buyForm) buyForm.addEventListener("submit", buyPlan);
+var coachForm = document.getElementById("coachForm");
+if (coachForm) coachForm.addEventListener("submit", sendCoaching);
+var calcForm = document.getElementById("calcForm");
+if (calcForm) calcForm.addEventListener("submit", runCalculator);
+var videoGrid = document.getElementById("videoGrid");
+if (videoGrid) loadVideos();
+if (!document.body.classList.contains("ad-page")) {
+    tabFromHash();
+} else {
+    var current = location.pathname.replace(/\/$/, "") || "/";
+    document.querySelectorAll(".tabs a").forEach(function (a) {
+        var href = a.getAttribute("href") || "";
+        a.classList.toggle("active", href === current);
+    });
+}

@@ -8,7 +8,7 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 PAYMENT_REF_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{2,79}$")
 
 ALLOWED_SEX = {"male", "female"}
-ALLOWED_GOALS = {"lose", "gain", "recomp"}
+ALLOWED_GOALS = {"lose", "gain", "recomp", "vitality"}
 ALLOWED_DAYS = {2, 3, 4, 5, 6}
 ALLOWED_LOCATIONS = {"gym", "home"}
 ALLOWED_DURATIONS = {"30", "45", "60", "75", "90"}

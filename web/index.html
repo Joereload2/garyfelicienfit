@@ -14,7 +14,8 @@
         <span>Fit</span>
     </div>
     <nav class="tabs" aria-label="Secciones">
-        <button type="button" class="active" data-tab="guia">El plan</button>
+        <button type="button" class="active" data-tab="plan">El plan</button>
+        <button type="button" data-tab="calculadora">Calculadora</button>
         <button type="button" data-tab="coach">El coach</button>
         <button type="button" data-tab="videos">Videos</button>
         <button type="button" data-tab="coaching">Coaching</button>
@@ -27,43 +28,68 @@
         <p class="kicker">GaryFelicienFit</p>
         <h1>Tu plan de 12 semanas, hecho a tu medida.</h1>
         <p class="lead">
-            Plan personalizado de alimentación y entrenamiento. Lo armas una vez,
-            lo recibes por correo. Sin calculadora pública y sin atajos.
+            Plan personalizado de alimentación y entrenamiento, 12 semanas.
+            Lo armas una vez y lo recibes por correo. Elige tu modelo: bajar de peso
+            o recuperar vitalidad.
         </p>
         <div class="price-row">
-            <div class="price">USD $40 <small>pago único</small></div>
+            <div class="price">USD $40 <small>pago único · cada modelo</small></div>
         </div>
         <div class="actions">
-            <button type="button" class="btn btn-gold" id="openBuy">Comprar el plan</button>
-            <button type="button" class="btn btn-ghost" onclick="showTab('coaching')">Coaching personalizado</button>
+            <button type="button" class="btn btn-gold" onclick="showTab('plan')">Ver los 2 modelos</button>
+            <button type="button" class="btn btn-ghost" onclick="showTab('calculadora')">Calculadora</button>
         </div>
     </div>
 </section>
 
 <main class="wrap">
 
-    <section class="panel active" id="panel-guia">
-        <div class="grid-2">
+    <section class="panel active" id="panel-plan">
+        <p class="kicker">Dos modelos · mismo formato</p>
+        <h2>Elige cómo quieres que se arme tu plan de 12 semanas</h2>
+        <p class="muted">Mismo precio, misma estructura (comida, entreno, hábitos, planner). Cambia el enfoque: bajar de peso, o recuperar energía y calidad de vida.</p>
+        <div class="model-grid">
+            <article class="card model-card">
+                <p class="kicker">Modelo 1</p>
+                <h3>Bajar de peso</h3>
+                <p class="muted">Para quien quiere verse y sentirse más ligero, con menús según lo que ya comes y un déficit realista a 12 semanas.</p>
+                <ul class="list">
+                    <li>Enfoque en bajar grasa sin dietas locas.</li>
+                    <li>Porciones y rotación de 4 menús a tu medida.</li>
+                    <li>Rutina casa o gym, con progresión.</li>
+                </ul>
+                <div class="price-row"><div class="price" style="font-size:28px;">USD $40 <small>pago único</small></div></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-gold" data-buy="bajar">Comprar este modelo</button>
+                </div>
+            </article>
+            <article class="card model-card">
+                <p class="kicker">Modelo 2</p>
+                <h3>Recuperar vitalidad</h3>
+                <p class="muted">Para quien busca más energía, hábitos y calidad de vida. El cuerpo se cuida; el peso no es la única brújula.</p>
+                <ul class="list">
+                    <li>Comida para rendir y sentirte mejor.</li>
+                    <li>Entreno sostenible, casa o gym.</li>
+                    <li>Hábitos de sueño, pasos y constancia.</li>
+                </ul>
+                <div class="price-row"><div class="price" style="font-size:28px;">USD $40 <small>pago único</small></div></div>
+                <div class="actions">
+                    <button type="button" class="btn btn-gold" data-buy="vitalidad">Comprar este modelo</button>
+                </div>
+            </article>
+        </div>
+        <p class="note" style="margin-top:18px;">Pagas en Shopify con Mercado Pago (Chile, CLP). Después del pago, el enlace de un solo uso se emite para armar tu plan. El plan no se muestra en esta web.</p>
+        <div class="grid-2" style="margin-top:40px;">
             <div>
-                <p class="kicker">La oferta</p>
-                <h2>Plan personalizado de nutrición y entrenamiento · 12 semanas</h2>
-                <p class="muted">
-                    Pagas USD $40. Completas un formulario de un solo uso, atado a tu email.
-                    El plan personalizado no se muestra en la web: llega al correo, con tu nombre, tu meta
-                    y las 12 semanas.
-                </p>
+                <p class="kicker">Qué incluye</p>
+                <h2>Las 12 semanas, a tu medida</h2>
                 <ul class="list">
                     <li>4 menús para rotar, con porciones, según lo que tú comes.</li>
                     <li>6 recetas cortas con tus proteínas, carbos y verduras.</li>
                     <li>Rutina en casa o gym, con progresión y sustituciones.</li>
                     <li>Registro de medidas y planner de 12 semanas.</li>
-                    <li>Y mucho más, dentro del plan personalizado.</li>
                     <li>Un solo pago. El mismo pago no genera otro plan.</li>
                 </ul>
-                <div class="actions">
-                    <button type="button" class="btn btn-gold" id="openBuy2">Comprar · USD $40</button>
-                </div>
-                <p class="note">Pagas con Mercado Pago (Chile, CLP). El enlace para armar el plan te lo enviamos por correo después de confirmar el pago.</p>
             </div>
             <article class="card">
                 <img class="mockup" src="/img/guia-mockup.jpg" alt="Mockup del plan personalizado de 12 semanas">
@@ -101,6 +127,81 @@
                     <figcaption>Rutina con pistas</figcaption>
                 </figure>
             </div>
+        </div>
+    </section>
+
+    <section class="panel" id="panel-calculadora">
+        <p class="kicker">Calculadora</p>
+        <h2>Tus números de partida</h2>
+        <p class="muted">IMC, calorías en reposo y gasto según tu actividad. Orientativo, no es un diagnóstico. El plan personalizado ajusta esto a tu modelo y a lo que comes de verdad.</p>
+        <form class="card calc-form" id="calcForm" novalidate>
+            <div class="error" id="calcError"></div>
+            <div class="calc-row">
+                <div>
+                    <label for="calcSex">Sexo</label>
+                    <select id="calcSex" required>
+                        <option value="">Selecciona</option>
+                        <option value="m">Hombre</option>
+                        <option value="f">Mujer</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="calcAge">Edad (años)</label>
+                    <input id="calcAge" type="number" inputmode="numeric" min="15" max="80" step="1" required>
+                </div>
+            </div>
+            <div class="calc-row">
+                <div>
+                    <label for="calcHeight">Altura (cm)</label>
+                    <input id="calcHeight" type="number" inputmode="decimal" min="120" max="230" step="0.1" required>
+                    <span class="note">Ejemplo: 170. Si pones 1.70, te avisamos.</span>
+                </div>
+                <div>
+                    <label for="calcWeight">Peso (kg)</label>
+                    <input id="calcWeight" type="number" inputmode="decimal" min="30" max="250" step="0.1" required>
+                </div>
+            </div>
+            <label for="calcActivity">Nivel de actividad física</label>
+            <select id="calcActivity" required>
+                <option value="">Selecciona</option>
+                <option value="1.2">Sedentario (1.2) — poco o ningún ejercicio, oficina, casi no caminas.</option>
+                <option value="1.375">Ligero (1.375) — ejercicio 1–3 días/semana (caminatas, yoga suave).</option>
+                <option value="1.55">Moderado (1.55) — 3–5 días/semana (gym, trote, deporte recreativo).</option>
+                <option value="1.725">Activo (1.725) — intenso 6–7 días/semana (fuerza o cardio casi diario).</option>
+                <option value="1.9">Muy activo (1.9) — diario muy intenso, o trabajo físico + entreno.</option>
+            </select>
+            <div class="actions">
+                <button class="btn btn-gold" type="submit">Calcular</button>
+            </div>
+        </form>
+        <div class="calc-results" id="calcResults" hidden>
+            <article class="card">
+                <h3>IMC</h3>
+                <p class="calc-value" id="calcImcN"></p>
+                <span class="calc-badge" id="calcImcBadge"></span>
+                <p class="note">Peso (kg) dividido por la altura en metros al cuadrado.</p>
+            </article>
+            <article class="card">
+                <h3>TMB</h3>
+                <p class="calc-value" id="calcTmbN"></p>
+                <p class="note">Estas son las calorías que tu cuerpo quema en reposo, solo para mantenerte vivo.</p>
+            </article>
+            <article class="card">
+                <h3>GET</h3>
+                <p class="calc-value" id="calcGetN"></p>
+                <p class="note">Este es tu gasto total considerando tu nivel de actividad. Es tu punto de referencia para bajar, mantener o subir de peso.</p>
+                <div class="calc-sugs">
+                    <div><span>Bajar de peso</span><strong id="calcCut"></strong></div>
+                    <div><span>Mantener peso</span><strong id="calcHold"></strong></div>
+                    <div><span>Ganar masa muscular</span><strong id="calcGain"></strong></div>
+                </div>
+            </article>
+            <p class="muted" id="calcSuggest"></p>
+            <div class="actions">
+                <button type="button" class="btn btn-gold" id="calcCtaBajar" data-buy="bajar">Quiero bajar de peso</button>
+                <button type="button" class="btn btn-ghost" id="calcCtaVital" data-buy="vitalidad">Quiero recuperar vitalidad</button>
+            </div>
+            <p class="note">Cifras orientativas (Mifflin-St Jeor). No sustituyen evaluación médica ni el plan personalizado de 12 semanas.</p>
         </div>
     </section>
 
@@ -166,10 +267,7 @@
     <section class="panel" id="panel-videos">
         <p class="kicker">YouTube</p>
         <h2>Videos de Gary</h2>
-        <p class="muted">
-            Aquí se incrustan los videos que vaya publicando. Añade objetos en
-            <code>web/videos.json</code>: <code>{"id":"xxxxxxxxxxx","title":"Título"}</code>.
-        </p>
+        <p class="muted">Videos de Gary. Se irán publicando aquí.</p>
         <div id="videoGrid" class="videos" style="margin-top:22px;"></div>
     </section>
 
@@ -211,21 +309,18 @@
 </footer>
 
 <div class="modal" id="buyModal">
-    <form class="card" id="buyForm">
-        <h3>Comprar el plan personalizado · USD $40</h3>
-        <p class="muted">Pagas en Chile con Mercado Pago (CLP). Cuando el pago está aprobado, te enviamos a este email el enlace para armar tu plan.</p>
-        <div id="buyError" class="error"></div>
-        <label for="buyEmail">Email</label>
-        <input id="buyEmail" type="email" required autocomplete="email">
+    <div class="card" id="buyForm">
+        <h3 id="buyTitle">Comprar el plan personalizado · USD $40</h3>
+        <p class="muted" id="buyLead">Pagas en Shopify (Mercado Pago, Chile). Cuando el pago está aprobado, se emite el enlace de un solo uso para armar tu plan.</p>
         <div class="actions">
             <button type="button" class="btn btn-ghost" id="closeBuy">Cancelar</button>
-            <button type="submit" class="btn btn-gold" id="buySubmit">Pagar con Mercado Pago</button>
+            <a class="btn btn-gold" id="buySubmit" href="#">Ir a pagar</a>
         </div>
         <p class="note">
             ¿Problemas para pagar?
-            <a href="https://wa.me/56959128603?text=Hola%2C%20estoy%20interesado%20en%20el%20plan" target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a>.
+            <a href="https://wa.me/56959128603?text=Hola%2C%20estoy%20interesado%20en%20el%20plan%20personalizado" target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a>.
         </p>
-    </form>
+    </div>
 </div>
 
 <script src="/site.js"></script>

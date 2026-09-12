@@ -126,7 +126,7 @@ function validateStep(step) {
 
     if (step === 2) {
         const goal = getRadio("goal");
-        if (!["lose", "gain", "recomp"].includes(goal)) {
+        if (!["lose", "gain", "recomp", "vitality"].includes(goal)) {
             showError("Selecciona un objetivo.");
             return false;
         }
@@ -297,6 +297,7 @@ function createSummary() {
         lose: "Bajar de peso",
         gain: "Ganar masa muscular",
         recomp: "Recomposición corporal",
+        vitality: "Recuperar vitalidad y calidad de vida",
     };
     const focusNames = {
         balanced: "Trabajo equilibrado",
@@ -437,6 +438,15 @@ async function init() {
         document.getElementById("email").value = data.email;
         document.getElementById("gate").classList.add("hidden");
         document.getElementById("wizard").classList.remove("hidden");
+        var modelo = new URLSearchParams(location.search).get("modelo") || "";
+        if (modelo === "bajar") {
+            var lose = document.getElementById("lose");
+            if (lose) lose.checked = true;
+        }
+        if (modelo === "vitalidad") {
+            var vit = document.getElementById("vitality");
+            if (vit) vit.checked = true;
+        }
     } catch (err) {
         showGate("Sin conexión", "No se pudo comprobar el enlace. Recarga la página.");
     }

@@ -57,8 +57,10 @@ LANDING = {
     "gracias.html",
     "bajar.html",
     "vitalidad.html",
+    "empezar.html",
     "site.css",
     "site.js",
+    "quiz.js",
     "videos.json",
 }
 MAX_BODY = 200_000
@@ -183,6 +185,9 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/vitalidad", "/vitalidad.html"):
             self._html_file("vitalidad.html")
             return
+        if path in ("/empezar", "/empezar.html", "/tu-plan"):
+            self._html_file("empezar.html")
+            return
         if path == "/admin":
             self._html_file("admin.html")
             return
@@ -192,7 +197,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/webhooks/mercadopago":
             self._mp_webhook()
             return
-        if path in ("/styles.css", "/form.js", "/site.css", "/site.js", "/videos.json"):
+        if path in ("/styles.css", "/form.js", "/site.css", "/site.js", "/quiz.js", "/videos.json"):
             self._static(path.lstrip("/"))
             return
         if re.fullmatch(r"/img/[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)", path):

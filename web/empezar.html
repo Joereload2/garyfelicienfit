@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Descubre tu plan — GaryFelicienFit</title>
+<meta name="description" content="Responde 4 preguntas y te recomendamos el modelo de plan personalizado de 12 semanas: bajar de peso o recuperar vitalidad.">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body class="quiz-page">
+<header class="top">
+    <a class="brand" href="/">
+        <b>Gary Felicien</b>
+        <span>Fit</span>
+    </a>
+    <nav class="tabs" aria-label="Secciones">
+        <a class="active" href="/empezar">Empezar</a>
+        <a href="/bajar">Bajar de peso</a>
+        <a href="/vitalidad">Vitalidad</a>
+    </nav>
+</header>
+
+<main class="quiz-wrap">
+    <p class="kicker">12 semanas · a tu medida</p>
+    <h1 class="quiz-title">Encuentra tu modelo</h1>
+    <p class="muted quiz-lead">Elige con botones. Al final te decimos qué plan encaja — el detalle se arma después, con tus datos.</p>
+
+    <div class="quiz-progress" aria-hidden="true">
+        <span id="quizBar"></span>
+    </div>
+    <p class="quiz-step-n" id="quizStepN"></p>
+
+    <section class="quiz-card" id="quizStep"></section>
+
+    <section class="quiz-card quiz-result" id="quizResult" hidden>
+        <p class="kicker">Tu recomendación</p>
+        <h2 id="quizRecTitle"></h2>
+        <p class="lead" id="quizRecLead"></p>
+        <ul class="list" id="quizRecap"></ul>
+        <p class="note">Esto no es todavía tu plan de 12 semanas. Es el modelo. El plan se arma con tus datos después del pago, en un enlace de un solo uso.</p>
+        <div class="actions">
+            <a class="btn btn-gold" id="quizCta" href="/bajar">Ver mi plan</a>
+            <button type="button" class="btn btn-ghost" id="quizRestart">Empezar de nuevo</button>
+        </div>
+    </section>
+</main>
+
+<footer class="foot">
+    <span>GaryFelicienFit</span>
+    <a href="/">Volver al inicio</a>
+</footer>
+<script src="/quiz.js"></script>
+</body>
+</html>

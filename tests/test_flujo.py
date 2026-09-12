@@ -89,6 +89,15 @@ class FlujoTests(unittest.TestCase):
             self.assertIn("Mercado Pago", html)
             self.assertNotIn("myshopify.com", html.lower())
 
+    def test_01c_cuestionario_empezar(self):
+        req = urllib.request.Request(self.base + "/empezar")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            html = resp.read().decode("utf-8")
+        self.assertEqual(resp.status, 200)
+        self.assertIn("quiz.js", html)
+        self.assertIn("Encuentra tu modelo", html)
+        self.assertNotIn("myshopify.com", html.lower())
+
     def test_02_emitir_acceso(self):
         code, data, _ = _json_request(
             "POST",

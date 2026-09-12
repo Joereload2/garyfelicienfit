@@ -261,3 +261,25 @@ if (!document.body.classList.contains("ad-page")) {
         a.classList.toggle("active", href === current);
     });
 }
+
+(function showQuizRecap() {
+    var bar = document.getElementById("quizRecapBar");
+    if (!bar) return;
+    var q = new URLSearchParams(location.search);
+    if (q.get("from") !== "quiz") return;
+    var sexo = q.get("sexo") === "f" ? "mujer" : q.get("sexo") === "m" ? "hombre" : "";
+    var lugar = q.get("lugar") === "casa" ? "casa" : q.get("lugar") === "gym" ? "gimnasio" : "";
+    var trabas = {
+        motivacion: "la motivación",
+        habitos: "sostener hábitos",
+        comida: "ordenar la comida",
+        tiempo: "el tiempo",
+        lesiones: "molestias o lesiones"
+    };
+    var traba = trabas[q.get("traba") || ""] || "";
+    if (!sexo || !lugar) return;
+    var bits = ["Llegaste desde el cuestionario: " + sexo + ", entreno en " + lugar];
+    if (traba) bits.push("tu traba es " + traba);
+    bar.innerHTML = "<b>A tu medida.</b> " + bits.join("; ") + ". El plan de 12 semanas se arma con tus datos después del pago.";
+    bar.classList.add("show");
+})();

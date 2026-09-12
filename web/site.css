@@ -408,6 +408,69 @@ textarea { min-height: 120px; resize: vertical; }
 .calc-sugs strong { color: var(--gold-2); }
 .modal .btn { text-decoration: none; }
 
+.quiz-wrap {
+    width: min(640px, calc(100% - 10vw));
+    margin: 0 auto;
+    padding: 36px 0 80px;
+}
+.quiz-title { font-size: clamp(28px, 5vw, 44px); }
+.quiz-lead { margin-bottom: 22px; }
+.quiz-progress {
+    height: 6px;
+    background: #1a1c22;
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 8px 0 10px;
+}
+.quiz-progress span {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--gold);
+    transition: width 0.25s ease;
+}
+.quiz-step-n { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0 0 16px; }
+.quiz-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    padding: 26px;
+}
+.quiz-card h2 { font-size: 26px; margin-bottom: 18px; }
+.quiz-opts { display: grid; gap: 10px; }
+.quiz-opt {
+    text-align: left;
+    background: #12141a;
+    border: 1px solid var(--line);
+    color: var(--cream);
+    border-radius: 16px;
+    padding: 16px 18px;
+    cursor: pointer;
+    font: inherit;
+}
+.quiz-opt:hover, .quiz-opt:focus {
+    border-color: var(--gold);
+    outline: none;
+}
+.quiz-opt strong { display: block; font-size: 17px; }
+.quiz-opt span { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.4; }
+.quiz-back { margin-top: 16px; }
+.quiz-result .actions { margin-top: 18px; }
+.quiz-recap-bar {
+    display: none;
+    width: min(1120px, calc(100% - 12vw));
+    margin: 18px auto 0;
+    padding: 14px 18px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--card);
+    color: var(--cream);
+    font-size: 14px;
+    line-height: 1.45;
+}
+.quiz-recap-bar.show { display: block; }
+.quiz-recap-bar b { color: var(--gold-2); }
+
 @media (max-width: 860px) {
     .grid-2, .photo-grid, .certs, .peek-grid, .model-grid, .calc-row { grid-template-columns: 1fr; }
     .photo-grid .tall { height: 240px; grid-row: auto; }

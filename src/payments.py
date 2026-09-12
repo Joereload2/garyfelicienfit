@@ -193,10 +193,10 @@ def create_mp_preference(
 ) -> str:
     email = normalize_email(email)
     pending_url = success_url.replace("paid=1", "pending=1")
-    slug = "vitalidad" if modelo == "vitalidad" else "bajar"
+    slug = "recomposicion" if modelo in {"recomposicion", "vitalidad", "recomp"} else "bajar"
     titles = {
         "bajar": "Plan personalizado 12 semanas — Bajar de peso",
-        "vitalidad": "Plan personalizado 12 semanas — Recuperar vitalidad",
+        "recomposicion": "Plan personalizado 12 semanas — Recomposición corporal",
     }
     body = {
         "items": [

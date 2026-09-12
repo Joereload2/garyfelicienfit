@@ -6,7 +6,7 @@ GOAL_NAMES = {
     "lose": "Bajar de peso",
     "gain": "Ganar masa muscular",
     "recomp": "Recomposición corporal",
-    "vitality": "Recuperar vitalidad y calidad de vida",
+    "vitality": "Recomposición corporal",
 }
 FOCUS_NAMES = {
     "balanced": "Trabajo equilibrado",
@@ -69,7 +69,7 @@ def calculate_calories(user: dict) -> int:
     elif user["goal"] == "gain":
         calories = tdee * 1.10
     elif user["goal"] == "vitality":
-        calories = tdee * 1.00
+        calories = tdee * 0.90
     else:
         calories = tdee * 0.90
     return int(round(calories))

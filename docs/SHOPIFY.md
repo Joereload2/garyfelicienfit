@@ -9,6 +9,8 @@
 | Product ID | `10255880847600` |
 | Producto | Plan personalizado de 12 semanas |
 | `SHOPIFY_PRODUCT_ID` | `10255880847600` |
+| Backend público | `https://garyfelicienfit-production.up.railway.app` |
+| Webhook | `https://garyfelicienfit-production.up.railway.app/webhooks/shopify` |
 
 Flujo objetivo: el cliente paga en **Shopify** (Mercado Pago en el checkout). Shopify avisa a este backend. Aquí se emite el enlace de un solo uso y se manda el correo. El PDF completo se genera cuando el usuario completa `/usar/TOKEN`.
 

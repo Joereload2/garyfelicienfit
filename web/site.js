@@ -7,9 +7,9 @@ const MODELS = {
         title: "Bajar de peso · USD $40",
         lead: "Pagas el plan personalizado con enfoque en bajar de peso. Mercado Pago (Chile, CLP)."
     },
-    vitalidad: {
-        title: "Recuperar vitalidad · USD $40",
-        lead: "Pagas el plan personalizado con enfoque en energía y calidad de vida. Mercado Pago (Chile, CLP)."
+    recomposicion: {
+        title: "Recomposición corporal · USD $40",
+        lead: "Pagas el plan personalizado con enfoque en bajar grasa y conservar o ganar músculo. Mercado Pago (Chile, CLP)."
     }
 };
 
@@ -219,8 +219,8 @@ function runCalculator(ev) {
     document.getElementById("calcHold").textContent = Math.round(get) + " kcal/día";
     document.getElementById("calcGain").textContent = Math.round(get + 300) + "–" + Math.round(get + 500) + " kcal";
     document.getElementById("calcSuggest").textContent = imc >= 25
-        ? "Con este IMC, el modelo Bajar de peso suele encajar mejor. Vitalidad sigue siendo una opción si tu prioridad es energía y hábitos."
-        : "Si tu prioridad es energía y sentirte mejor, el modelo Recuperar vitalidad encaja bien. Si quieres bajar kilos, elige Bajar de peso.";
+        ? "Con este IMC, el modelo Bajar de peso suele encajar mejor. Recomposición corporal es una opción si quieres bajar grasa y cuidar el músculo a la vez."
+        : "Si quieres verte más firme sin perseguir solo la báscula, Recomposición corporal encaja bien. Si tu meta es bajar kilos, elige Bajar de peso.";
     results.hidden = false;
     results.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }

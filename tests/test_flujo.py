@@ -79,12 +79,15 @@ class FlujoTests(unittest.TestCase):
         self.assertNotIn("myshopify.com", html.lower())
 
     def test_01b_paginas_de_anuncio(self):
-        for path, needle in (("/bajar", "Bajar de peso"), ("/vitalidad", "calidad de vida")):
+        for path, needle in (("/bajar", "Bajar de peso"), ("/recomposicion", "Recomposición corporal")):
             req = urllib.request.Request(self.base + path)
             with urllib.request.urlopen(req, timeout=10) as resp:
                 html = resp.read().decode("utf-8")
             self.assertEqual(resp.status, 200, path)
             self.assertIn(needle, html)
+            if path == "/recomposicion":
+                self.assertIn("músculo", html.lower())
+                self.assertIn("grasa", html.lower())
             self.assertIn("buyModal", html)
             self.assertIn("Mercado Pago", html)
             self.assertNotIn("myshopify.com", html.lower())

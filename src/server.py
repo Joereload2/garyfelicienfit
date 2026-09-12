@@ -56,7 +56,7 @@ LANDING = {
     "index.html",
     "gracias.html",
     "bajar.html",
-    "vitalidad.html",
+    "recomposicion.html",
     "empezar.html",
     "site.css",
     "site.js",
@@ -129,6 +129,13 @@ class Handler(BaseHTTPRequestHandler):
         raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self._send(code, raw, "application/json; charset=utf-8")
 
+    def _redirect(self, location: str, code: int = 301) -> None:
+        self.send_response(code)
+        self.send_header("Location", location)
+        self._cors()
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
     def _file_from(self, folder: Path, rel: str, code: int = 200) -> None:
         root = folder.resolve()
         path = (folder / rel).resolve()
@@ -182,8 +189,11 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/bajar", "/bajar.html"):
             self._html_file("bajar.html")
             return
+        if path in ("/recomposicion", "/recomposicion.html"):
+            self._html_file("recomposicion.html")
+            return
         if path in ("/vitalidad", "/vitalidad.html"):
-            self._html_file("vitalidad.html")
+            self._redirect("/recomposicion")
             return
         if path in ("/empezar", "/empezar.html", "/tu-plan"):
             self._html_file("empezar.html")
@@ -318,7 +328,9 @@ class Handler(BaseHTTPRequestHandler):
         data = self._read_json()
         email = normalize_email(data.get("email"))
         modelo = str(data.get("modelo") or "").strip().lower()
-        if modelo not in {"bajar", "vitalidad"}:
+        if modelo in {"vitalidad", "vitality", "recomp"}:
+            modelo = "recomposicion"
+        if modelo not in {"bajar", "recomposicion"}:
             modelo = "bajar"
         success = f"{_app_url()}/gracias?paid=1&modelo={modelo}"
         cancel = f"{_app_url()}/{modelo}"

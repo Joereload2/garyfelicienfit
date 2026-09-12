@@ -3,7 +3,7 @@
 (function () {
     var LABELS = {
         sexo: { m: "Hombre", f: "Mujer" },
-        modelo: { bajar: "Bajar de peso", vitalidad: "Recuperar vitalidad" },
+        modelo: { bajar: "Bajar de peso", recomposicion: "Recomposición corporal" },
         lugar: { gym: "Gimnasio", casa: "Casa" },
         traba: {
             motivacion: "Me cuesta la motivación",
@@ -28,7 +28,7 @@
             q: "¿Qué quieres trabajar estas 12 semanas?",
             options: [
                 { v: "bajar", t: "Bajar de peso", d: "Verme y sentirme más ligero, con un déficit realista." },
-                { v: "vitalidad", t: "Recuperar vitalidad", d: "Más energía, hábitos y calidad de vida. El peso no es la única brújula." }
+                { v: "recomposicion", t: "Recomposición corporal", d: "Bajar grasa y conservar o ganar músculo. La báscula no es lo único." }
             ]
         },
         {
@@ -53,7 +53,8 @@
     ];
 
     var preset = (new URLSearchParams(location.search).get("modelo") || "").toLowerCase();
-    if (preset !== "bajar" && preset !== "vitalidad") preset = "";
+    if (preset === "vitalidad") preset = "recomposicion";
+    if (preset !== "bajar" && preset !== "recomposicion") preset = "";
 
     var steps = ALL_STEPS.filter(function (s) {
         return !(s.key === "modelo" && preset);
@@ -121,7 +122,7 @@
     }
 
     function renderResult() {
-        var modelo = answers.modelo === "vitalidad" ? "vitalidad" : "bajar";
+        var modelo = answers.modelo === "recomposicion" ? "recomposicion" : "bajar";
         var sexo = recapLine("sexo");
         var lugar = recapLine("lugar");
         var traba = recapLine("traba");
@@ -129,13 +130,13 @@
 
         document.getElementById("quizRecTitle").textContent = isBajar
             ? "Te recomendamos: Bajar de peso"
-            : "Te recomendamos: Recuperar vitalidad";
+            : "Te recomendamos: Recomposición corporal";
 
         var lead = "Marcas " + sexo.toLowerCase() + ", entrenar en " + lugar.toLowerCase();
         lead += " y que tu traba es: " + traba.toLowerCase() + ". ";
         lead += isBajar
             ? "El modelo de bajar de peso encaja: menús a tu medida y un déficit realista a 12 semanas."
-            : "El modelo de vitalidad encaja: energía, hábitos y un entreno que puedas sostener.";
+            : "El modelo de recomposición encaja: proteína, fuerza y bajar grasa sin obsesionarte con la báscula.";
         document.getElementById("quizRecLead").textContent = lead;
 
         var recap = document.getElementById("quizRecap");

@@ -56,6 +56,47 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 """
 
+PUPIL_SCHEMA = """
+CREATE TABLE IF NOT EXISTS pupils (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL DEFAULT '',
+  pin_hash TEXT NOT NULL,
+  session TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS pupil_metrics (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  pupil_id INTEGER NOT NULL,
+  key TEXT NOT NULL,
+  label TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'number',
+  unit TEXT NOT NULL DEFAULT '',
+  sort INTEGER NOT NULL DEFAULT 0,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  UNIQUE(pupil_id, key)
+);
+CREATE TABLE IF NOT EXISTS pupil_day_values (
+  pupil_id INTEGER NOT NULL,
+  day TEXT NOT NULL,
+  metric_key TEXT NOT NULL,
+  value REAL NOT NULL,
+  PRIMARY KEY (pupil_id, day, metric_key)
+);
+CREATE TABLE IF NOT EXISTS pupil_lifts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  pupil_id INTEGER NOT NULL,
+  day TEXT NOT NULL,
+  week INTEGER NOT NULL DEFAULT 1,
+  exercise TEXT NOT NULL,
+  load REAL,
+  sets INTEGER,
+  reps INTEGER,
+  notes TEXT,
+  created_at TEXT NOT NULL
+);
+"""
+
 
 def init(path: Path) -> None:
     global _db_path, _conn
@@ -77,6 +118,7 @@ def _connect() -> sqlite3.Connection:
         _conn.execute("PRAGMA journal_mode=WAL")
         _conn.execute("PRAGMA foreign_keys=ON")
         _conn.executescript(SCHEMA)
+        _conn.executescript(PUPIL_SCHEMA)
         _conn.commit()
     return _conn
 
@@ -255,3 +297,189 @@ def import_json_if_empty(json_path: Path) -> None:
             insert_entitlement(ent)
         except ValueError:
             continue
+
+
+DEFAULT_METRICS = [
+    ("entreno", "Entrenamiento hecho", "bool", "", 10),
+    ("sueno", "Sueño", "number", "h", 20),
+    ("agua", "Vasos de agua", "number", "vasos", 30),
+    ("pasos", "Pasos", "number", "pasos", 40),
+    ("capsulas", "Cápsulas de ejercicio", "number", "", 50),
+    ("kcal", "Kcal", "number", "kcal", 60),
+    ("proteina", "Proteína", "number", "g", 70),
+    ("carbos", "Carbos", "number", "g", 80),
+    ("grasa", "Grasa", "number", "g", 90),
+    ("coca", "Vasos de Coca-Cola", "number", "vasos", 100),
+]
+
+
+def _row(row: sqlite3.Row | None) -> dict | None:
+    return dict(row) if row is not None else None
+
+
+def insert_pupil(email: str, name: str, pin_hash: str, created_at: str) -> dict:
+    conn = _connect()
+    cur = conn.execute(
+        "INSERT INTO pupils (email, name, pin_hash, created_at) VALUES (?, ?, ?, ?)",
+        (email, name, pin_hash, created_at),
+    )
+    pid = cur.lastrowid
+    for key, label, kind, unit, sort in DEFAULT_METRICS:
+        conn.execute(
+            """
+            INSERT INTO pupil_metrics (pupil_id, key, label, kind, unit, sort, enabled)
+            VALUES (?, ?, ?, ?, ?, ?, 1)
+            """,
+            (pid, key, label, kind, unit, sort),
+        )
+    conn.commit()
+    return get_pupil_by_id(pid)
+
+
+def get_pupil_by_id(pid: int) -> dict | None:
+    cur = _connect().execute("SELECT * FROM pupils WHERE id = ?", (pid,))
+    return _row(cur.fetchone())
+
+
+def get_pupil_by_email(email: str) -> dict | None:
+    cur = _connect().execute("SELECT * FROM pupils WHERE email = ?", (email,))
+    return _row(cur.fetchone())
+
+
+def get_pupil_by_session(session: str) -> dict | None:
+    if not session:
+        return None
+    cur = _connect().execute("SELECT * FROM pupils WHERE session = ?", (session,))
+    return _row(cur.fetchone())
+
+
+def list_pupils() -> list[dict]:
+    cur = _connect().execute("SELECT id, email, name, created_at FROM pupils ORDER BY created_at DESC")
+    return [dict(r) for r in cur.fetchall()]
+
+
+def set_pupil_session(pid: int, session: str | None) -> None:
+    conn = _connect()
+    conn.execute("UPDATE pupils SET session = ? WHERE id = ?", (session, pid))
+    conn.commit()
+
+
+def list_metrics(pid: int) -> list[dict]:
+    cur = _connect().execute(
+        "SELECT * FROM pupil_metrics WHERE pupil_id = ? ORDER BY sort, id",
+        (pid,),
+    )
+    return [dict(r) for r in cur.fetchall()]
+
+
+def add_metric(pid: int, key: str, label: str, kind: str, unit: str) -> dict:
+    conn = _connect()
+    sort = conn.execute(
+        "SELECT COALESCE(MAX(sort), 0) + 10 FROM pupil_metrics WHERE pupil_id = ?",
+        (pid,),
+    ).fetchone()[0]
+    conn.execute(
+        """
+        INSERT INTO pupil_metrics (pupil_id, key, label, kind, unit, sort, enabled)
+        VALUES (?, ?, ?, ?, ?, ?, 1)
+        """,
+        (pid, key, label, kind, unit, sort),
+    )
+    conn.commit()
+    cur = conn.execute(
+        "SELECT * FROM pupil_metrics WHERE pupil_id = ? AND key = ?",
+        (pid, key),
+    )
+    return dict(cur.fetchone())
+
+
+def disable_metric(pid: int, key: str) -> None:
+    conn = _connect()
+    conn.execute(
+        "UPDATE pupil_metrics SET enabled = 0 WHERE pupil_id = ? AND key = ?",
+        (pid, key),
+    )
+    conn.commit()
+
+
+def enable_metric(pid: int, key: str) -> None:
+    conn = _connect()
+    conn.execute(
+        "UPDATE pupil_metrics SET enabled = 1 WHERE pupil_id = ? AND key = ?",
+        (pid, key),
+    )
+    conn.commit()
+
+
+def upsert_day_value(pid: int, day: str, key: str, value: float) -> None:
+    conn = _connect()
+    conn.execute(
+        """
+        INSERT INTO pupil_day_values (pupil_id, day, metric_key, value)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(pupil_id, day, metric_key) DO UPDATE SET value = excluded.value
+        """,
+        (pid, day, key, value),
+    )
+    conn.commit()
+
+
+def list_day_values(pid: int, start: str, end: str) -> list[dict]:
+    cur = _connect().execute(
+        """
+        SELECT day, metric_key, value FROM pupil_day_values
+        WHERE pupil_id = ? AND day >= ? AND day <= ?
+        ORDER BY day
+        """,
+        (pid, start, end),
+    )
+    return [dict(r) for r in cur.fetchall()]
+
+
+def insert_lift(row: dict) -> dict:
+    conn = _connect()
+    cur = conn.execute(
+        """
+        INSERT INTO pupil_lifts (
+          pupil_id, day, week, exercise, load, sets, reps, notes, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            row["pupil_id"],
+            row["day"],
+            row.get("week") or 1,
+            row["exercise"],
+            row.get("load"),
+            row.get("sets"),
+            row.get("reps"),
+            row.get("notes") or "",
+            row["created_at"],
+        ),
+    )
+    conn.commit()
+    row = dict(row)
+    row["id"] = cur.lastrowid
+    return row
+
+
+def list_lifts(pid: int, start: str, end: str) -> list[dict]:
+    cur = _connect().execute(
+        """
+        SELECT * FROM pupil_lifts
+        WHERE pupil_id = ? AND day >= ? AND day <= ?
+        ORDER BY day, id
+        """,
+        (pid, start, end),
+    )
+    return [dict(r) for r in cur.fetchall()]
+
+
+def delete_lift(pid: int, lift_id: int) -> bool:
+    conn = _connect()
+    cur = conn.execute(
+        "DELETE FROM pupil_lifts WHERE id = ? AND pupil_id = ?",
+        (lift_id, pid),
+    )
+    conn.commit()
+    return cur.rowcount == 1
+

@@ -1,0 +1,126 @@
+:root {
+    --bg: #0b0c0f;
+    --card: #171a21;
+    --gold: #d4a017;
+    --gold-2: #f0c75e;
+    --cream: #f3ede2;
+    --muted: #9a9388;
+    --line: rgba(212, 160, 23, 0.28);
+    --ok: #7dcea0;
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--cream);
+}
+a { color: var(--gold-2); }
+.top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 5vw;
+    border-bottom: 1px solid var(--line);
+}
+.brand { letter-spacing: 0.18em; text-transform: uppercase; text-decoration: none; color: var(--gold); font-size: 13px; font-weight: 700; }
+.wrap { width: min(980px, calc(100% - 8vw)); margin: 0 auto; padding: 24px 0 64px; }
+h1 { font-family: Georgia, serif; font-size: 28px; margin: 0 0 8px; }
+h2 { font-family: Georgia, serif; font-size: 20px; margin: 28px 0 12px; }
+.muted { color: var(--muted); line-height: 1.5; }
+.card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 14px;
+}
+label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 6px; }
+input, select {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: #12141a;
+    color: var(--cream);
+    font: inherit;
+}
+.btn {
+    border: 0;
+    border-radius: 999px;
+    padding: 11px 18px;
+    font-weight: 700;
+    cursor: pointer;
+    font: inherit;
+}
+.btn-gold { background: var(--gold); color: #1a1404; }
+.btn-ghost { background: transparent; color: var(--cream); border: 1px solid var(--line); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.error { display: none; background: #3a1515; color: #ffd0d0; padding: 10px; border-radius: 10px; }
+.ok { display: none; background: #143322; color: #d9ffe8; padding: 10px; border-radius: 10px; }
+.error.show, .ok.show { display: block; }
+.hidden { display: none !important; }
+.dash {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+.stat { background: #12141a; border-radius: 12px; padding: 12px; }
+.stat b { display: block; font-size: 22px; color: var(--gold-2); }
+.stat span { font-size: 12px; color: var(--muted); }
+.bars { display: grid; gap: 8px; }
+.bar-row { display: grid; grid-template-columns: 72px 1fr 40px; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); }
+.bar-track { height: 8px; background: #12141a; border-radius: 99px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--gold); width: 0; }
+.metrics { display: grid; gap: 10px; }
+.metric {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+    background: #12141a;
+    border-radius: 12px;
+    padding: 10px 12px;
+}
+.metric label { margin: 0; color: var(--cream); }
+.stepper { display: flex; gap: 6px; align-items: center; }
+.stepper button {
+    width: 36px; height: 36px; border-radius: 10px;
+    border: 1px solid var(--line); background: #171a21; color: var(--cream); cursor: pointer;
+}
+.stepper input { width: 88px; text-align: center; }
+.toggle {
+    width: 52px; height: 30px; border-radius: 999px; border: 0;
+    background: #2a2d36; cursor: pointer; position: relative;
+}
+.toggle.on { background: var(--gold); }
+.lifts { display: grid; gap: 8px; }
+.lift {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #12141a;
+    border-radius: 12px;
+    font-size: 14px;
+}
+.lift button { background: transparent; border: 0; color: var(--muted); cursor: pointer; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+}
+.chip.off { opacity: 0.45; text-decoration: line-through; }
+@media (max-width: 800px) {
+    .dash, .grid-3 { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 520px) {
+    .dash { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr; }
+}

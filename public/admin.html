@@ -56,6 +56,33 @@
                 <tbody id="rows"></tbody>
             </table>
         </div>
+
+        <h2 style="margin-top:36px;">Alumnos · seguimiento</h2>
+        <p class="subtitle">Crea un PIN. El alumno entra en /alumno y registra días, hábitos y cargas.</p>
+        <div class="field">
+            <label for="pupilEmail">Email del alumno</label>
+            <input id="pupilEmail" type="email" autocomplete="off">
+        </div>
+        <div class="field">
+            <label for="pupilName">Nombre</label>
+            <input id="pupilName" maxlength="80" autocomplete="off">
+        </div>
+        <div class="buttons">
+            <button type="button" class="btn-secondary" id="pupilReload">Actualizar alumnos</button>
+            <button type="button" class="btn-primary" id="pupilCreate">Crear alumno</button>
+        </div>
+        <div id="pupilPinWrap" class="hidden" style="margin-top:16px;">
+            <h3>PIN (cópialo ahora)</h3>
+            <div id="pupilPinBox" class="linkbox"></div>
+        </div>
+        <div class="table-wrap" style="margin-top:16px;">
+            <table class="data">
+                <thead>
+                    <tr><th>Nombre</th><th>Email</th><th>Alta</th></tr>
+                </thead>
+                <tbody id="pupilRows"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 <script>
@@ -167,6 +194,51 @@ document.getElementById("rows").addEventListener("click", function (event) {
     const btn = event.target.closest("button[data-ref]");
     if (!btn) return;
     resend(btn.getAttribute("data-ref")).catch(function () { showError("Error de red."); });
+});
+
+async function createPupil() {
+    clearNotes();
+    const res = await fetch("/internal/pupils", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-Admin-Secret": secret(),
+        },
+        body: JSON.stringify({
+            email: document.getElementById("pupilEmail").value,
+            name: document.getElementById("pupilName").value,
+        }),
+    });
+    const data = await res.json().catch(function () { return {}; });
+    if (!res.ok || !data.ok) {
+        showError(data.error || "No se pudo crear el alumno.");
+        return;
+    }
+    document.getElementById("pupilPinWrap").classList.remove("hidden");
+    document.getElementById("pupilPinBox").textContent =
+        data.email + " · PIN " + data.pin + " · " + data.login_url;
+    showOk("Alumno creado. El PIN no se vuelve a mostrar.");
+    loadPupils();
+}
+
+async function loadPupils() {
+    const res = await fetch("/internal/pupils", { headers: { "X-Admin-Secret": secret() } });
+    const data = await res.json().catch(function () { return {}; });
+    const tbody = document.getElementById("pupilRows");
+    tbody.innerHTML = "";
+    if (!res.ok) return;
+    (data.items || []).forEach(function (item) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = "<td>" + (item.name || "") + "</td><td>" + item.email + "</td><td>" + (item.created_at || "") + "</td>";
+        tbody.appendChild(tr);
+    });
+}
+
+document.getElementById("pupilCreate").addEventListener("click", function () {
+    createPupil().catch(function () { showError("Error de red."); });
+});
+document.getElementById("pupilReload").addEventListener("click", function () {
+    loadPupils().catch(function () {});
 });
 </script>
 </body>

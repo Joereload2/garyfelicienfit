@@ -49,6 +49,7 @@ from store import (  # noqa: E402
     save_coaching,
 )
 from validate import ValidationError, normalize_email, normalize_payment_ref, validate_payload  # noqa: E402
+import pupils  # noqa: E402
 
 PUBLIC = ROOT / "public"
 WEB = ROOT / "web"
@@ -201,13 +202,25 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/admin":
             self._html_file("admin.html")
             return
+        if path in ("/alumno", "/alumno.html"):
+            self._html_file("alumno.html")
+            return
         if path == "/gracias":
             self._html_file("gracias.html")
             return
         if path == "/webhooks/mercadopago":
             self._mp_webhook()
             return
-        if path in ("/styles.css", "/form.js", "/site.css", "/site.js", "/quiz.js", "/videos.json"):
+        if path in (
+            "/styles.css",
+            "/form.js",
+            "/site.css",
+            "/site.js",
+            "/quiz.js",
+            "/videos.json",
+            "/alumno.js",
+            "/alumno.css",
+        ):
             self._static(path.lstrip("/"))
             return
         if re.fullmatch(r"/img/[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)", path):
@@ -233,6 +246,12 @@ class Handler(BaseHTTPRequestHandler):
         match = re.fullmatch(r"/api/access/([A-Za-z0-9_-]+)", path)
         if match:
             self._api_access(match.group(1))
+            return
+        if path == "/api/alumno/state":
+            self._alumno_state()
+            return
+        if path == "/internal/pupils":
+            self._list_pupils()
             return
         if path == "/internal/entitlements":
             if not self._admin_ok():
@@ -264,6 +283,27 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path == "/internal/entitlements":
                 self._create_entitlement()
+                return
+            if path == "/internal/pupils":
+                self._create_pupil()
+                return
+            if path == "/api/alumno/login":
+                self._alumno_login()
+                return
+            if path == "/api/alumno/day":
+                self._alumno_day()
+                return
+            if path == "/api/alumno/metric":
+                self._alumno_metric()
+                return
+            if path == "/api/alumno/metric-toggle":
+                self._alumno_metric_toggle()
+                return
+            if path == "/api/alumno/lift":
+                self._alumno_lift()
+                return
+            if path == "/api/alumno/lift-delete":
+                self._alumno_lift_delete()
                 return
             if path == "/internal/resend-pdf":
                 self._resend_pdf()
@@ -323,6 +363,83 @@ class Handler(BaseHTTPRequestHandler):
                 return
             raise
         self._json(201, {"ok": True, **issued})
+
+    def _pupil_session(self) -> dict:
+        auth = self.headers.get("Authorization") or ""
+        token = auth[7:].strip() if auth.lower().startswith("bearer ") else ""
+        return pupils.pupil_from_session(token)
+
+    def _create_pupil(self) -> None:
+        if not self._admin_ok():
+            self._json(401, {"ok": False, "error": "No autorizado"})
+            return
+        data = self._read_json()
+        created = pupils.create_pupil(str(data.get("email") or ""), str(data.get("name") or ""))
+        created["login_url"] = f"{_app_url()}/alumno"
+        self._json(201, {"ok": True, **created})
+
+    def _list_pupils(self) -> None:
+        if not self._admin_ok():
+            self._json(401, {"ok": False, "error": "No autorizado"})
+            return
+        try:
+            self._json(200, {"ok": True, "items": pupils.list_pupils()})
+        except Exception as exc:
+            self._json(500, {"ok": False, "error": str(exc)[:200]})
+
+    def _alumno_login(self) -> None:
+        data = self._read_json()
+        out = pupils.login(str(data.get("email") or ""), str(data.get("pin") or ""))
+        self._json(200, {"ok": True, **out})
+
+    def _alumno_state(self) -> None:
+        try:
+            pupil = self._pupil_session()
+            qs = parse_qs(urlparse(self.path).query)
+            start = (qs.get("start") or [""])[0]
+            end = (qs.get("end") or [""])[0]
+            if not start or not end:
+                today = datetime.now(timezone.utc).date()
+                end = today.isoformat()
+                start = today.fromordinal(today.toordinal() - 6).isoformat()
+            self._json(200, {"ok": True, **pupils.state(pupil, start, end)})
+        except ValidationError as exc:
+            code = 401 if "Sesión" in exc.message else 400
+            self._json(code, {"ok": False, "error": exc.message})
+
+    def _alumno_day(self) -> None:
+        pupil = self._pupil_session()
+        data = self._read_json()
+        pupils.save_day(pupil, str(data.get("day") or ""), data.get("values") or {})
+        self._json(200, {"ok": True})
+
+    def _alumno_metric(self) -> None:
+        pupil = self._pupil_session()
+        data = self._read_json()
+        metric = pupils.add_metric(
+            pupil,
+            str(data.get("label") or ""),
+            str(data.get("kind") or "number"),
+            str(data.get("unit") or ""),
+        )
+        self._json(201, {"ok": True, "metric": metric})
+
+    def _alumno_metric_toggle(self) -> None:
+        pupil = self._pupil_session()
+        data = self._read_json()
+        pupils.toggle_metric(pupil, str(data.get("key") or ""), bool(data.get("enabled")))
+        self._json(200, {"ok": True})
+
+    def _alumno_lift(self) -> None:
+        pupil = self._pupil_session()
+        lift = pupils.add_lift(pupil, self._read_json())
+        self._json(201, {"ok": True, "lift": lift})
+
+    def _alumno_lift_delete(self) -> None:
+        pupil = self._pupil_session()
+        data = self._read_json()
+        pupils.remove_lift(pupil, int(data.get("id") or 0))
+        self._json(200, {"ok": True})
 
     def _checkout(self) -> None:
         data = self._read_json()

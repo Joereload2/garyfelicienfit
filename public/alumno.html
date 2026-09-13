@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seguimiento de alumno — GaryFelicienFit</title>
+<link rel="stylesheet" href="/alumno.css">
+</head>
+<body>
+<header class="top">
+    <a class="brand" href="/">Gary Felicien Fit</a>
+    <button type="button" class="btn btn-ghost hidden" id="logoutBtn">Salir</button>
+</header>
+<main class="wrap">
+    <div id="loginView">
+        <h1>Tu seguimiento</h1>
+        <p class="muted">Entra con el email y el PIN que te dio Gary. Aquí registras el día, las cargas y ves tu semana.</p>
+        <form class="card" id="loginForm">
+            <div id="loginError" class="error"></div>
+            <label for="loginEmail">Email</label>
+            <input id="loginEmail" type="email" required autocomplete="username">
+            <label for="loginPin">PIN de 6 dígitos</label>
+            <input id="loginPin" inputmode="numeric" maxlength="6" required autocomplete="current-password">
+            <div class="actions">
+                <button class="btn btn-gold" type="submit">Entrar</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="appView" class="hidden">
+        <h1 id="hello">Hola</h1>
+        <p class="muted">Marca el día. El dashboard resume los últimos 7 días. Puedes ocultar hábitos o agregar los tuyos.</p>
+
+        <div class="dash" id="dash"></div>
+
+        <h2>Semana</h2>
+        <div class="card">
+            <div class="bars" id="weekBars"></div>
+        </div>
+
+        <h2>Hoy</h2>
+        <div class="card">
+            <label for="dayPick">Día</label>
+            <input id="dayPick" type="date">
+            <div class="metrics" id="metrics"></div>
+            <div class="actions">
+                <button type="button" class="btn btn-gold" id="saveDay">Guardar día</button>
+            </div>
+            <p class="muted" id="saveMsg"></p>
+        </div>
+
+        <h2>Hábitos en el tablero</h2>
+        <div class="card">
+            <div class="chips" id="chips"></div>
+            <p class="muted">Toca para ocultar o volver a mostrar.</p>
+            <div class="grid-3" style="margin-top:12px;">
+                <div>
+                    <label for="newLabel">Nuevo hábito</label>
+                    <input id="newLabel" placeholder="Ej. Caminata extra">
+                </div>
+                <div>
+                    <label for="newKind">Tipo</label>
+                    <select id="newKind">
+                        <option value="number">Número</option>
+                        <option value="bool">Sí / no</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="newUnit">Unidad</label>
+                    <input id="newUnit" placeholder="vasos, min, g…">
+                </div>
+            </div>
+            <div class="actions">
+                <button type="button" class="btn btn-ghost" id="addMetric">Agregar al tablero</button>
+            </div>
+        </div>
+
+        <h2>Planner de cargas</h2>
+        <div class="card">
+            <div class="grid-3">
+                <div>
+                    <label for="liftWeek">Semana del plan</label>
+                    <select id="liftWeek"></select>
+                </div>
+                <div>
+                    <label for="liftEx">Ejercicio</label>
+                    <input id="liftEx" placeholder="Sentadilla">
+                </div>
+                <div>
+                    <label for="liftLoad">Carga (kg)</label>
+                    <input id="liftLoad" type="number" step="0.5">
+                </div>
+                <div>
+                    <label for="liftSets">Series</label>
+                    <input id="liftSets" type="number" min="1">
+                </div>
+                <div>
+                    <label for="liftReps">Reps</label>
+                    <input id="liftReps" type="number" min="1">
+                </div>
+            </div>
+            <div class="actions">
+                <button type="button" class="btn btn-gold" id="addLift">Sumar al día</button>
+            </div>
+            <div class="lifts" id="lifts"></div>
+        </div>
+    </div>
+</main>
+<script src="/alumno.js"></script>
+</body>
+</html>

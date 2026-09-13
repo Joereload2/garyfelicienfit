@@ -52,9 +52,19 @@ class PupilTests(unittest.TestCase):
             {"day": "2026-09-13", "week": 3, "exercise": "Sentadilla", "load": 60, "sets": 3, "reps": 8},
         )
         self.assertEqual(lift["exercise"], "Sentadilla")
+        pupils.add_lift(
+            pupil,
+            {"day": "2026-09-13", "week": 3, "exercise": "Press banca", "load": 40, "sets": 3, "reps": 10},
+        )
+        with self.assertRaises(ValidationError):
+            pupils.add_lift(
+                pupil,
+                {"day": "2026-09-13", "week": 3, "exercise": "Zancadas", "load": 20, "sets": 3, "reps": 10},
+            )
         pupils.remove_lift(pupil, lift["id"])
         st = pupils.state(pupil, "2026-09-13", "2026-09-13")
-        self.assertEqual(st["lifts"], [])
+        self.assertEqual(len(st["lifts"]), 1)
+        self.assertIn("Sentadilla", st["exercises"])
 
     def test_bad_login(self):
         pupils.create_pupil(TEST_EMAIL, "Jose")

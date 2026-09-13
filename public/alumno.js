@@ -122,6 +122,7 @@ function renderMetrics() {
     }).join("");
 
     const lifts = (state.lifts || []).filter(function (x) { return x.day === day; });
+    const maxLifts = state.max_lifts || 2;
     document.getElementById("lifts").innerHTML = lifts.length
         ? lifts.map(function (x) {
             const bits = [x.exercise];
@@ -134,6 +135,59 @@ function renderMetrics() {
             );
         }).join("")
         : '<p class="muted">Aún no hay cargas este día.</p>';
+    const full = lifts.length >= maxLifts;
+    document.getElementById("addLift").disabled = full;
+    document.getElementById("liftHint").textContent = full
+        ? "Ya tienes 2 ejercicios hoy. Quita uno para cambiar."
+        : "Máximo 2 ejercicios por día.";
+    fillExerciseSelect();
+}
+
+function fillExerciseSelect() {
+    const sel = document.getElementById("liftEx");
+    if (!sel) return;
+    const prev = sel.value;
+    const catalog = state.exercises || [];
+    const mine = [];
+    (state.lifts || []).forEach(function (x) {
+        if (x.exercise && catalog.indexOf(x.exercise) < 0 && mine.indexOf(x.exercise) < 0) {
+            mine.push(x.exercise);
+        }
+    });
+    let html = '<option value="">Elige un ejercicio</option>';
+    if (mine.length) {
+        html += '<optgroup label="Tus ejercicios">';
+        mine.sort().forEach(function (n) {
+            html += '<option value="' + n.replace(/"/g, "") + '">' + n + "</option>";
+        });
+        html += "</optgroup>";
+    }
+    html += '<optgroup label="Lista">';
+    catalog.forEach(function (n) {
+        html += '<option value="' + n.replace(/"/g, "") + '">' + n + "</option>";
+    });
+    html += "</optgroup>";
+    html += '<option value="__custom__">Otro (escribir)…</option>';
+    sel.innerHTML = html;
+    if (prev && Array.from(sel.options).some(function (o) { return o.value === prev; })) {
+        sel.value = prev;
+    }
+    toggleCustomExercise();
+}
+
+function toggleCustomExercise() {
+    const custom = document.getElementById("liftExCustom");
+    const isCustom = document.getElementById("liftEx").value === "__custom__";
+    custom.classList.toggle("hidden", !isCustom);
+    if (isCustom) custom.focus();
+}
+
+function chosenExercise() {
+    const sel = document.getElementById("liftEx").value;
+    if (sel === "__custom__") {
+        return document.getElementById("liftExCustom").value.trim();
+    }
+    return sel;
 }
 
 function collectValues() {
@@ -181,6 +235,7 @@ document.getElementById("logoutBtn").addEventListener("click", function () {
     showLogin();
 });
 document.getElementById("dayPick").addEventListener("change", loadState);
+document.getElementById("liftEx").addEventListener("change", toggleCustomExercise);
 
 document.getElementById("metrics").addEventListener("click", function (ev) {
     const t = ev.target;
@@ -233,7 +288,7 @@ document.getElementById("addLift").addEventListener("click", async function () {
     const { res, data } = await api("POST", "/api/alumno/lift", {
         day: document.getElementById("dayPick").value || todayISO(),
         week: document.getElementById("liftWeek").value,
-        exercise: document.getElementById("liftEx").value,
+        exercise: chosenExercise(),
         load: document.getElementById("liftLoad").value,
         sets: document.getElementById("liftSets").value,
         reps: document.getElementById("liftReps").value
@@ -243,6 +298,8 @@ document.getElementById("addLift").addEventListener("click", async function () {
         return;
     }
     document.getElementById("liftEx").value = "";
+    document.getElementById("liftExCustom").value = "";
+    document.getElementById("liftExCustom").classList.add("hidden");
     loadState();
 });
 

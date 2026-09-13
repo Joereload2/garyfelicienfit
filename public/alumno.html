@@ -84,7 +84,8 @@
                 </div>
                 <div>
                     <label for="liftEx">Ejercicio</label>
-                    <input id="liftEx" placeholder="Sentadilla">
+                    <select id="liftEx"></select>
+                    <input id="liftExCustom" class="hidden" maxlength="80" placeholder="Nombre del ejercicio" style="margin-top:8px;">
                 </div>
                 <div>
                     <label for="liftLoad">Carga (kg)</label>
@@ -99,6 +100,7 @@
                     <input id="liftReps" type="number" min="1">
                 </div>
             </div>
+            <p class="muted" id="liftHint">Máximo 2 ejercicios por día.</p>
             <div class="actions">
                 <button type="button" class="btn btn-gold" id="addLift">Sumar al día</button>
             </div>

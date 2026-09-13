@@ -63,7 +63,8 @@ class PupilTests(unittest.TestCase):
         pupils.remove_lift(pupil, lift["id"])
         st = pupils.state(pupil, "2026-09-13", "2026-09-13")
         self.assertEqual(len(st["lifts"]), 2)
-        self.assertIn("Sentadilla", st["exercises"])
+        self.assertIn("Sentadilla", st["exercises"]["strength"])
+        self.assertIn("Caminata", st["exercises"]["cardio"])
 
     def test_bad_login(self):
         pupils.create_pupil(TEST_EMAIL, "Jose")

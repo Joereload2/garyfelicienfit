@@ -10,6 +10,11 @@ function todayISO() {
     const day = String(d.getDate()).padStart(2, "0");
     return d.getFullYear() + "-" + m + "-" + day;
 }
+function fmtDate(iso) {
+    if (!iso || String(iso).length < 10) return iso || "";
+    var p = String(iso).slice(0, 10).split("-");
+    return p[2] + "-" + p[1] + "-" + p[0].slice(2);
+}
 function addDays(iso, n) {
     const d = new Date(iso + "T12:00:00");
     d.setDate(d.getDate() + n);
@@ -59,10 +64,14 @@ function rangeLabel() {
     return "Semanal (7 días)";
 }
 
-function val(day, key) {
-    const row = state.days[day] || {};
-    if (row[key] === undefined || row[key] === null) return 0;
+function rawVal(day, key) {
+    const row = state.days[day];
+    if (!row || row[key] === undefined || row[key] === null || row[key] === "") return null;
     return Number(row[key]);
+}
+function val(day, key) {
+    const v = rawVal(day, key);
+    return v === null ? 0 : v;
 }
 
 function renderDash() {
@@ -73,20 +82,21 @@ function renderDash() {
         days.push(cursor);
         cursor = addDays(cursor, 1);
     }
-    const n = days.length || 1;
     const enabled = state.metrics.filter(function (m) { return m.enabled; });
     const items = enabled.map(function (m) {
+        const logged = days.filter(function (d) { return rawVal(d, m.key) !== null; });
+        if (!logged.length) return { l: m.label, v: "—" };
         if (m.kind === "bool") {
-            const c = days.filter(function (d) { return val(d, m.key) > 0; }).length;
-            return { l: m.label, v: c + "/" + n + " días" };
+            const c = logged.filter(function (d) { return val(d, m.key) > 0; }).length;
+            return { l: m.label, v: c + "/" + logged.length + " días" };
         }
-        const sum = days.reduce(function (s, d) { return s + val(d, m.key); }, 0);
-        const avg = sum / n;
+        const sum = logged.reduce(function (s, d) { return s + val(d, m.key); }, 0);
+        const avg = sum / logged.length;
         const unit = m.unit ? " " + m.unit : "";
         const shown = m.key === "pasos" || avg >= 20
             ? Math.round(avg).toLocaleString("es")
             : avg.toFixed(1);
-        return { l: m.label + " (media)", v: shown + unit };
+        return { l: m.label + " (media · " + logged.length + " d)", v: shown + unit };
     });
     const liftN = (state.lifts || []).length;
     items.push({ l: "Ejercicios anotados", v: String(liftN) });
@@ -94,13 +104,16 @@ function renderDash() {
         return '<div class="stat"><b>' + it.v + "</b><span>" + it.l + "</span></div>";
     }).join("");
     const label = document.getElementById("dashLabel");
-    if (label) label.textContent = rangeLabel() + " · " + start + " → " + end;
+    if (label) label.textContent = rangeLabel() + " · " + fmtDate(start) + " → " + fmtDate(end);
 
-    document.getElementById("weekBars").innerHTML = days.map(function (d) {
+    const barDays = days.filter(function (d) {
+        return state.days[d] && Object.keys(state.days[d]).length;
+    });
+    document.getElementById("weekBars").innerHTML = (barDays.length ? barDays : days).map(function (d) {
         const done = val(d, "entreno") > 0;
         const fill = done ? 100 : 12;
         return (
-            '<div class="bar-row"><span>' + d.slice(5) + "</span>" +
+            '<div class="bar-row"><span>' + fmtDate(d) + "</span>" +
             '<div class="bar-track"><div class="bar-fill" style="width:' + fill + '%"></div></div>' +
             "<span>" + (done ? "sí" : "—") + "</span></div>"
         );
@@ -138,6 +151,7 @@ function renderMetrics() {
     document.getElementById("lifts").innerHTML = lifts.length
         ? lifts.map(function (x) {
             const bits = [x.exercise];
+            if (x.minutes != null && x.minutes !== "") bits.push(x.minutes + " min");
             if (x.load != null) bits.push(x.load + " kg");
             if (x.sets || x.reps) bits.push((x.sets || "—") + " × " + (x.reps || "—"));
             bits.push("sem. " + x.week);
@@ -154,10 +168,13 @@ function fillExerciseSelect() {
     const sel = document.getElementById("liftEx");
     if (!sel) return;
     const prev = sel.value;
-    const catalog = state.exercises || [];
+    const catalog = state.exercises || {};
+    const strength = catalog.strength || [];
+    const cardio = catalog.cardio || [];
+    const known = strength.concat(cardio);
     const mine = [];
     (state.lifts || []).forEach(function (x) {
-        if (x.exercise && catalog.indexOf(x.exercise) < 0 && mine.indexOf(x.exercise) < 0) {
+        if (x.exercise && known.indexOf(x.exercise) < 0 && mine.indexOf(x.exercise) < 0) {
             mine.push(x.exercise);
         }
     });
@@ -169,8 +186,13 @@ function fillExerciseSelect() {
         });
         html += "</optgroup>";
     }
-    html += '<optgroup label="Lista">';
-    catalog.forEach(function (n) {
+    html += '<optgroup label="Fuerza">';
+    strength.forEach(function (n) {
+        html += '<option value="' + n.replace(/"/g, "") + '">' + n + "</option>";
+    });
+    html += "</optgroup>";
+    html += '<optgroup label="Cardio">';
+    cardio.forEach(function (n) {
         html += '<option value="' + n.replace(/"/g, "") + '">' + n + "</option>";
     });
     html += "</optgroup>";
@@ -182,11 +204,24 @@ function fillExerciseSelect() {
     toggleCustomExercise();
 }
 
+function isCardioName(name) {
+    const cardio = (state.exercises && state.exercises.cardio) || [];
+    return cardio.indexOf(name) >= 0;
+}
+
 function toggleCustomExercise() {
     const custom = document.getElementById("liftExCustom");
-    const isCustom = document.getElementById("liftEx").value === "__custom__";
+    const sel = document.getElementById("liftEx").value;
+    const isCustom = sel === "__custom__";
     custom.classList.toggle("hidden", !isCustom);
     if (isCustom) custom.focus();
+    const name = isCustom ? custom.value.trim() : sel;
+    const showTime = isCardioName(name) || isCustom;
+    const showLoad = !isCardioName(name);
+    document.getElementById("liftCardioFields").classList.toggle("hidden", !showTime);
+    document.getElementById("liftStrengthFields").classList.toggle("hidden", !showLoad);
+    document.getElementById("liftSetsWrap").classList.toggle("hidden", !showLoad);
+    document.getElementById("liftRepsWrap").classList.toggle("hidden", !showLoad);
 }
 
 function chosenExercise() {
@@ -243,7 +278,7 @@ function renderGuide() {
     const fatNow = lastMetric("grasa");
     const rows = [
         ["Objetivo", g.objetivo || "—", ""],
-        ["Peso de partida", fmt(g.peso, "kg"), pesoNow ? fmt(pesoNow.v, "kg") + " · " + pesoNow.day : "—"],
+        ["Peso de partida", fmt(g.peso, "kg"), pesoNow ? fmt(pesoNow.v, "kg") + " · " + fmtDate(pesoNow.day) : "—"],
         ["Peso meta", fmt(g.peso_meta, "kg"), ""],
         ["Kcal / día", fmt(g.kcal, "kcal"), kcalNow ? fmt(Math.round(kcalNow.v), "kcal") : "—"],
         ["Proteína", fmt(g.proteina, "g"), protNow ? fmt(Math.round(protNow.v), "g") : "—"],
@@ -284,7 +319,7 @@ function renderWeightLog() {
         return;
     }
     box.innerHTML = rows.slice(0, 12).map(function (r) {
-        return "<div><span>" + r.d + "</span><b>" + r.v + " kg</b></div>";
+        return "<div><span>" + fmtDate(r.d) + "</span><b>" + r.v + " kg</b></div>";
     }).join("");
 }
 
@@ -313,6 +348,7 @@ document.getElementById("logoutBtn").addEventListener("click", function () {
 });
 document.getElementById("dayPick").addEventListener("change", loadState);
 document.getElementById("liftEx").addEventListener("change", toggleCustomExercise);
+document.getElementById("liftExCustom").addEventListener("input", toggleCustomExercise);
 
 document.getElementById("openDash").addEventListener("click", function () {
     document.getElementById("dashView").classList.remove("hidden");
@@ -408,7 +444,8 @@ document.getElementById("addLift").addEventListener("click", async function () {
         exercise: chosenExercise(),
         load: document.getElementById("liftLoad").value,
         sets: document.getElementById("liftSets").value,
-        reps: document.getElementById("liftReps").value
+        reps: document.getElementById("liftReps").value,
+        minutes: document.getElementById("liftMin").value
     });
     if (!res.ok) {
         document.getElementById("saveMsg").textContent = data.error || "No se pudo sumar.";

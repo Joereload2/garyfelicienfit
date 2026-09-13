@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS pupil_lifts (
   load REAL,
   sets INTEGER,
   reps INTEGER,
+  minutes REAL,
   notes TEXT,
   created_at TEXT NOT NULL
 );
@@ -122,6 +123,9 @@ def _connect() -> sqlite3.Connection:
         cols = [r[1] for r in _conn.execute("PRAGMA table_info(pupils)").fetchall()]
         if cols and "guide" not in cols:
             _conn.execute("ALTER TABLE pupils ADD COLUMN guide TEXT")
+        lift_cols = [r[1] for r in _conn.execute("PRAGMA table_info(pupil_lifts)").fetchall()]
+        if lift_cols and "minutes" not in lift_cols:
+            _conn.execute("ALTER TABLE pupil_lifts ADD COLUMN minutes REAL")
         _conn.commit()
     return _conn
 
@@ -494,8 +498,8 @@ def insert_lift(row: dict) -> dict:
     cur = conn.execute(
         """
         INSERT INTO pupil_lifts (
-          pupil_id, day, week, exercise, load, sets, reps, notes, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          pupil_id, day, week, exercise, load, sets, reps, minutes, notes, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             row["pupil_id"],
@@ -505,6 +509,7 @@ def insert_lift(row: dict) -> dict:
             row.get("load"),
             row.get("sets"),
             row.get("reps"),
+            row.get("minutes"),
             row.get("notes") or "",
             row["created_at"],
         ),

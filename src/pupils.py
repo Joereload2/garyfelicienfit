@@ -10,32 +10,52 @@ from datetime import datetime, timezone
 import json
 
 import sqlite_db
-from plan import GYM, HOME, GOAL_NAMES, LOCATION_NAMES, calculate_calories, macros_for
+from plan import GOAL_NAMES, LOCATION_NAMES, calculate_calories, macros_for
 from validate import ValidationError, normalize_email
 
-def exercise_catalog() -> list[str]:
-    names = set()
-    for group in (GYM, HOME):
-        for items in group.values():
-            names.update(items)
-    extra = [
-        "Peso muerto",
-        "Peso muerto rumano",
-        "Sentadilla goblet",
-        "Remo sentado",
-        "Press banca inclinado",
-        "Dominadas",
-        "Fondos",
-        "Face pull",
-        "Abdominales",
-        "Plancha",
-        "Burpees",
-        "Caminata",
-        "Bici",
-        "Elíptica",
-    ]
-    names.update(extra)
-    return sorted(names)
+STRENGTH_EXERCISES = [
+    "Sentadilla",
+    "Prensa",
+    "Zancadas",
+    "Peso muerto",
+    "Peso muerto rumano",
+    "Hip thrust",
+    "Press banca",
+    "Press inclinado con mancuernas",
+    "Jalón al pecho",
+    "Remo con barra",
+    "Remo unilateral",
+    "Press militar",
+    "Elevaciones laterales",
+    "Curl de bíceps",
+    "Extensión de tríceps en polea",
+    "Dominadas",
+    "Fondos",
+    "Flexiones",
+    "Plancha",
+    "Abdominales",
+]
+CARDIO_EXERCISES = [
+    "Caminata",
+    "Trote",
+    "Bici",
+    "Elíptica",
+    "Cinta",
+    "Remo (cardio)",
+    "Saltar la cuerda",
+    "Nadar",
+]
+
+
+def exercise_catalog() -> dict:
+    return {
+        "strength": list(STRENGTH_EXERCISES),
+        "cardio": list(CARDIO_EXERCISES),
+    }
+
+
+def is_cardio(name: str) -> bool:
+    return (name or "").strip() in CARDIO_EXERCISES
 
 KEY_RE = re.compile(r"^[a-z][a-z0-9_]{1,31}$")
 DAY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -277,6 +297,7 @@ def add_lift(pupil: dict, data: dict) -> dict:
         "load": maybe_num(data.get("load")),
         "sets": int(maybe_num(data.get("sets")) or 0) or None,
         "reps": int(maybe_num(data.get("reps")) or 0) or None,
+        "minutes": maybe_num(data.get("minutes")),
         "notes": str(data.get("notes") or "")[:120],
         "created_at": _now(),
     }

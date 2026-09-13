@@ -129,17 +129,21 @@
                     <select id="liftEx"></select>
                     <input id="liftExCustom" class="hidden" maxlength="80" placeholder="Nombre del ejercicio" style="margin-top:8px;">
                 </div>
-                <div>
+                <div id="liftStrengthFields">
                     <label for="liftLoad">Carga (kg)</label>
                     <input id="liftLoad" type="number" step="0.5">
                 </div>
-                <div>
+                <div id="liftSetsWrap">
                     <label for="liftSets">Series</label>
                     <input id="liftSets" type="number" min="1">
                 </div>
-                <div>
+                <div id="liftRepsWrap">
                     <label for="liftReps">Reps</label>
                     <input id="liftReps" type="number" min="1">
+                </div>
+                <div id="liftCardioFields" class="hidden">
+                    <label for="liftMin">Tiempo (min)</label>
+                    <input id="liftMin" type="number" min="1" step="1" placeholder="minutos">
                 </div>
             </div>
             <div class="actions">

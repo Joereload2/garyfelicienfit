@@ -7,8 +7,10 @@ import re
 import secrets
 from datetime import datetime, timezone
 
+import json
+
 import sqlite_db
-from plan import GYM, HOME
+from plan import GYM, HOME, GOAL_NAMES, LOCATION_NAMES, calculate_calories, macros_for
 from validate import ValidationError, normalize_email
 
 def exercise_catalog() -> list[str]:
@@ -109,10 +111,77 @@ def _slug(label: str) -> str:
     return raw[:32]
 
 
+def _parse_guide(raw) -> dict | None:
+    if not raw:
+        return None
+    if isinstance(raw, dict):
+        return raw
+    try:
+        data = json.loads(raw)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def guide_for(pupil: dict) -> dict | None:
+    sqlite_db.ensure_metric(pupil["id"], "peso", "Peso", "number", "kg", 15)
+    fresh = sqlite_db.get_pupil_by_id(pupil["id"]) or pupil
+    saved = _parse_guide(fresh.get("guide"))
+    if saved and saved.get("kcal"):
+        return saved
+    sub = sqlite_db.latest_submission_by_email(pupil.get("email") or "")
+    if not sub:
+        return saved
+    try:
+        kcal = calculate_calories(sub)
+        macros = macros_for(sub.get("goal") or "recomp", kcal)
+    except Exception:
+        return saved
+    return {
+        "objetivo": GOAL_NAMES.get(sub.get("goal"), sub.get("goal") or "—"),
+        "peso": sub.get("weight"),
+        "peso_meta": sub.get("targetWeight"),
+        "kcal": kcal,
+        "proteina": macros["protein_g"],
+        "carbos": macros["carb_g"],
+        "grasa": macros["fat_g"],
+        "dias": sub.get("days"),
+        "lugar": LOCATION_NAMES.get(sub.get("location"), sub.get("location") or ""),
+        "from_plan": True,
+    }
+
+
+def save_guide(pupil: dict, data: dict) -> dict:
+    def num(key, lo, hi):
+        try:
+            v = float(data.get(key))
+        except (TypeError, ValueError):
+            return None
+        if v < lo or v > hi:
+            return None
+        return round(v, 1)
+
+    guide = {
+        "objetivo": str(data.get("objetivo") or "").strip()[:80],
+        "peso": num("peso", 30, 250),
+        "peso_meta": num("peso_meta", 30, 250),
+        "kcal": num("kcal", 800, 6000),
+        "proteina": num("proteina", 20, 400),
+        "carbos": num("carbos", 20, 800),
+        "grasa": num("grasa", 10, 250),
+        "from_plan": False,
+    }
+    if not guide["kcal"]:
+        raise ValidationError("Indica las kcal meta del plan.")
+    sqlite_db.set_pupil_guide(pupil["id"], guide)
+    return guide
+
+
 def state(pupil: dict, start: str, end: str) -> dict:
     if not DAY_RE.match(start) or not DAY_RE.match(end):
         raise ValidationError("Rango de fechas inválido.")
     pid = pupil["id"]
+    sqlite_db.ensure_metric(pid, "peso", "Peso", "number", "kg", 15)
     metrics = sqlite_db.list_metrics(pid)
     values = sqlite_db.list_day_values(pid, start, end)
     lifts = sqlite_db.list_lifts(pid, start, end)
@@ -126,6 +195,7 @@ def state(pupil: dict, start: str, end: str) -> dict:
         "days": by_day,
         "lifts": lifts,
         "exercises": exercise_catalog(),
+        "guide": guide_for(pupil),
         "start": start,
         "end": end,
     }

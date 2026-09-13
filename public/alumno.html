@@ -35,18 +35,46 @@
         </div>
 
         <div id="dashView" class="hidden">
-            <h2>Dashboard</h2>
+            <div class="dash-top">
+                <h2 style="margin:0;">Dashboard</h2>
+                <button type="button" class="btn btn-gold" id="closeDash">Volver a los registros</button>
+            </div>
             <div class="card">
                 <p class="muted">Elige el período. Los números son según lo que hayas guardado en esos días.</p>
                 <div class="actions" id="dashRange">
                     <button type="button" class="btn btn-gold" data-range="7">Semanal</button>
                     <button type="button" class="btn btn-ghost" data-range="15">Quincenal</button>
                     <button type="button" class="btn btn-ghost" data-range="30">Mensual</button>
-                    <button type="button" class="btn btn-ghost" id="closeDash">Volver al día</button>
                 </div>
                 <p class="muted" id="dashLabel" style="margin-top:12px;"></p>
                 <div class="dash" id="dash"></div>
                 <div class="bars" id="weekBars" style="margin-top:16px;"></div>
+            </div>
+            <h2>Guía del plan</h2>
+            <div class="card">
+                <p class="muted" id="guideNote">Metas de kcal, macros y peso. Si ya armaste el plan, se cargan solas; si no, las puedes escribir.</p>
+                <table class="guide-table" id="guideTable"></table>
+                <div id="guideForm" class="grid-3" style="margin-top:14px;">
+                    <div><label for="gObj">Objetivo</label><input id="gObj" placeholder="Recomposición / bajar…"></div>
+                    <div><label for="gPeso">Peso de partida (kg)</label><input id="gPeso" type="number" step="0.1"></div>
+                    <div><label for="gMeta">Peso meta (kg)</label><input id="gMeta" type="number" step="0.1"></div>
+                    <div><label for="gKcal">Kcal / día</label><input id="gKcal" type="number"></div>
+                    <div><label for="gProt">Proteína (g)</label><input id="gProt" type="number"></div>
+                    <div><label for="gCarb">Carbos (g)</label><input id="gCarb" type="number"></div>
+                    <div><label for="gFat">Grasa (g)</label><input id="gFat" type="number"></div>
+                </div>
+                <div class="actions">
+                    <button type="button" class="btn btn-ghost" id="saveGuide">Guardar guía</button>
+                </div>
+                <p class="muted" id="guideSaveMsg"></p>
+            </div>
+            <h2>Registro de peso</h2>
+            <div class="card">
+                <p class="muted">Se llena con el peso que guardas cada día en los registros.</p>
+                <div class="weight-log" id="weightLog"></div>
+            </div>
+            <div class="actions">
+                <button type="button" class="btn btn-gold" id="closeDash2">Volver a los registros</button>
             </div>
         </div>
 
@@ -55,6 +83,7 @@
         <div class="card">
             <label for="dayPick">Día</label>
             <input id="dayPick" type="date">
+            <p class="muted">El peso del día queda en el registro de peso del dashboard.</p>
             <div class="metrics" id="metrics"></div>
             <div class="actions">
                 <button type="button" class="btn btn-gold" id="saveDay">Guardar día</button>

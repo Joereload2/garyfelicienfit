@@ -216,6 +216,76 @@ async function loadState() {
     document.getElementById("hello").textContent = "Hola, " + (data.name || data.email);
     renderDash();
     renderMetrics();
+    renderGuide();
+    renderWeightLog();
+}
+
+function lastMetric(key) {
+    const days = Object.keys(state.days || {}).sort();
+    for (let i = days.length - 1; i >= 0; i--) {
+        const v = val(days[i], key);
+        if (v) return { day: days[i], v: v };
+    }
+    return null;
+}
+
+function fmt(n, unit) {
+    if (n === undefined || n === null || n === "") return "—";
+    return n + (unit ? " " + unit : "");
+}
+
+function renderGuide() {
+    const g = state.guide || {};
+    const pesoNow = lastMetric("peso");
+    const kcalNow = lastMetric("kcal");
+    const protNow = lastMetric("proteina");
+    const carbNow = lastMetric("carbos");
+    const fatNow = lastMetric("grasa");
+    const rows = [
+        ["Objetivo", g.objetivo || "—", ""],
+        ["Peso de partida", fmt(g.peso, "kg"), pesoNow ? fmt(pesoNow.v, "kg") + " · " + pesoNow.day : "—"],
+        ["Peso meta", fmt(g.peso_meta, "kg"), ""],
+        ["Kcal / día", fmt(g.kcal, "kcal"), kcalNow ? fmt(Math.round(kcalNow.v), "kcal") : "—"],
+        ["Proteína", fmt(g.proteina, "g"), protNow ? fmt(Math.round(protNow.v), "g") : "—"],
+        ["Carbos", fmt(g.carbos, "g"), carbNow ? fmt(Math.round(carbNow.v), "g") : "—"],
+        ["Grasa", fmt(g.grasa, "g"), fatNow ? fmt(Math.round(fatNow.v), "g") : "—"]
+    ];
+    if (g.dias) rows.push(["Días de entreno", String(g.dias), ""]);
+    if (g.lugar) rows.push(["Lugar", g.lugar, ""]);
+    document.getElementById("guideTable").innerHTML =
+        "<thead><tr><th></th><th>Meta del plan</th><th>Último registro</th></tr></thead><tbody>" +
+        rows.map(function (r) {
+            return "<tr><td>" + r[0] + "</td><td>" + r[1] + "</td><td>" + (r[2] || "—") + "</td></tr>";
+        }).join("") + "</tbody>";
+    if (g.kcal) {
+        document.getElementById("gObj").value = g.objetivo || "";
+        document.getElementById("gPeso").value = g.peso || "";
+        document.getElementById("gMeta").value = g.peso_meta || "";
+        document.getElementById("gKcal").value = g.kcal || "";
+        document.getElementById("gProt").value = g.proteina || "";
+        document.getElementById("gCarb").value = g.carbos || "";
+        document.getElementById("gFat").value = g.grasa || "";
+    }
+    document.getElementById("guideNote").textContent = g.from_plan
+        ? "Estas metas salen de tu plan personalizado. El último registro es lo que marcaste en los días."
+        : "Si aún no armaste el plan, escribe aquí las metas. El peso diario se compara en la tercera columna.";
+}
+
+function renderWeightLog() {
+    const days = Object.keys(state.days || {}).sort().reverse();
+    const rows = [];
+    days.forEach(function (d) {
+        const v = val(d, "peso");
+        if (v) rows.push({ d: d, v: v });
+    });
+    const box = document.getElementById("weightLog");
+    if (!rows.length) {
+        box.innerHTML = '<p class="muted">Todavía no hay pesos. Guárdalo en el día (hábito Peso).</p>';
+        return;
+    }
+    box.innerHTML = rows.slice(0, 12).map(function (r) {
+        return "<div><span>" + r.d + "</span><b>" + r.v + " kg</b></div>";
+    }).join("");
 }
 
 document.getElementById("loginForm").addEventListener("submit", async function (ev) {
@@ -250,10 +320,26 @@ document.getElementById("openDash").addEventListener("click", function () {
     document.getElementById("openDash").classList.add("hidden");
     loadState();
 });
-document.getElementById("closeDash").addEventListener("click", function () {
+function backToRecords() {
     document.getElementById("dashView").classList.add("hidden");
     document.getElementById("dayView").classList.remove("hidden");
     document.getElementById("openDash").classList.remove("hidden");
+}
+document.getElementById("closeDash").addEventListener("click", backToRecords);
+document.getElementById("closeDash2").addEventListener("click", backToRecords);
+
+document.getElementById("saveGuide").addEventListener("click", async function () {
+    const { res, data } = await api("POST", "/api/alumno/guide", {
+        objetivo: document.getElementById("gObj").value,
+        peso: document.getElementById("gPeso").value,
+        peso_meta: document.getElementById("gMeta").value,
+        kcal: document.getElementById("gKcal").value,
+        proteina: document.getElementById("gProt").value,
+        carbos: document.getElementById("gCarb").value,
+        grasa: document.getElementById("gFat").value
+    });
+    document.getElementById("guideSaveMsg").textContent = res.ok ? "Guía guardada." : (data.error || "Error");
+    if (res.ok) loadState();
 });
 document.getElementById("dashRange").addEventListener("click", function (ev) {
     const btn = ev.target.closest("[data-range]");
@@ -279,6 +365,7 @@ document.getElementById("metrics").addEventListener("click", function (ev) {
         if (key === "pasos") step = 500;
         if (key === "kcal") step = 50;
         if (key === "sueno") step = 0.5;
+        if (key === "peso") step = 0.1;
         input.value = String(Math.max(0, Number(input.value || 0) + d * step));
     }
 });

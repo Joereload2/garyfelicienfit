@@ -119,6 +119,9 @@ def _connect() -> sqlite3.Connection:
         _conn.execute("PRAGMA foreign_keys=ON")
         _conn.executescript(SCHEMA)
         _conn.executescript(PUPIL_SCHEMA)
+        cols = [r[1] for r in _conn.execute("PRAGMA table_info(pupils)").fetchall()]
+        if cols and "guide" not in cols:
+            _conn.execute("ALTER TABLE pupils ADD COLUMN guide TEXT")
         _conn.commit()
     return _conn
 
@@ -301,6 +304,7 @@ def import_json_if_empty(json_path: Path) -> None:
 
 DEFAULT_METRICS = [
     ("entreno", "Entrenamiento hecho", "bool", "", 10),
+    ("peso", "Peso", "number", "kg", 15),
     ("sueno", "Sueño", "number", "h", 20),
     ("agua", "Vasos de agua", "number", "vasos", 30),
     ("pasos", "Pasos", "number", "pasos", 40),
@@ -361,6 +365,55 @@ def list_pupils() -> list[dict]:
 def set_pupil_session(pid: int, session: str | None) -> None:
     conn = _connect()
     conn.execute("UPDATE pupils SET session = ? WHERE id = ?", (session, pid))
+    conn.commit()
+
+
+def set_pupil_guide(pid: int, guide: dict | None) -> None:
+    conn = _connect()
+    conn.execute(
+        "UPDATE pupils SET guide = ? WHERE id = ?",
+        (json.dumps(guide, ensure_ascii=False) if guide else None, pid),
+    )
+    conn.commit()
+
+
+def latest_submission_by_email(email: str) -> dict | None:
+    cur = _connect().execute(
+        """
+        SELECT submission FROM entitlements
+        WHERE lower(email) = lower(?) AND submission IS NOT NULL AND submission != ''
+        ORDER BY created_at DESC LIMIT 1
+        """,
+        (email,),
+    )
+    row = cur.fetchone()
+    if not row:
+        return None
+    raw = row["submission"]
+    if isinstance(raw, str) and raw:
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            return None
+        return data if isinstance(data, dict) else None
+    return None
+
+
+def ensure_metric(pid: int, key: str, label: str, kind: str, unit: str, sort: int) -> None:
+    conn = _connect()
+    row = conn.execute(
+        "SELECT id FROM pupil_metrics WHERE pupil_id = ? AND key = ?",
+        (pid, key),
+    ).fetchone()
+    if row:
+        return
+    conn.execute(
+        """
+        INSERT INTO pupil_metrics (pupil_id, key, label, kind, unit, sort, enabled)
+        VALUES (?, ?, ?, ?, ?, ?, 1)
+        """,
+        (pid, key, label, kind, unit, sort),
+    )
     conn.commit()
 
 

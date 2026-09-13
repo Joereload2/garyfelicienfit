@@ -117,6 +117,30 @@ input, select {
     cursor: pointer;
 }
 .chip.off { opacity: 0.45; text-decoration: line-through; }
+.guide-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-top: 10px;
+}
+.guide-table th, .guide-table td {
+    text-align: left;
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--line);
+}
+.guide-table th { color: var(--muted); font-weight: 700; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+.guide-table td:last-child, .guide-table th:last-child { text-align: right; }
+.weight-log { display: grid; gap: 6px; margin-top: 10px; }
+.weight-log div {
+    display: flex;
+    justify-content: space-between;
+    background: #12141a;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+.dash-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+
 @media (max-width: 800px) {
     .dash, .grid-3 { grid-template-columns: 1fr 1fr; }
 }

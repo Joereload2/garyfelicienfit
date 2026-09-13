@@ -305,6 +305,9 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/alumno/lift-delete":
                 self._alumno_lift_delete()
                 return
+            if path == "/api/alumno/guide":
+                self._alumno_guide()
+                return
             if path == "/internal/resend-pdf":
                 self._resend_pdf()
                 return
@@ -440,6 +443,11 @@ class Handler(BaseHTTPRequestHandler):
         data = self._read_json()
         pupils.remove_lift(pupil, int(data.get("id") or 0))
         self._json(200, {"ok": True})
+
+    def _alumno_guide(self) -> None:
+        pupil = self._pupil_session()
+        guide = pupils.save_guide(pupil, self._read_json())
+        self._json(200, {"ok": True, "guide": guide})
 
     def _checkout(self) -> None:
         data = self._read_json()

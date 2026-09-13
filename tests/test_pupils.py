@@ -70,6 +70,19 @@ class PupilTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             pupils.login(TEST_EMAIL, "000000")
 
+    def test_guide_and_peso_metric(self):
+        out = pupils.login("guia@test.com", "12345")
+        pupil = pupils.pupil_from_session(out["session"])
+        st = pupils.state(pupil, "2026-09-01", "2026-09-13")
+        self.assertTrue(any(m["key"] == "peso" for m in st["metrics"]))
+        guide = pupils.save_guide(
+            pupil,
+            {"objetivo": "Recomposición corporal", "peso": 80, "peso_meta": 78, "kcal": 2200, "proteina": 160, "carbos": 200, "grasa": 70},
+        )
+        self.assertEqual(guide["kcal"], 2200)
+        st2 = pupils.state(pupil, "2026-09-01", "2026-09-13")
+        self.assertEqual(st2["guide"]["proteina"], 160)
+
     def test_open_login_any_email(self):
         out = pupils.login("solo-un-nombre", "12345")
         self.assertTrue(out["session"])

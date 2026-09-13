@@ -29,15 +29,28 @@
 
     <div id="appView" class="hidden">
         <h1 id="hello">Hola</h1>
-        <p class="muted">Marca el día. El dashboard resume los últimos 7 días. Puedes ocultar hábitos o agregar los tuyos.</p>
-
-        <div class="dash" id="dash"></div>
-
-        <h2>Semana</h2>
-        <div class="card">
-            <div class="bars" id="weekBars"></div>
+        <p class="muted">Marca el día, hábitos y cargas. El dashboard resume semana, quincena o mes.</p>
+        <div class="actions" style="margin-bottom:18px;">
+            <button type="button" class="btn btn-gold" id="openDash">Ver dashboard</button>
         </div>
 
+        <div id="dashView" class="hidden">
+            <h2>Dashboard</h2>
+            <div class="card">
+                <p class="muted">Elige el período. Los números son según lo que hayas guardado en esos días.</p>
+                <div class="actions" id="dashRange">
+                    <button type="button" class="btn btn-gold" data-range="7">Semanal</button>
+                    <button type="button" class="btn btn-ghost" data-range="15">Quincenal</button>
+                    <button type="button" class="btn btn-ghost" data-range="30">Mensual</button>
+                    <button type="button" class="btn btn-ghost" id="closeDash">Volver al día</button>
+                </div>
+                <p class="muted" id="dashLabel" style="margin-top:12px;"></p>
+                <div class="dash" id="dash"></div>
+                <div class="bars" id="weekBars" style="margin-top:16px;"></div>
+            </div>
+        </div>
+
+        <div id="dayView">
         <h2>Hoy</h2>
         <div class="card">
             <label for="dayPick">Día</label>
@@ -100,11 +113,11 @@
                     <input id="liftReps" type="number" min="1">
                 </div>
             </div>
-            <p class="muted" id="liftHint">Máximo 2 ejercicios por día.</p>
             <div class="actions">
                 <button type="button" class="btn btn-gold" id="addLift">Sumar al día</button>
             </div>
             <div class="lifts" id="lifts"></div>
+        </div>
         </div>
     </div>
 </main>

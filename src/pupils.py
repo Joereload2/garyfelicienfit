@@ -11,9 +11,6 @@ import sqlite_db
 from plan import GYM, HOME
 from validate import ValidationError, normalize_email
 
-MAX_LIFTS_PER_DAY = 2
-
-
 def exercise_catalog() -> list[str]:
     names = set()
     for group in (GYM, HOME):
@@ -129,7 +126,6 @@ def state(pupil: dict, start: str, end: str) -> dict:
         "days": by_day,
         "lifts": lifts,
         "exercises": exercise_catalog(),
-        "max_lifts": MAX_LIFTS_PER_DAY,
         "start": start,
         "end": end,
     }
@@ -189,9 +185,6 @@ def add_lift(pupil: dict, data: dict) -> dict:
     exercise = str(data.get("exercise") or "").replace("<", "").replace(">", "").strip()[:80]
     if len(exercise) < 2:
         raise ValidationError("Elige o escribe el ejercicio.")
-    existing = sqlite_db.list_lifts(pupil["id"], day, day)
-    if len(existing) >= MAX_LIFTS_PER_DAY:
-        raise ValidationError("Este día admite como máximo 2 ejercicios.")
     try:
         week = int(data.get("week") or 1)
     except (TypeError, ValueError):

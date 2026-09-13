@@ -2,6 +2,7 @@
 
 const KEY = "gff_alumno_session";
 let state = { metrics: [], days: {}, lifts: [], name: "", email: "" };
+let dashDays = 7;
 
 function todayISO() {
     const d = new Date();
@@ -48,7 +49,14 @@ function showApp() {
 
 function weekRange() {
     const end = document.getElementById("dayPick").value || todayISO();
-    return { start: addDays(end, -6), end: end };
+    const n = dashDays > 0 ? dashDays : 7;
+    return { start: addDays(end, -(n - 1)), end: end };
+}
+
+function rangeLabel() {
+    if (dashDays === 15) return "Quincenal (15 días)";
+    if (dashDays === 30) return "Mensual (30 días)";
+    return "Semanal (7 días)";
 }
 
 function val(day, key) {
@@ -59,35 +67,40 @@ function val(day, key) {
 
 function renderDash() {
     const { start, end } = weekRange();
-    let days = [];
-    for (let i = 0; i < 7; i++) days.push(addDays(start, i));
-    days = days.filter(function (d) { return d <= end; });
+    const days = [];
+    let cursor = start;
+    while (cursor <= end) {
+        days.push(cursor);
+        cursor = addDays(cursor, 1);
+    }
     const n = days.length || 1;
-    const entreno = days.filter(function (d) { return val(d, "entreno") > 0; }).length;
-    const avg = function (key) {
-        return days.reduce(function (s, d) { return s + val(d, key); }, 0) / n;
-    };
-    const items = [
-        { l: "Entrenos / 7 días", v: entreno + "/" + n },
-        { l: "Sueño medio", v: avg("sueno").toFixed(1) + " h" },
-        { l: "Agua media", v: avg("agua").toFixed(1) + " vasos" },
-        { l: "Pasos medios", v: Math.round(avg("pasos")).toLocaleString("es") }
-    ];
+    const enabled = state.metrics.filter(function (m) { return m.enabled; });
+    const items = enabled.map(function (m) {
+        if (m.kind === "bool") {
+            const c = days.filter(function (d) { return val(d, m.key) > 0; }).length;
+            return { l: m.label, v: c + "/" + n + " días" };
+        }
+        const sum = days.reduce(function (s, d) { return s + val(d, m.key); }, 0);
+        const avg = sum / n;
+        const unit = m.unit ? " " + m.unit : "";
+        const shown = m.key === "pasos" || avg >= 20
+            ? Math.round(avg).toLocaleString("es")
+            : avg.toFixed(1);
+        return { l: m.label + " (media)", v: shown + unit };
+    });
+    const liftN = (state.lifts || []).length;
+    items.push({ l: "Ejercicios anotados", v: String(liftN) });
     document.getElementById("dash").innerHTML = items.map(function (it) {
         return '<div class="stat"><b>' + it.v + "</b><span>" + it.l + "</span></div>";
     }).join("");
+    const label = document.getElementById("dashLabel");
+    if (label) label.textContent = rangeLabel() + " · " + start + " → " + end;
 
-    const active = state.metrics.filter(function (m) { return m.enabled; });
-    const maxes = {};
-    active.forEach(function (m) {
-        maxes[m.key] = Math.max(1, ...days.map(function (d) { return val(d, m.key); }));
-    });
     document.getElementById("weekBars").innerHTML = days.map(function (d) {
-        const label = d.slice(5);
         const done = val(d, "entreno") > 0;
-        const fill = done ? 100 : 15;
+        const fill = done ? 100 : 12;
         return (
-            '<div class="bar-row"><span>' + label + "</span>" +
+            '<div class="bar-row"><span>' + d.slice(5) + "</span>" +
             '<div class="bar-track"><div class="bar-fill" style="width:' + fill + '%"></div></div>' +
             "<span>" + (done ? "sí" : "—") + "</span></div>"
         );
@@ -122,7 +135,6 @@ function renderMetrics() {
     }).join("");
 
     const lifts = (state.lifts || []).filter(function (x) { return x.day === day; });
-    const maxLifts = state.max_lifts || 2;
     document.getElementById("lifts").innerHTML = lifts.length
         ? lifts.map(function (x) {
             const bits = [x.exercise];
@@ -135,11 +147,6 @@ function renderMetrics() {
             );
         }).join("")
         : '<p class="muted">Aún no hay cargas este día.</p>';
-    const full = lifts.length >= maxLifts;
-    document.getElementById("addLift").disabled = full;
-    document.getElementById("liftHint").textContent = full
-        ? "Ya tienes 2 ejercicios hoy. Quita uno para cambiar."
-        : "Máximo 2 ejercicios por día.";
     fillExerciseSelect();
 }
 
@@ -236,6 +243,29 @@ document.getElementById("logoutBtn").addEventListener("click", function () {
 });
 document.getElementById("dayPick").addEventListener("change", loadState);
 document.getElementById("liftEx").addEventListener("change", toggleCustomExercise);
+
+document.getElementById("openDash").addEventListener("click", function () {
+    document.getElementById("dashView").classList.remove("hidden");
+    document.getElementById("dayView").classList.add("hidden");
+    document.getElementById("openDash").classList.add("hidden");
+    loadState();
+});
+document.getElementById("closeDash").addEventListener("click", function () {
+    document.getElementById("dashView").classList.add("hidden");
+    document.getElementById("dayView").classList.remove("hidden");
+    document.getElementById("openDash").classList.remove("hidden");
+});
+document.getElementById("dashRange").addEventListener("click", function (ev) {
+    const btn = ev.target.closest("[data-range]");
+    if (!btn) return;
+    dashDays = Number(btn.getAttribute("data-range")) || 7;
+    document.querySelectorAll("#dashRange [data-range]").forEach(function (b) {
+        const on = b === btn;
+        b.classList.toggle("btn-gold", on);
+        b.classList.toggle("btn-ghost", !on);
+    });
+    loadState();
+});
 
 document.getElementById("metrics").addEventListener("click", function (ev) {
     const t = ev.target;

@@ -14,13 +14,13 @@
 <main class="wrap">
     <div id="loginView">
         <h1>Tu seguimiento</h1>
-        <p class="muted">Entra con el email y el PIN que te dio Gary. Aquí registras el día, las cargas y ves tu semana.</p>
+        <p class="muted">Entra con cualquier email (o tu nombre) y el PIN <b>12345</b>. Aquí registras el día, las cargas y ves tu semana.</p>
         <form class="card" id="loginForm">
             <div id="loginError" class="error"></div>
-            <label for="loginEmail">Email</label>
-            <input id="loginEmail" type="email" required autocomplete="username">
-            <label for="loginPin">PIN de 6 dígitos</label>
-            <input id="loginPin" inputmode="numeric" maxlength="6" required autocomplete="current-password">
+            <label for="loginEmail">Email o nombre</label>
+            <input id="loginEmail" type="text" required autocomplete="username" placeholder="tu@email.com">
+            <label for="loginPin">PIN</label>
+            <input id="loginPin" inputmode="numeric" maxlength="6" required value="12345" autocomplete="current-password">
             <div class="actions">
                 <button class="btn btn-gold" type="submit">Entrar</button>
             </div>

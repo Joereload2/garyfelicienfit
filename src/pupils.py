@@ -41,12 +41,27 @@ def list_pupils() -> list[dict]:
     return sqlite_db.list_pupils()
 
 
+def _loose_email(value: object) -> str:
+    text = str(value or "").strip().lower()
+    if not text:
+        raise ValidationError("Escribe un email o un nombre.")
+    if "@" not in text:
+        slug = "".join(ch if ch.isalnum() else "." for ch in text).strip(".") or "alumno"
+        text = slug[:40] + "@alumno.local"
+    if len(text) > 120:
+        raise ValidationError("Ese email es demasiado largo.")
+    return text
+
+
 def login(email: str, pin: str) -> dict:
-    email = normalize_email(email)
     pin = str(pin or "").strip()
+    if pin != "12345":
+        raise ValidationError("Usa el PIN 12345.")
+    email = _loose_email(email)
     pupil = sqlite_db.get_pupil_by_email(email)
-    if not pupil or pupil.get("pin_hash") != hash_pin(email, pin):
-        raise ValidationError("Email o PIN incorrectos.")
+    if not pupil:
+        name = email.split("@")[0].replace(".", " ").strip()[:80]
+        pupil = sqlite_db.insert_pupil(email, name or "Alumno", hash_pin(email, "12345"), _now())
     session = secrets.token_urlsafe(24)
     sqlite_db.set_pupil_session(pupil["id"], session)
     return {"session": session, "email": email, "name": pupil.get("name") or ""}

@@ -34,7 +34,7 @@ function showTab(id) {
 function tabFromHash() {
     const raw = (location.hash || "#plan").replace("#", "");
     const id = raw === "guia" ? "plan" : raw;
-    const known = ["plan", "calculadora", "coach", "videos", "coaching"];
+    const known = ["plan", "calculadora", "coach", "videos", "tresmeses", "coaching"];
     showTab(known.indexOf(id) >= 0 ? id : "plan");
 }
 
@@ -125,6 +125,60 @@ async function sendCoaching(ev) {
         err.textContent = "Sin conexión con el servidor.";
         err.classList.add("show");
     }
+}
+
+function bindOfferForm() {
+    const form = document.getElementById("offerForm");
+    if (!form) return;
+    form.addEventListener("submit", async function (ev) {
+        ev.preventDefault();
+        const err = document.getElementById("offerError");
+        const ok = document.getElementById("offerOk");
+        if (err) err.classList.remove("show");
+        if (ok) ok.classList.remove("show");
+        const email = document.getElementById("offerEmail").value.trim();
+        const name = (document.getElementById("offerName") || {}).value || "";
+        const btn = document.getElementById("offerSubmit");
+        if (btn) btn.disabled = true;
+        try {
+            const res = await fetch("/api/oferta-3meses", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email, name: name }),
+            });
+            const data = await res.json().catch(function () { return {}; });
+            if (!res.ok || !data.ok) {
+                if (err) {
+                    err.textContent = data.error || "No se pudo aplicar el descuento.";
+                    err.classList.add("show");
+                }
+                if (btn) btn.disabled = false;
+                return;
+            }
+            const list = document.getElementById("offerList");
+            const deal = document.getElementById("offerDeal");
+            if (list) list.classList.add("hidden");
+            if (deal) deal.classList.remove("hidden");
+            form.classList.add("hidden");
+            const wa = document.getElementById("offerWa");
+            if (wa) {
+                const msg = encodeURIComponent(
+                    "Hola, dejé mi correo (" + email + ") para el 50% off del acompañamiento de 3 meses. Quiero coordinar el pago de $225.000 CLP."
+                );
+                wa.setAttribute("href", "https://wa.me/56959128603?text=" + msg);
+            }
+            if (ok) {
+                ok.textContent = data.message || "Descuento aplicado.";
+                ok.classList.add("show");
+            }
+        } catch (e) {
+            if (err) {
+                err.textContent = "Sin conexión con el servidor.";
+                err.classList.add("show");
+            }
+            if (btn) btn.disabled = false;
+        }
+    });
 }
 
 function youtubeThumb(id) {
@@ -250,6 +304,7 @@ var coachForm = document.getElementById("coachForm");
 if (coachForm) coachForm.addEventListener("submit", sendCoaching);
 var calcForm = document.getElementById("calcForm");
 if (calcForm) calcForm.addEventListener("submit", runCalculator);
+bindOfferForm();
 var videoGrid = document.getElementById("videoGrid");
 if (videoGrid) loadVideos();
 if (!document.body.classList.contains("ad-page")) {

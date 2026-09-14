@@ -59,6 +59,7 @@ LANDING = {
     "bajar.html",
     "recomposicion.html",
     "empezar.html",
+    "3meses.html",
     "site.css",
     "site.js",
     "quiz.js",
@@ -199,6 +200,9 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/empezar", "/empezar.html", "/tu-plan"):
             self._html_file("empezar.html")
             return
+        if path in ("/3meses", "/3meses.html", "/acompanamiento"):
+            self._html_file("3meses.html")
+            return
         if path == "/admin":
             self._html_file("admin.html")
             return
@@ -316,6 +320,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path == "/api/coaching":
                 self._coaching()
+                return
+            if path == "/api/oferta-3meses":
+                self._oferta_3meses()
                 return
             if path == "/webhooks/stripe":
                 self._stripe_webhook()
@@ -636,6 +643,31 @@ class Handler(BaseHTTPRequestHandler):
             return
         print("shopify webhook ok:", result)
         self._json(200, result)
+
+    def _oferta_3meses(self) -> None:
+        data = self._read_json()
+        email = normalize_email(data.get("email"))
+        name = str(data.get("name") or "").replace("<", "").replace(">", "").strip()[:80]
+        if len(name) < 2:
+            name = email.split("@")[0].replace(".", " ").replace("_", " ").strip()[:80] or "Alumno"
+        save_coaching(
+            {
+                "name": name,
+                "email": email,
+                "phone": "",
+                "message": "Lead 50% off — Entrenamiento personalizado 3 meses. Lista CLP 450000 / con correo CLP 225000.",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+        self._json(
+            200,
+            {
+                "ok": True,
+                "list_price": 450000,
+                "offer_price": 225000,
+                "message": "Descuento aplicado. Tu precio es $225.000 CLP por 3 meses.",
+            },
+        )
 
     def _coaching(self) -> None:
         data = self._read_json()

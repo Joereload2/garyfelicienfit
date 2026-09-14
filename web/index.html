@@ -19,6 +19,7 @@
         <button type="button" data-tab="calculadora">Calculadora</button>
         <button type="button" data-tab="coach">El coach</button>
         <button type="button" data-tab="videos">Videos</button>
+        <button type="button" data-tab="tresmeses">3 meses</button>
         <button type="button" data-tab="coaching">Coaching</button>
     </nav>
 </header>
@@ -38,7 +39,7 @@
         </div>
         <div class="actions">
             <a class="btn btn-gold" href="/empezar">Descubre tu modelo</a>
-            <a class="btn btn-ghost" href="/#calculadora">Calculadora</a>
+            <a class="btn btn-ghost" href="/#tresmeses">Acompañamiento 3 meses</a>
         </div>
     </div>
 </section>
@@ -272,6 +273,50 @@
         <h2>Videos de Gary</h2>
         <p class="muted">Videos de Gary. Se irán publicando aquí.</p>
         <div id="videoGrid" class="videos" style="margin-top:22px;"></div>
+    </section>
+
+    <section class="panel" id="panel-tresmeses">
+        <p class="kicker">Acompañamiento</p>
+        <h2>Entrenamiento personalizado con seguimiento real — 3 meses</h2>
+        <p class="lead">No es un plan que descargas y ya. Es entrenamiento y alimentación hechos para ti, con seguimiento constante para que realmente lo sostengas — sin exigirte dejar la comida chatarra de golpe.</p>
+        <div class="grid-2" style="margin-top:28px;">
+            <div>
+                <p class="kicker">Qué incluye</p>
+                <ul class="list">
+                    <li><b>Rutina personalizada</b> — según tus días disponibles, nivel y si entrenas en gym o en casa.</li>
+                    <li><b>Plan de alimentación realista</b> — ajustado a lo que ya comes, sin prohibiciones imposibles de mantener.</li>
+                    <li><b>Dashboard de seguimiento</b> — ves resultados y cumplimiento del plan en tiempo real.</li>
+                    <li><b>Videos explicativos</b> — de cada ejercicio de tu rutina y de cómo funciona el proceso, para que no entrenes con dudas.</li>
+                    <li><b>WhatsApp directo</b> — para resolver cualquier duda en el momento.</li>
+                    <li><b>Evaluación quincenal</b> — cada 2 semanas revisamos tu progreso (mail o videollamada) y ajustamos lo que funciona y lo que no.</li>
+                </ul>
+                <p class="kicker" style="margin-top:28px;">Para quién es</p>
+                <p class="muted">Si ya intentaste bajar de peso solo — con apps, dietas o el gym por tu cuenta — y siempre terminas abandonando, esto es para ti. No te falta información: te falta que alguien te acompañe a ejecutarla y ajuste el camino contigo.</p>
+            </div>
+            <article class="card offer-card">
+                <p class="kicker">Inversión</p>
+                <div class="price" id="offerList">$450.000 <small>CLP · 3 meses</small></div>
+                <div class="offer-deal hidden" id="offerDeal">
+                    <p class="muted"><s>$450.000 CLP</s></p>
+                    <div class="price">$225.000 <small>CLP · 3 meses · 50% off</small></div>
+                    <p class="note">Precio por dejar tu correo. Gary te contacta para coordinar el pago y el arranque.</p>
+                    <a class="btn btn-gold" id="offerWa" href="https://wa.me/56959128603" target="_blank" rel="noopener noreferrer">Escribir por WhatsApp</a>
+                </div>
+                <form id="offerForm">
+                    <p class="muted">Deja tu correo y el acompañamiento queda a <b>mitad de precio</b> ($225.000 CLP).</p>
+                    <div id="offerError" class="error"></div>
+                    <div id="offerOk" class="ok"></div>
+                    <label for="offerName">Nombre</label>
+                    <input id="offerName" name="name" autocomplete="name">
+                    <label for="offerEmail">Email</label>
+                    <input id="offerEmail" name="email" type="email" required autocomplete="email">
+                    <div class="actions">
+                        <button type="submit" class="btn btn-gold" id="offerSubmit">Quiero el 50% off</button>
+                    </div>
+                </form>
+                <p class="note">También puedes pedir info sin descuento por la pestaña Coaching o por WhatsApp.</p>
+            </article>
+        </div>
     </section>
 
     <section class="panel" id="panel-coaching">

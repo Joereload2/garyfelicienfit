@@ -373,6 +373,10 @@ textarea { min-height: 120px; resize: vertical; }
     color: var(--gold-2);
 }
 
+.offer-deal { margin: 8px 0 16px; }
+.offer-deal .btn { margin-top: 12px; }
+.offer-card .price { font-size: 34px; }
+
 .model-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;

@@ -77,6 +77,17 @@ class FlujoTests(unittest.TestCase):
         self.assertNotIn("jspdf", html.lower())
         self.assertNotIn("generatePlan", html)
         self.assertNotIn("myshopify.com", html.lower())
+        self.assertIn("450.000", html)
+        self.assertIn("panel-tresmeses", html)
+
+    def test_01d_oferta_3meses(self):
+        req = urllib.request.Request(self.base + "/3meses")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            html = resp.read().decode("utf-8")
+        self.assertEqual(resp.status, 200)
+        self.assertIn("450.000", html)
+        self.assertIn("225.000", html)
+        self.assertIn("offerForm", html)
 
     def test_01b_paginas_de_anuncio(self):
         for path, needle in (("/bajar", "Bajar de peso"), ("/recomposicion", "Recomposición corporal")):

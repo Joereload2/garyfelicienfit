@@ -128,49 +128,81 @@ async function sendCoaching(ev) {
 }
 
 function bindOfferForm() {
-    const form = document.getElementById("offerForm");
-    if (!form) return;
+    if (document.getElementById("offerModal")) {
+        wireOfferModal();
+        return;
+    }
+    var html = ""
+        + '<div class="modal" id="offerModal">'
+        + '<form class="card" id="offerForm">'
+        + "<h3>¿Quieres 50% de descuento?</h3>"
+        + '<p class="muted">Déjanos tu correo y te enviamos el código. El precio con descuento es $225.000 CLP por 3 meses (lista $450.000).</p>'
+        + '<div id="offerError" class="error"></div>'
+        + '<div id="offerOk" class="ok"></div>'
+        + '<label for="offerEmail">Correo electrónico</label>'
+        + '<input id="offerEmail" type="email" required autocomplete="email" placeholder="tucorreo@email.com">'
+        + '<div class="actions">'
+        + '<button type="button" class="btn btn-ghost" id="offerClose">Ahora no</button>'
+        + '<button type="submit" class="btn btn-gold" id="offerSubmit">Enviarme el código</button>'
+        + "</div>"
+        + '<p class="note">Revisa bandeja de entrada y spam. El código no se muestra aquí.</p>'
+        + "</form></div>";
+    document.body.insertAdjacentHTML("beforeend", html);
+    wireOfferModal();
+}
+
+function wireOfferModal() {
+    var modal = document.getElementById("offerModal");
+    var form = document.getElementById("offerForm");
+    if (!modal || !form || form.getAttribute("data-bound")) return;
+    form.setAttribute("data-bound", "1");
+    function openOffer() {
+        modal.classList.add("open");
+        var input = document.getElementById("offerEmail");
+        if (input) setTimeout(function () { input.focus(); }, 50);
+    }
+    function closeOffer() {
+        modal.classList.remove("open");
+    }
+    document.querySelectorAll("[data-open-offer]").forEach(function (btn) {
+        btn.addEventListener("click", openOffer);
+    });
+    var closer = document.getElementById("offerClose");
+    if (closer) closer.addEventListener("click", closeOffer);
+    modal.addEventListener("click", function (e) {
+        if (e.target.id === "offerModal") closeOffer();
+    });
     form.addEventListener("submit", async function (ev) {
         ev.preventDefault();
-        const err = document.getElementById("offerError");
-        const ok = document.getElementById("offerOk");
+        var err = document.getElementById("offerError");
+        var ok = document.getElementById("offerOk");
+        var btn = document.getElementById("offerSubmit");
         if (err) err.classList.remove("show");
         if (ok) ok.classList.remove("show");
-        const email = document.getElementById("offerEmail").value.trim();
-        const name = (document.getElementById("offerName") || {}).value || "";
-        const btn = document.getElementById("offerSubmit");
+        var email = document.getElementById("offerEmail").value.trim();
         if (btn) btn.disabled = true;
         try {
-            const res = await fetch("/api/oferta-3meses", {
+            var res = await fetch("/api/oferta-3meses", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: email, name: name }),
+                body: JSON.stringify({ email: email }),
             });
-            const data = await res.json().catch(function () { return {}; });
+            var data = await res.json().catch(function () { return {}; });
             if (!res.ok || !data.ok) {
                 if (err) {
-                    err.textContent = data.error || "No se pudo aplicar el descuento.";
+                    err.textContent = data.error || "No se pudo enviar el código.";
                     err.classList.add("show");
                 }
                 if (btn) btn.disabled = false;
                 return;
             }
-            const list = document.getElementById("offerList");
-            const deal = document.getElementById("offerDeal");
-            if (list) list.classList.add("hidden");
-            if (deal) deal.classList.remove("hidden");
-            form.classList.add("hidden");
-            const wa = document.getElementById("offerWa");
-            if (wa) {
-                const msg = encodeURIComponent(
-                    "Hola, dejé mi correo (" + email + ") para el 50% off del acompañamiento de 3 meses. Quiero coordinar el pago de $225.000 CLP."
-                );
-                wa.setAttribute("href", "https://wa.me/56959128603?text=" + msg);
-            }
             if (ok) {
-                ok.textContent = data.message || "Descuento aplicado.";
+                ok.textContent = data.message || "Revisa tu correo. Ahí va el código.";
                 ok.classList.add("show");
             }
+            form.querySelectorAll("input, button[type=submit]").forEach(function (el) {
+                el.disabled = true;
+            });
         } catch (e) {
             if (err) {
                 err.textContent = "Sin conexión con el servidor.";
@@ -179,6 +211,10 @@ function bindOfferForm() {
             if (btn) btn.disabled = false;
         }
     });
+    if (location.pathname.indexOf("3meses") >= 0 && !sessionStorage.getItem("gff_offer_seen")) {
+        sessionStorage.setItem("gff_offer_seen", "1");
+        setTimeout(openOffer, 1200);
+    }
 }
 
 function youtubeThumb(id) {

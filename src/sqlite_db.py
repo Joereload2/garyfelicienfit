@@ -83,6 +83,15 @@ CREATE TABLE IF NOT EXISTS pupil_day_values (
   value REAL NOT NULL,
   PRIMARY KEY (pupil_id, day, metric_key)
 );
+CREATE TABLE IF NOT EXISTS discount_codes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL,
+  code TEXT NOT NULL UNIQUE,
+  offer TEXT NOT NULL DEFAULT '3meses',
+  percent INTEGER NOT NULL DEFAULT 50,
+  used INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS pupil_lifts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   pupil_id INTEGER NOT NULL,
@@ -323,6 +332,32 @@ DEFAULT_METRICS = [
 
 def _row(row: sqlite3.Row | None) -> dict | None:
     return dict(row) if row is not None else None
+
+
+def get_discount_by_email(email: str) -> dict | None:
+    cur = _connect().execute(
+        """
+        SELECT * FROM discount_codes
+        WHERE lower(email) = lower(?) AND offer = '3meses'
+        ORDER BY id DESC LIMIT 1
+        """,
+        (email,),
+    )
+    row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def insert_discount(email: str, code: str, created_at: str) -> dict:
+    conn = _connect()
+    conn.execute(
+        """
+        INSERT INTO discount_codes (email, code, offer, percent, used, created_at)
+        VALUES (?, ?, '3meses', 50, 0, ?)
+        """,
+        (email, code, created_at),
+    )
+    conn.commit()
+    return get_discount_by_email(email) or {"email": email, "code": code}
 
 
 def insert_pupil(email: str, name: str, pin_hash: str, created_at: str) -> dict:

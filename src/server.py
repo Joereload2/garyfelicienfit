@@ -6,6 +6,7 @@ import hmac
 import json
 import os
 import re
+import secrets
 import sys
 from datetime import datetime, timezone
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
@@ -19,7 +20,7 @@ from envload import get, load_env, require  # noqa: E402
 
 load_env()
 
-from mailer import send_plan_pdf  # noqa: E402
+from mailer import send_discount_code, send_plan_pdf  # noqa: E402
 from payments import (  # noqa: E402
     create_mp_preference,
     create_stripe_checkout,
@@ -50,6 +51,7 @@ from store import (  # noqa: E402
 )
 from validate import ValidationError, normalize_email, normalize_payment_ref, validate_payload  # noqa: E402
 import pupils  # noqa: E402
+import sqlite_db  # noqa: E402
 
 PUBLIC = ROOT / "public"
 WEB = ROOT / "web"
@@ -650,22 +652,30 @@ class Handler(BaseHTTPRequestHandler):
         name = str(data.get("name") or "").replace("<", "").replace(">", "").strip()[:80]
         if len(name) < 2:
             name = email.split("@")[0].replace(".", " ").replace("_", " ").strip()[:80] or "Alumno"
+        existing = sqlite_db.get_discount_by_email(email)
+        if existing and existing.get("code"):
+            code = existing["code"]
+        else:
+            code = "GARY50-" + secrets.token_hex(3).upper()
+            sqlite_db.insert_discount(email, code, datetime.now(timezone.utc).isoformat())
         save_coaching(
             {
                 "name": name,
                 "email": email,
                 "phone": "",
-                "message": "Lead 50% off — Entrenamiento personalizado 3 meses. Lista CLP 450000 / con correo CLP 225000.",
+                "message": f"Lead 50% off 3 meses. Código {code}. Lista 450000 / con código 225000 CLP.",
                 "created_at": datetime.now(timezone.utc).isoformat(),
             }
         )
+        try:
+            send_discount_code(email, code)
+        except Exception as exc:
+            print("discount mail:", str(exc)[:300])
         self._json(
             200,
             {
                 "ok": True,
-                "list_price": 450000,
-                "offer_price": 225000,
-                "message": "Descuento aplicado. Tu precio es $225.000 CLP por 3 meses.",
+                "message": "Revisa tu correo. Te enviamos el código de 50% de descuento.",
             },
         )
 

@@ -86,8 +86,8 @@ class FlujoTests(unittest.TestCase):
             html = resp.read().decode("utf-8")
         self.assertEqual(resp.status, 200)
         self.assertIn("450.000", html)
-        self.assertIn("225.000", html)
-        self.assertIn("offerForm", html)
+        self.assertIn("data-open-offer", html)
+        self.assertIn("50%", html)
 
     def test_01b_paginas_de_anuncio(self):
         for path, needle in (("/bajar", "Bajar de peso"), ("/recomposicion", "Recomposición corporal")):

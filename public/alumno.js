@@ -106,16 +106,16 @@ function renderDash() {
     const label = document.getElementById("dashLabel");
     if (label) label.textContent = rangeLabel() + " · " + fmtDate(start) + " → " + fmtDate(end);
 
-    const barDays = days.filter(function (d) {
-        return state.days[d] && Object.keys(state.days[d]).length;
-    });
-    document.getElementById("weekBars").innerHTML = (barDays.length ? barDays : days).map(function (d) {
-        const done = val(d, "entreno") > 0;
-        const fill = done ? 100 : 12;
+    const per = (state.compliance && state.compliance.days) || {};
+    document.getElementById("weekBars").innerHTML = days.map(function (d) {
+        const sc = per[d] || {};
+        const color = sc.color || "empty";
+        const fill = sc.pct == null ? 8 : Math.max(8, sc.pct);
+        const label = sc.status === "empty" ? "sin dato" : (sc.pct + "%");
         return (
             '<div class="bar-row"><span>' + fmtDate(d) + "</span>" +
-            '<div class="bar-track"><div class="bar-fill" style="width:' + fill + '%"></div></div>' +
-            "<span>" + (done ? "sí" : "—") + "</span></div>"
+            '<div class="bar-track"><div class="bar-fill c-' + color + '" style="width:' + fill + '%"></div></div>' +
+            "<span>" + label + "</span></div>"
         );
     }).join("");
 }
@@ -249,6 +249,18 @@ async function loadState() {
     if (!res.ok) return;
     state = data;
     document.getElementById("hello").textContent = "Hola, " + (data.name || data.email);
+    var pill = document.getElementById("compPill");
+    var comp = data.compliance || {};
+    if (pill) {
+        pill.className = "comp-pill comp-" + (comp.color || "empty");
+        if (comp.kind === "no_fill") {
+            pill.textContent = "Sin registros en este período";
+        } else if (comp.avg_pct != null) {
+            pill.textContent = "Cumplimiento del plan: " + comp.avg_pct + "%";
+        } else {
+            pill.textContent = "";
+        }
+    }
     renderDash();
     renderMetrics();
     renderGuide();

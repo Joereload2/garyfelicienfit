@@ -334,30 +334,30 @@ def _row(row: sqlite3.Row | None) -> dict | None:
     return dict(row) if row is not None else None
 
 
-def get_discount_by_email(email: str) -> dict | None:
+def get_discount_by_email(email: str, offer: str = "3meses") -> dict | None:
     cur = _connect().execute(
         """
         SELECT * FROM discount_codes
-        WHERE lower(email) = lower(?) AND offer = '3meses'
+        WHERE lower(email) = lower(?) AND offer = ?
         ORDER BY id DESC LIMIT 1
         """,
-        (email,),
+        (email, offer),
     )
     row = cur.fetchone()
     return dict(row) if row else None
 
 
-def insert_discount(email: str, code: str, created_at: str) -> dict:
+def insert_discount(email: str, code: str, created_at: str, offer: str = "3meses", percent: int = 50) -> dict:
     conn = _connect()
     conn.execute(
         """
         INSERT INTO discount_codes (email, code, offer, percent, used, created_at)
-        VALUES (?, ?, '3meses', 50, 0, ?)
+        VALUES (?, ?, ?, ?, 0, ?)
         """,
-        (email, code, created_at),
+        (email, code, offer, percent, created_at),
     )
     conn.commit()
-    return get_discount_by_email(email) or {"email": email, "code": code}
+    return get_discount_by_email(email, offer) or {"email": email, "code": code}
 
 
 def insert_pupil(email: str, name: str, pin_hash: str, created_at: str) -> dict:

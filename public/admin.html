@@ -83,6 +83,31 @@
                 <tbody id="pupilRows"></tbody>
             </table>
         </div>
+
+        <h2 style="margin-top:36px;">Cumplimiento (14 días)</h2>
+        <p class="subtitle">No se mezcla quien no rellena el planner con quien sí rellena pero falla el plan. Verde ≈ 100%.</p>
+        <button type="button" class="btn-secondary" id="rosterReload">Actualizar cumplimiento</button>
+        <h3>No registran</h3>
+        <div class="table-wrap">
+            <table class="data">
+                <thead><tr><th>Nombre</th><th>Email</th><th>Días vacíos</th></tr></thead>
+                <tbody id="rosterEmpty"></tbody>
+            </table>
+        </div>
+        <h3>Registran y no cumplen</h3>
+        <div class="table-wrap">
+            <table class="data">
+                <thead><tr><th>Nombre</th><th>Email</th><th>%</th><th>Días con fallo</th></tr></thead>
+                <tbody id="rosterFail"></tbody>
+            </table>
+        </div>
+        <h3>Al día</h3>
+        <div class="table-wrap">
+            <table class="data">
+                <thead><tr><th>Nombre</th><th>Email</th><th>%</th></tr></thead>
+                <tbody id="rosterOk"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 <script>
@@ -239,6 +264,33 @@ document.getElementById("pupilCreate").addEventListener("click", function () {
 });
 document.getElementById("pupilReload").addEventListener("click", function () {
     loadPupils().catch(function () {});
+});
+
+async function loadRoster() {
+    const res = await fetch("/internal/alumno-roster", { headers: { "X-Admin-Secret": secret() } });
+    const data = await res.json().catch(function () { return {}; });
+    if (!res.ok) return;
+    function fill(id, rows, cols) {
+        const tbody = document.getElementById(id);
+        tbody.innerHTML = "";
+        (rows || []).forEach(function (item) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = cols(item);
+            tbody.appendChild(tr);
+        });
+    }
+    fill("rosterEmpty", data.no_fill, function (i) {
+        return "<td>" + (i.name || "") + "</td><td>" + i.email + "</td><td>" + (i.empty_days || "") + "</td>";
+    });
+    fill("rosterFail", data.failing, function (i) {
+        return "<td>" + (i.name || "") + "</td><td>" + i.email + "</td><td>" + (i.avg_pct ?? "—") + "</td><td>" + (i.logged_days || "") + "</td>";
+    });
+    fill("rosterOk", data.ok, function (i) {
+        return "<td>" + (i.name || "") + "</td><td>" + i.email + "</td><td>" + (i.avg_pct ?? "—") + "</td>";
+    });
+}
+document.getElementById("rosterReload").addEventListener("click", function () {
+    loadRoster().catch(function () {});
 });
 </script>
 </body>

@@ -1,0 +1,26 @@
+{
+  "videos": [
+    {"name": "Press banca", "group": "Pecho", "youtube": ""},
+    {"name": "Press inclinado con mancuernas", "group": "Pecho", "youtube": ""},
+    {"name": "Aperturas", "group": "Pecho", "youtube": ""},
+    {"name": "Flexiones", "group": "Pecho", "youtube": ""},
+    {"name": "Jalón al pecho", "group": "Espalda", "youtube": ""},
+    {"name": "Remo con barra", "group": "Espalda", "youtube": ""},
+    {"name": "Remo unilateral", "group": "Espalda", "youtube": ""},
+    {"name": "Sentadilla", "group": "Piernas", "youtube": ""},
+    {"name": "Prensa", "group": "Piernas", "youtube": ""},
+    {"name": "Zancadas", "group": "Piernas", "youtube": ""},
+    {"name": "Press militar", "group": "Hombros", "youtube": ""},
+    {"name": "Elevaciones laterales", "group": "Hombros", "youtube": ""},
+    {"name": "Curl de bíceps", "group": "Brazos", "youtube": ""},
+    {"name": "Extensión de tríceps en polea", "group": "Brazos", "youtube": ""},
+    {"name": "Hip thrust", "group": "Glúteos", "youtube": ""},
+    {"name": "Peso muerto rumano", "group": "Glúteos", "youtube": ""},
+    {"name": "Plancha", "group": "Core", "youtube": ""},
+    {"name": "Abdominales", "group": "Core", "youtube": ""},
+    {"name": "Caminata", "group": "Cardio", "youtube": ""},
+    {"name": "Trote", "group": "Cardio", "youtube": ""},
+    {"name": "Bici", "group": "Cardio", "youtube": ""},
+    {"name": "Elíptica", "group": "Cardio", "youtube": ""}
+  ]
+}

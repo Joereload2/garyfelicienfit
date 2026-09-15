@@ -165,6 +165,23 @@ def send_discount_code(email: str, code: str) -> str:
     return send_mail("discount", email, "Tu 50% off — código GaryFelicienFit", body)
 
 
+def send_guia_upgrade(email: str, code: str, course: int, guide: int, price: int) -> str:
+    body = (
+        "Hola,\n\n"
+        "Ya tienes tu plan personalizado de 12 semanas.\n\n"
+        "Si quieres el acompañamiento de 3 meses (rutina, dashboard, WhatsApp y evaluación quincenal), "
+        "descontamos lo que ya pagaste por la guía.\n\n"
+        f"Curso: ${course:,} CLP\n"
+        f"Ya pagaste (guía): ${guide:,} CLP\n"
+        f"Tu precio: ${price:,} CLP\n"
+        f"Código: {code}\n\n"
+        "Escríbele a Gary por WhatsApp y menciona el código:\n"
+        "https://wa.me/56959128603\n\n"
+        "GaryFelicienFit\n"
+    ).replace(",", ".")
+    return send_mail("guia-upgrade", email, "Tu descuento al acompañamiento de 3 meses", body)
+
+
 def send_access_link(email: str, url: str, payment_ref: str) -> str:
     body = (
         "Hola,\n\n"

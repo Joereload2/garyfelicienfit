@@ -3,7 +3,9 @@
 Entrega de un plan de alimentación y entrenamiento de **un solo uso**.
 El cobro objetivo es **Shopify** (Mercado Pago en el checkout, CLP). El backend emite el enlace tras el webhook `orders/paid`. Stripe / MP directo en Netlify quedan como legado. El PDF nunca se muestra en la web.
 
-Guía de migración y checklist: **[docs/SHOPIFY.md](docs/SHOPIFY.md)**.
+Historial de decisiones: **[docs/HISTORIAL.md](docs/HISTORIAL.md)**.  
+Host propio (más adelante): **[docs/HOST.md](docs/HOST.md)**.  
+Shopify (legado): **[docs/SHOPIFY.md](docs/SHOPIFY.md)**.
 
 ## Flujo (Shopify)
 

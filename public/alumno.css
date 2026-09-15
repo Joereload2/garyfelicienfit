@@ -140,6 +140,24 @@ input, select {
     font-size: 14px;
 }
 .dash-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.comp-pill {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    margin: 0 0 10px;
+}
+.comp-green { background: #1f5c3a; color: #d9ffe8; }
+.comp-yellow { background: #5c4a12; color: #ffe9a8; }
+.comp-orange { background: #5c3212; color: #ffd0b0; }
+.comp-red { background: #5c1212; color: #ffd0d0; }
+.comp-empty { background: #2a2d36; color: var(--muted); }
+.bar-fill.c-green { background: #3dcf7a; }
+.bar-fill.c-yellow { background: #e0b44a; }
+.bar-fill.c-orange { background: #e07a3a; }
+.bar-fill.c-red { background: #e24b4b; }
+.bar-fill.c-empty { background: #2a2d36; }
 
 @media (max-width: 800px) {
     .dash, .grid-3 { grid-template-columns: 1fr 1fr; }

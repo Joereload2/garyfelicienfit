@@ -20,7 +20,7 @@ from envload import get, load_env, require  # noqa: E402
 
 load_env()
 
-from mailer import send_discount_code, send_plan_pdf  # noqa: E402
+from mailer import send_discount_code, send_guia_upgrade, send_plan_pdf  # noqa: E402
 from payments import (  # noqa: E402
     create_mp_preference,
     create_stripe_checkout,
@@ -211,6 +211,9 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/alumno", "/alumno.html"):
             self._html_file("alumno.html")
             return
+        if path in ("/alumno/ejercicios", "/ejercicios"):
+            self._html_file("ejercicios.html")
+            return
         if path == "/gracias":
             self._html_file("gracias.html")
             return
@@ -226,6 +229,8 @@ class Handler(BaseHTTPRequestHandler):
             "/videos.json",
             "/alumno.js",
             "/alumno.css",
+            "/ejercicios.js",
+            "/ejercicios-videos.json",
         ):
             self._static(path.lstrip("/"))
             return
@@ -258,6 +263,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/internal/pupils":
             self._list_pupils()
+            return
+        if path == "/internal/alumno-roster":
+            self._alumno_roster()
             return
         if path == "/internal/entitlements":
             if not self._admin_ok():
@@ -389,6 +397,12 @@ class Handler(BaseHTTPRequestHandler):
         created = pupils.create_pupil(str(data.get("email") or ""), str(data.get("name") or ""))
         created["login_url"] = f"{_app_url()}/alumno"
         self._json(201, {"ok": True, **created})
+
+    def _alumno_roster(self) -> None:
+        if not self._admin_ok():
+            self._json(401, {"ok": False, "error": "No autorizado"})
+            return
+        self._json(200, {"ok": True, **pupils.roster(14)})
 
     def _list_pupils(self) -> None:
         if not self._admin_ok():
@@ -749,6 +763,22 @@ class Handler(BaseHTTPRequestHandler):
             send_plan_pdf(cleaned["email"], cleaned["name"], pdf_path, ent["payment_ref"])
         except Exception as exc:
             sys.stderr.write(f"mail pdf failed: {exc}\n")
+        try:
+            course = int(get("COURSE_PRICE_CLP") or "450000")
+            guide = int(get("GUIDE_PRICE_CLP") or get("PRICE_CLP") or "38000")
+            price = max(0, course - guide)
+            email = cleaned["email"]
+            existing = sqlite_db.get_discount_by_email(email, "guia-upgrade")
+            if existing and existing.get("code"):
+                code = existing["code"]
+            else:
+                code = "GUIA-" + secrets.token_hex(3).upper()
+                sqlite_db.insert_discount(
+                    email, code, datetime.now(timezone.utc).isoformat(), offer="guia-upgrade", percent=0
+                )
+            send_guia_upgrade(email, code, course, guide, price)
+        except Exception as exc:
+            sys.stderr.write(f"mail guia-upgrade failed: {exc}\n")
         self._json(
             200,
             {

@@ -84,6 +84,24 @@ class PupilTests(unittest.TestCase):
         st2 = pupils.state(pupil, "2026-09-01", "2026-09-13")
         self.assertEqual(st2["guide"]["proteina"], 160)
 
+    def test_compliance_empty_vs_failing(self):
+        out = pupils.login("semaforo@test.com", "12345")
+        pupil = pupils.pupil_from_session(out["session"])
+        pupils.save_guide(
+            pupil,
+            {"objetivo": "Bajar de peso", "kcal": 2000, "proteina": 150, "carbos": 180, "grasa": 60},
+        )
+        empty = pupils.state(pupil, "2026-09-01", "2026-09-07")
+        self.assertEqual(empty["compliance"]["kind"], "no_fill")
+        pupils.save_day(
+            pupil,
+            "2026-09-07",
+            {"entreno": 0, "kcal": 4000, "proteina": 20, "carbos": 400, "grasa": 200},
+        )
+        bad = pupils.state(pupil, "2026-09-07", "2026-09-07")
+        self.assertEqual(bad["compliance"]["kind"], "failing")
+        self.assertLess(bad["compliance"]["avg_pct"], 70)
+
     def test_open_login_any_email(self):
         out = pupils.login("solo-un-nombre", "12345")
         self.assertTrue(out["session"])

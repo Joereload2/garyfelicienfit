@@ -101,14 +101,23 @@ def _loose_email(value: object) -> str:
 
 
 def login(email: str, pin: str) -> dict:
+    from envload import get
+
     pin = str(pin or "").strip()
-    if pin != "12345":
-        raise ValidationError("Usa el PIN 12345.")
-    email = _loose_email(email)
-    pupil = sqlite_db.get_pupil_by_email(email)
-    if not pupil:
-        name = email.split("@")[0].replace(".", " ").strip()[:80]
-        pupil = sqlite_db.insert_pupil(email, name or "Alumno", hash_pin(email, "12345"), _now())
+    open_login = get("ALUMNO_OPEN_LOGIN", "1") != "0"
+    if open_login:
+        if pin != "12345":
+            raise ValidationError("Usa el PIN 12345.")
+        email = _loose_email(email)
+        pupil = sqlite_db.get_pupil_by_email(email)
+        if not pupil:
+            name = email.split("@")[0].replace(".", " ").strip()[:80]
+            pupil = sqlite_db.insert_pupil(email, name or "Alumno", hash_pin(email, "12345"), _now())
+    else:
+        email = normalize_email(email)
+        pupil = sqlite_db.get_pupil_by_email(email)
+        if not pupil or pupil.get("pin_hash") != hash_pin(email, pin):
+            raise ValidationError("Email o PIN incorrectos.")
     session = secrets.token_urlsafe(24)
     sqlite_db.set_pupil_session(pupil["id"], session)
     return {"session": session, "email": email, "name": pupil.get("name") or ""}
@@ -208,6 +217,7 @@ def state(pupil: dict, start: str, end: str) -> dict:
     by_day: dict[str, dict] = {}
     for row in values:
         by_day.setdefault(row["day"], {})[row["metric_key"]] = row["value"]
+    guide = guide_for(pupil)
     return {
         "email": pupil["email"],
         "name": pupil.get("name") or "",
@@ -215,10 +225,134 @@ def state(pupil: dict, start: str, end: str) -> dict:
         "days": by_day,
         "lifts": lifts,
         "exercises": exercise_catalog(),
-        "guide": guide_for(pupil),
+        "guide": guide,
+        "compliance": compliance_for(by_day, lifts, guide, start, end),
         "start": start,
         "end": end,
     }
+
+
+def _band(actual, target, tol: float = 0.15) -> float | None:
+    if actual is None or not target:
+        return None
+    try:
+        actual_f = float(actual)
+        target_f = float(target)
+    except (TypeError, ValueError):
+        return None
+    if target_f <= 0:
+        return None
+    diff = abs(actual_f - target_f) / target_f
+    if diff <= tol:
+        return 1.0
+    if diff >= 1.0:
+        return 0.0
+    return max(0.0, 1.0 - (diff - tol) / (1.0 - tol))
+
+
+def _pct_color(pct: int | None) -> str:
+    if pct is None:
+        return "empty"
+    if pct >= 85:
+        return "green"
+    if pct >= 60:
+        return "yellow"
+    if pct >= 35:
+        return "orange"
+    return "red"
+
+
+def day_score(values: dict, has_lift: bool, guide: dict | None) -> dict:
+    if not values and not has_lift:
+        return {"status": "empty", "pct": None, "color": "empty"}
+    guide = guide or {}
+    scores: list[float] = []
+    trained = bool(values.get("entreno")) or has_lift
+    if "entreno" in values or has_lift:
+        scores.append(1.0 if trained else 0.0)
+    for key in ("kcal", "proteina", "carbos", "grasa"):
+        s = _band(values.get(key), guide.get(key))
+        if s is not None:
+            scores.append(s)
+    if not scores:
+        return {"status": "logged", "pct": 50, "color": _pct_color(50)}
+    pct = int(round(100 * sum(scores) / len(scores)))
+    return {"status": "logged", "pct": pct, "color": _pct_color(pct)}
+
+
+def compliance_for(by_day: dict, lifts: list, guide: dict | None, start: str, end: str) -> dict:
+    from datetime import date as date_cls
+
+    days: list[str] = []
+    cur = date_cls.fromisoformat(start)
+    last = date_cls.fromisoformat(end)
+    while cur <= last:
+        days.append(cur.isoformat())
+        cur = date_cls.fromordinal(cur.toordinal() + 1)
+    lift_days = {str(x.get("day") or "") for x in lifts or []}
+    per_day = {}
+    logged_pcts: list[int] = []
+    empty = 0
+    failing = 0
+    for d in days:
+        vals = by_day.get(d) or {}
+        sc = day_score(vals, d in lift_days, guide)
+        per_day[d] = sc
+        if sc["status"] == "empty":
+            empty += 1
+        else:
+            logged_pcts.append(int(sc["pct"] or 0))
+            if (sc["pct"] or 0) < 70:
+                failing += 1
+    if not logged_pcts:
+        kind = "no_fill"
+        avg = None
+    else:
+        avg = int(round(sum(logged_pcts) / len(logged_pcts)))
+        kind = "ok" if avg >= 70 and empty <= max(1, len(days) // 3) else "failing"
+        if empty == len(days):
+            kind = "no_fill"
+    return {
+        "kind": kind,
+        "avg_pct": avg,
+        "color": _pct_color(avg),
+        "empty_days": empty,
+        "logged_days": len(logged_pcts),
+        "failing_days": failing,
+        "days": per_day,
+    }
+
+
+def roster(days: int = 14) -> dict:
+    from datetime import date as date_cls
+
+    today = date_cls.today()
+    start = today.fromordinal(today.toordinal() - (days - 1)).isoformat()
+    end = today.isoformat()
+    no_fill = []
+    failing = []
+    ok = []
+    for row in sqlite_db.list_pupils():
+        full = sqlite_db.get_pupil_by_id(row["id"]) or row
+        st = state(full, start, end)
+        comp = st.get("compliance") or {}
+        item = {
+            "id": row["id"],
+            "email": row.get("email"),
+            "name": row.get("name") or "",
+            "kind": comp.get("kind"),
+            "avg_pct": comp.get("avg_pct"),
+            "color": comp.get("color"),
+            "empty_days": comp.get("empty_days"),
+            "logged_days": comp.get("logged_days"),
+        }
+        if comp.get("kind") == "no_fill":
+            no_fill.append(item)
+        elif comp.get("kind") == "failing":
+            failing.append(item)
+        else:
+            ok.append(item)
+    return {"no_fill": no_fill, "failing": failing, "ok": ok, "start": start, "end": end}
 
 
 def save_day(pupil: dict, day: str, values: dict) -> None:

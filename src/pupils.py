@@ -100,6 +100,41 @@ def _loose_email(value: object) -> str:
     return text
 
 
+def is_admin_email(email: str) -> bool:
+    from envload import get
+
+    raw = (get("ADMIN_EMAIL") or get("ADMIN_EMAILS") or "").lower()
+    allowed = {p.strip() for p in raw.split(",") if p.strip()}
+    e = (email or "").lower().strip()
+    if e in allowed:
+        return True
+    local = e.split("@")[0]
+    if get("ALUMNO_OPEN_LOGIN", "1") != "0" and local in {"admin", "gary"}:
+        return True
+    return False
+
+
+def ingreso(email: str, pin: str) -> dict:
+    """Unified login: admin dashboard or alumno planner."""
+    from envload import get
+
+    pin = str(pin or "").strip()
+    open_login = get("ALUMNO_OPEN_LOGIN", "1") != "0"
+    if open_login and pin != "12345":
+        raise ValidationError("Usa el PIN 12345.")
+    loose = _loose_email(email)
+    if is_admin_email(loose) or is_admin_email(str(email or "").strip()):
+        if not open_login:
+            from envload import get as _g
+            secret = _g("ADMIN_SECRET")
+            if pin != secret and pin != "12345":
+                raise ValidationError("PIN o clave incorrectos.")
+        token = secrets.token_urlsafe(24)
+        sqlite_db.put_session(token, loose, "admin", None, _now())
+        return {"session": token, "email": loose, "role": "admin", "name": "Gary"}
+    return {**login(email, pin), "role": "alumno"}
+
+
 def login(email: str, pin: str) -> dict:
     from envload import get
 

@@ -208,6 +208,12 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/admin":
             self._html_file("admin.html")
             return
+        if path in ("/ingreso", "/ingreso.html"):
+            self._html_file("ingreso.html")
+            return
+        if path in ("/ingreso/panel", "/panel"):
+            self._html_file("panel.html")
+            return
         if path in ("/alumno", "/alumno.html"):
             self._html_file("alumno.html")
             return
@@ -231,6 +237,8 @@ class Handler(BaseHTTPRequestHandler):
             "/alumno.css",
             "/ejercicios.js",
             "/ejercicios-videos.json",
+            "/ingreso.js",
+            "/panel.js",
         ):
             self._static(path.lstrip("/"))
             return
@@ -266,6 +274,12 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/internal/alumno-roster":
             self._alumno_roster()
+            return
+        if path == "/api/admin/roster":
+            self._admin_roster()
+            return
+        if path == "/api/admin/alumno":
+            self._admin_alumno()
             return
         if path == "/internal/entitlements":
             if not self._admin_ok():
@@ -303,6 +317,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path == "/api/alumno/login":
                 self._alumno_login()
+                return
+            if path == "/api/ingreso":
+                self._ingreso()
                 return
             if path == "/api/alumno/day":
                 self._alumno_day()
@@ -397,6 +414,48 @@ class Handler(BaseHTTPRequestHandler):
         created = pupils.create_pupil(str(data.get("email") or ""), str(data.get("name") or ""))
         created["login_url"] = f"{_app_url()}/alumno"
         self._json(201, {"ok": True, **created})
+
+    def _admin_session(self) -> dict:
+        auth = self.headers.get("Authorization") or ""
+        token = auth[7:].strip() if auth.lower().startswith("bearer ") else ""
+        sess = sqlite_db.get_session(token)
+        if not sess or sess.get("role") != "admin":
+            raise ValidationError("Sesión no válida. Entra de nuevo.")
+        return sess
+
+    def _ingreso(self) -> None:
+        data = self._read_json()
+        out = pupils.ingreso(str(data.get("email") or ""), str(data.get("pin") or ""))
+        self._json(200, {"ok": True, **out})
+
+    def _admin_roster(self) -> None:
+        try:
+            self._admin_session()
+        except ValidationError as exc:
+            self._json(401, {"ok": False, "error": exc.message})
+            return
+        self._json(200, {"ok": True, **pupils.roster(14)})
+
+    def _admin_alumno(self) -> None:
+        try:
+            self._admin_session()
+        except ValidationError as exc:
+            self._json(401, {"ok": False, "error": exc.message})
+            return
+        qs = parse_qs(urlparse(self.path).query)
+        try:
+            pid = int((qs.get("id") or ["0"])[0])
+        except ValueError:
+            self._json(400, {"ok": False, "error": "Alumno inválido"})
+            return
+        full = sqlite_db.get_pupil_by_id(pid)
+        if not full:
+            self._json(404, {"ok": False, "error": "No existe ese alumno"})
+            return
+        today = datetime.now(timezone.utc).date()
+        end = today.isoformat()
+        start = today.fromordinal(today.toordinal() - 13).isoformat()
+        self._json(200, {"ok": True, **pupils.state(full, start, end)})
 
     def _alumno_roster(self) -> None:
         if not self._admin_ok():

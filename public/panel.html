@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard admin — GaryFelicienFit</title>
+<link rel="stylesheet" href="/alumno.css">
+<style>
+.cols { display: grid; gap: 16px; }
+@media (min-width: 900px) { .cols { grid-template-columns: 1fr 1fr 1fr; } }
+.user-row { cursor: pointer; }
+.user-row:hover { border-color: var(--gold); }
+.detail { margin-top: 18px; }
+</style>
+</head>
+<body>
+<header class="top">
+    <a class="brand" href="/">Gary Felicien Fit</a>
+    <div>
+        <a class="btn btn-ghost" href="/">Inicio</a>
+        <button type="button" class="btn btn-ghost" id="salir">Salir</button>
+    </div>
+</header>
+<main class="wrap">
+    <p class="muted">Admin</p>
+    <h1>Dashboard de alumnos</h1>
+    <p class="muted">Últimos 14 días. <b>No registran</b> = no rellenan el planner. <b>Registran y fallan</b> = hay datos, pero lejos del plan. Verde ≈ 100%.</p>
+    <div class="cols">
+        <section>
+            <h2>No registran</h2>
+            <div id="colEmpty"></div>
+        </section>
+        <section>
+            <h2>Registran y no cumplen</h2>
+            <div id="colFail"></div>
+        </section>
+        <section>
+            <h2>Al día</h2>
+            <div id="colOk"></div>
+        </section>
+    </div>
+    <section class="detail hidden" id="detail">
+        <h2 id="detailTitle">Alumno</h2>
+        <p class="comp-pill" id="detailPill"></p>
+        <div class="dash" id="detailDash"></div>
+        <div class="bars" id="detailBars"></div>
+    </section>
+</main>
+<script src="/panel.js"></script>
+</body>
+</html>

@@ -83,6 +83,13 @@ CREATE TABLE IF NOT EXISTS pupil_day_values (
   value REAL NOT NULL,
   PRIMARY KEY (pupil_id, day, metric_key)
 );
+CREATE TABLE IF NOT EXISTS auth_sessions (
+  token TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  role TEXT NOT NULL,
+  pupil_id INTEGER,
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS discount_codes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT NOT NULL,
@@ -332,6 +339,23 @@ DEFAULT_METRICS = [
 
 def _row(row: sqlite3.Row | None) -> dict | None:
     return dict(row) if row is not None else None
+
+
+def put_session(token: str, email: str, role: str, pupil_id: int | None, created_at: str) -> None:
+    conn = _connect()
+    conn.execute(
+        "INSERT OR REPLACE INTO auth_sessions (token, email, role, pupil_id, created_at) VALUES (?, ?, ?, ?, ?)",
+        (token, email, role, pupil_id, created_at),
+    )
+    conn.commit()
+
+
+def get_session(token: str) -> dict | None:
+    if not token:
+        return None
+    cur = _connect().execute("SELECT * FROM auth_sessions WHERE token = ?", (token,))
+    row = cur.fetchone()
+    return dict(row) if row else None
 
 
 def get_discount_by_email(email: str, offer: str = "3meses") -> dict | None:

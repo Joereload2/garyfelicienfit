@@ -102,6 +102,12 @@ class PupilTests(unittest.TestCase):
         self.assertEqual(bad["compliance"]["kind"], "failing")
         self.assertLess(bad["compliance"]["avg_pct"], 70)
 
+    def test_ingreso_admin_vs_alumno(self):
+        admin = pupils.ingreso("admin", "12345")
+        self.assertEqual(admin["role"], "admin")
+        alum = pupils.ingreso("cliente@test.com", "12345")
+        self.assertEqual(alum["role"], "alumno")
+
     def test_open_login_any_email(self):
         out = pupils.login("solo-un-nombre", "12345")
         self.assertTrue(out["session"])

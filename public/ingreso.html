@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ingreso — GaryFelicienFit</title>
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+<header class="top">
+    <a class="brand" href="/">
+        <b>Gary Felicien</b>
+        <span>Fit</span>
+    </a>
+    <nav class="tabs">
+        <a href="/">Inicio</a>
+        <a class="active" href="/ingreso">Ingreso</a>
+    </nav>
+</header>
+<main class="wrap" style="max-width:480px;">
+    <p class="kicker">Área privada</p>
+    <h1>Ingreso</h1>
+    <p class="muted">Alumnos: su correo y PIN. Admin: el email de Gary para ver el dashboard de usuarios.</p>
+    <form class="card" id="ingresoForm">
+        <div id="ingresoError" class="error"></div>
+        <label for="inEmail">Email</label>
+        <input id="inEmail" type="email" required autocomplete="username" placeholder="tucorreo@email.com">
+        <label for="inPin">PIN</label>
+        <input id="inPin" inputmode="numeric" value="12345" required autocomplete="current-password">
+        <div class="actions">
+            <button class="btn btn-gold" type="submit">Entrar</button>
+        </div>
+        <p class="note">En diseño el PIN es 12345. Email de admin: el que configures en ADMIN_EMAIL, o <code>admin</code>.</p>
+    </form>
+</main>
+<script src="/ingreso.js"></script>
+</body>
+</html>

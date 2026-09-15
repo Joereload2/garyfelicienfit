@@ -114,24 +114,23 @@ def is_admin_email(email: str) -> bool:
     return False
 
 
+ADMIN_USER = "admin"
+ADMIN_PIN = "123456"
+
+
 def ingreso(email: str, pin: str) -> dict:
     """Unified login: admin dashboard or alumno planner."""
     from envload import get
 
     pin = str(pin or "").strip()
-    open_login = get("ALUMNO_OPEN_LOGIN", "1") != "0"
-    if open_login and pin != "12345":
-        raise ValidationError("Usa el PIN 12345.")
-    loose = _loose_email(email)
-    if is_admin_email(loose) or is_admin_email(str(email or "").strip()):
-        if not open_login:
-            from envload import get as _g
-            secret = _g("ADMIN_SECRET")
-            if pin != secret and pin != "12345":
-                raise ValidationError("PIN o clave incorrectos.")
+    raw = str(email or "").strip().lower()
+    local = raw.split("@")[0] if raw else ""
+    if local == ADMIN_USER or raw == ADMIN_USER:
+        if pin != ADMIN_PIN:
+            raise ValidationError("Usuario o PIN de admin incorrectos.")
         token = secrets.token_urlsafe(24)
-        sqlite_db.put_session(token, loose, "admin", None, _now())
-        return {"session": token, "email": loose, "role": "admin", "name": "Gary"}
+        sqlite_db.put_session(token, "admin@alumno.local", "admin", None, _now())
+        return {"session": token, "email": "admin@alumno.local", "role": "admin", "name": "Admin"}
     return {**login(email, pin), "role": "alumno"}
 
 

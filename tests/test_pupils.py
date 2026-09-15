@@ -103,8 +103,10 @@ class PupilTests(unittest.TestCase):
         self.assertLess(bad["compliance"]["avg_pct"], 70)
 
     def test_ingreso_admin_vs_alumno(self):
-        admin = pupils.ingreso("admin", "12345")
+        admin = pupils.ingreso("admin", "123456")
         self.assertEqual(admin["role"], "admin")
+        with self.assertRaises(ValidationError):
+            pupils.ingreso("admin", "12345")
         alum = pupils.ingreso("cliente@test.com", "12345")
         self.assertEqual(alum["role"], "alumno")
 

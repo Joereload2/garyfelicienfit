@@ -32,6 +32,7 @@ a { color: var(--gold-2); text-decoration: none; }
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: 16px;
     padding: 14px 6vw;
     background: rgba(11, 12, 15, 0.92);

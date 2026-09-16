@@ -20,9 +20,22 @@ a { color: var(--gold-2); }
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
     padding: 14px 5vw;
     border-bottom: 1px solid var(--line);
 }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tabs a {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--muted);
+    padding: 9px 12px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-size: 13px;
+}
+.tabs a.active { color: #0b0c0f; background: var(--gold); }
 .brand { letter-spacing: 0.18em; text-transform: uppercase; text-decoration: none; color: var(--gold); font-size: 13px; font-weight: 700; }
 .wrap { width: min(980px, calc(100% - 8vw)); margin: 0 auto; padding: 24px 0 64px; }
 h1 { font-family: Georgia, serif; font-size: 28px; margin: 0 0 8px; }

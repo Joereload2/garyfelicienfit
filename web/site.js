@@ -22,8 +22,13 @@ function showTab(id) {
     document.querySelectorAll(".panel").forEach(function (p) {
         p.classList.toggle("active", p.id === "panel-" + id);
     });
-    document.querySelectorAll(".tabs button").forEach(function (b) {
-        b.classList.toggle("active", b.getAttribute("data-tab") === id);
+    document.querySelectorAll(".tabs a").forEach(function (a) {
+        var href = a.getAttribute("href") || "";
+        var on = false;
+        if (id === "plan" && href === "/") on = true;
+        if (href === "/#" + id) on = true;
+        if (id === "tresmeses" && href === "/3meses") on = false;
+        a.classList.toggle("active", on);
     });
     if (id) {
         history.replaceState(null, "", "#" + id);
@@ -343,14 +348,8 @@ if (calcForm) calcForm.addEventListener("submit", runCalculator);
 bindOfferForm();
 var videoGrid = document.getElementById("videoGrid");
 if (videoGrid) loadVideos();
-if (!document.body.classList.contains("ad-page")) {
+if (!document.body.classList.contains("ad-page") && !document.body.classList.contains("quiz-page")) {
     tabFromHash();
-} else {
-    var current = location.pathname.replace(/\/$/, "") || "/";
-    document.querySelectorAll(".tabs a").forEach(function (a) {
-        var href = a.getAttribute("href") || "";
-        a.classList.toggle("active", href === current);
-    });
 }
 
 (function showQuizRecap() {

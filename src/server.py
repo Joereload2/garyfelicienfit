@@ -65,6 +65,7 @@ LANDING = {
     "site.css",
     "site.js",
     "quiz.js",
+    "nav.js",
     "videos.json",
 }
 MAX_BODY = 200_000
@@ -232,6 +233,7 @@ class Handler(BaseHTTPRequestHandler):
             "/site.css",
             "/site.js",
             "/quiz.js",
+            "/nav.js",
             "/videos.json",
             "/alumno.js",
             "/alumno.css",

@@ -63,22 +63,22 @@ class FlujoTests(unittest.TestCase):
         store.configure_paths()
         cls.tmp.cleanup()
 
-    def test_01_portada_sin_calculadora(self):
+    def test_01_portada_acompanamiento(self):
         req = urllib.request.Request(self.base + "/")
         with urllib.request.urlopen(req, timeout=10) as resp:
             html = resp.read().decode("utf-8")
         self.assertEqual(resp.status, 200)
         self.assertIn("GaryFelicienFit", html)
-        self.assertIn("USD $40", html)
-        self.assertIn("buyModal", html)
-        self.assertIn("Mercado Pago", html)
-        self.assertIn("wa.me/56959128603", html)
-        self.assertIn("no se muestra en esta web", html.lower())
+        self.assertIn("450.000", html)
+        self.assertIn("/herramientas", html)
+        self.assertIn("/3meses", html)
+        self.assertNotIn("USD $40", html)
+        self.assertNotIn("buyModal", html)
+        self.assertNotIn("panel-tresmeses", html)
         self.assertNotIn("jspdf", html.lower())
         self.assertNotIn("generatePlan", html)
         self.assertNotIn("myshopify.com", html.lower())
-        self.assertIn("450.000", html)
-        self.assertIn("panel-tresmeses", html)
+        self.assertNotIn("youtube.com", html.lower())
 
     def test_01d_oferta_3meses(self):
         req = urllib.request.Request(self.base + "/3meses")
@@ -88,29 +88,60 @@ class FlujoTests(unittest.TestCase):
         self.assertIn("450.000", html)
         self.assertIn("data-open-offer", html)
         self.assertIn("50%", html)
+        self.assertIn("ganar músculo", html.lower())
+        self.assertNotIn("USD $40", html)
+        self.assertNotIn("buyModal", html)
 
-    def test_01b_paginas_de_anuncio(self):
-        for path, needle in (("/bajar", "Bajar de peso"), ("/recomposicion", "Recomposición corporal")):
+    def test_01b_viejas_ofertas_redirigen(self):
+        for path in ("/bajar", "/recomposicion", "/empezar"):
             req = urllib.request.Request(self.base + path)
             with urllib.request.urlopen(req, timeout=10) as resp:
                 html = resp.read().decode("utf-8")
-            self.assertEqual(resp.status, 200, path)
-            self.assertIn(needle, html)
-            if path == "/recomposicion":
-                self.assertIn("músculo", html.lower())
-                self.assertIn("grasa", html.lower())
-            self.assertIn("buyModal", html)
-            self.assertIn("Mercado Pago", html)
-            self.assertNotIn("myshopify.com", html.lower())
+            self.assertTrue(resp.geturl().rstrip("/").endswith("/3meses"), path)
+            self.assertIn("450.000", html)
+            self.assertNotIn("buyModal", html)
 
-    def test_01c_cuestionario_empezar(self):
-        req = urllib.request.Request(self.base + "/empezar")
+    def test_01c_herramientas_y_registro(self):
+        req = urllib.request.Request(self.base + "/herramientas")
         with urllib.request.urlopen(req, timeout=10) as resp:
             html = resp.read().decode("utf-8")
         self.assertEqual(resp.status, 200)
-        self.assertIn("quiz.js", html)
-        self.assertIn("Encuentra tu modelo", html)
-        self.assertNotIn("myshopify.com", html.lower())
+        self.assertIn("calcForm", html)
+        self.assertIn("glosario", html.lower())
+        self.assertIn("registro.js", html)
+        self.assertIn("regAds", html)
+        self.assertNotIn("checked", html.split("id=\"regAds\"")[1][:80])
+        self.assertNotIn("USD $40", html)
+        self.assertNotIn("youtube.com", html.lower())
+
+        req = urllib.request.Request(self.base + "/ejercicios")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            html = resp.read().decode("utf-8")
+        self.assertEqual(resp.status, 200)
+        self.assertIn("ejercicios-mapa.js", html)
+        self.assertIn("registro.js", html)
+
+        code, data, _ = _json_request(
+            "POST",
+            self.base + "/api/registro",
+            {
+                "name": "Ana Test",
+                "email": "ana.registro@example.com",
+                "phone": "+56 9 1234 5678",
+                "ads_consent": True,
+                "source": "herramientas",
+            },
+        )
+        self.assertEqual(code, 200, data)
+        self.assertTrue(data.get("ok"))
+
+        code, data, _ = _json_request(
+            "POST",
+            self.base + "/api/registro",
+            {"name": "Ana", "email": "ana.registro@example.com", "phone": "912345678"},
+        )
+        self.assertEqual(code, 400, data)
+        self.assertIn("autoriz", data.get("error", "").lower())
 
     def test_02_emitir_acceso(self):
         code, data, _ = _json_request(

@@ -13,6 +13,7 @@
         } else {
             var p = href.split("#")[0].replace(/\/$/, "") || "/";
             on = path === p;
+            if (path === "/ejercicios" && p === "/herramientas") on = true;
         }
         a.classList.toggle("active", on);
     });

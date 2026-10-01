@@ -1,137 +1,5 @@
 "use strict";
 
-const PRICE = 40;
-
-const MODELS = {
-    bajar: {
-        title: "Bajar de peso · USD $40",
-        lead: "Pagas el plan personalizado con enfoque en bajar de peso. Mercado Pago (Chile, CLP)."
-    },
-    recomposicion: {
-        title: "Recomposición corporal · USD $40",
-        lead: "Pagas el plan personalizado con enfoque en bajar grasa y conservar o ganar músculo. Mercado Pago (Chile, CLP)."
-    }
-};
-
-function isLocalApp() {
-    const h = location.hostname;
-    return h === "localhost" || h === "127.0.0.1";
-}
-
-function showTab(id) {
-    document.querySelectorAll(".panel").forEach(function (p) {
-        p.classList.toggle("active", p.id === "panel-" + id);
-    });
-    document.querySelectorAll(".tabs a").forEach(function (a) {
-        var href = a.getAttribute("href") || "";
-        var on = false;
-        if (id === "plan" && href === "/") on = true;
-        if (href === "/#" + id) on = true;
-        if (id === "tresmeses" && href === "/3meses") on = false;
-        a.classList.toggle("active", on);
-    });
-    if (id) {
-        history.replaceState(null, "", "#" + id);
-    }
-    window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-function tabFromHash() {
-    const raw = (location.hash || "#plan").replace("#", "");
-    const id = raw === "guia" ? "plan" : raw;
-    const known = ["plan", "calculadora", "coach", "videos", "tresmeses", "coaching"];
-    showTab(known.indexOf(id) >= 0 ? id : "plan");
-}
-
-function openBuy(modelo) {
-    const info = MODELS[modelo] || MODELS.bajar;
-    const title = document.getElementById("buyTitle");
-    const lead = document.getElementById("buyLead");
-    const hidden = document.getElementById("buyModelo");
-    const err = document.getElementById("buyError");
-    if (title) title.textContent = info.title;
-    if (lead) lead.textContent = info.lead;
-    if (hidden) hidden.value = modelo;
-    if (err) err.classList.remove("show");
-    document.getElementById("buyModal").classList.add("open");
-}
-
-function closeModal() {
-    document.getElementById("buyModal").classList.remove("open");
-}
-
-async function buyPlan(ev) {
-    ev.preventDefault();
-    const err = document.getElementById("buyError");
-    const emailEl = document.getElementById("buyEmail");
-    const modeloEl = document.getElementById("buyModelo");
-    const btn = document.getElementById("buySubmit");
-    if (!emailEl || !err) return;
-    err.classList.remove("show");
-    const email = emailEl.value.trim();
-    const modelo = (modeloEl && modeloEl.value) || "bajar";
-    btn.disabled = true;
-    try {
-        const res = await fetch("/api/checkout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: email, modelo: modelo }),
-        });
-        const data = await res.json().catch(function () { return {}; });
-        if (!res.ok || !data.ok) {
-            err.textContent = data.error || "No se pudo iniciar el pago.";
-            err.classList.add("show");
-            btn.disabled = false;
-            return;
-        }
-        if ((data.mode === "mp" || data.mode === "stripe") && data.url) {
-            window.location.href = data.url;
-            return;
-        }
-        window.location.href = isLocalApp() ? "/gracias?test=1" : "/gracias.html?test=1";
-    } catch (e) {
-        err.textContent = "Sin conexión con el servidor de pago.";
-        err.classList.add("show");
-        btn.disabled = false;
-    }
-}
-
-async function sendCoaching(ev) {
-    if (!isLocalApp()) {
-        return;
-    }
-    ev.preventDefault();
-    const err = document.getElementById("coachError");
-    const ok = document.getElementById("coachOk");
-    err.classList.remove("show");
-    ok.classList.remove("show");
-    const payload = {
-        name: document.getElementById("cName").value,
-        email: document.getElementById("cEmail").value,
-        phone: document.getElementById("cPhone").value,
-        message: document.getElementById("cMsg").value,
-    };
-    try {
-        const res = await fetch("/api/coaching", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-        });
-        const data = await res.json().catch(function () { return {}; });
-        if (!res.ok || !data.ok) {
-            err.textContent = data.error || "No se pudo enviar.";
-            err.classList.add("show");
-            return;
-        }
-        ok.textContent = data.message || "Recibido.";
-        ok.classList.add("show");
-        ev.target.reset();
-    } catch (e) {
-        err.textContent = "Sin conexión con el servidor.";
-        err.classList.add("show");
-    }
-}
-
 function bindOfferForm() {
     if (document.getElementById("offerModal")) {
         wireOfferModal();
@@ -222,35 +90,6 @@ function wireOfferModal() {
     }
 }
 
-function youtubeThumb(id) {
-    return "https://i.ytimg.com/vi/" + id + "/hqdefault.jpg";
-}
-
-async function loadVideos() {
-    const box = document.getElementById("videoGrid");
-    try {
-        const res = await fetch("/videos.json", { cache: "no-store" });
-        const data = await res.json();
-        const videos = data.videos || [];
-        if (!videos.length) {
-            box.innerHTML = '<div class="empty">Pronto videos de Gary aquí.</div>';
-            return;
-        }
-        box.innerHTML = videos.map(function (v) {
-            const id = encodeURIComponent(v.id);
-            const title = String(v.title || "Video").replace(/[<>]/g, "");
-            return (
-                '<article class="video">' +
-                '<iframe src="https://www.youtube-nocookie.com/embed/' + id +
-                '" title="' + title + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>' +
-                "<p>" + title + "</p></article>"
-            );
-        }).join("");
-    } catch (e) {
-        box.innerHTML = '<div class="empty">No se pudo cargar la lista de videos.</div>';
-    }
-}
-
 function imcClass(imc) {
     if (imc < 18.5) return { label: "Bajo peso", cls: "calc-imc-bajo" };
     if (imc < 25) return { label: "Peso normal", cls: "calc-imc-ok" };
@@ -314,62 +153,12 @@ function runCalculator(ev) {
     document.getElementById("calcHold").textContent = Math.round(get) + " kcal/día";
     document.getElementById("calcGain").textContent = Math.round(get + 300) + "–" + Math.round(get + 500) + " kcal";
     document.getElementById("calcSuggest").textContent = imc >= 25
-        ? "Con este IMC, el modelo Bajar de peso suele encajar mejor. Recomposición corporal es una opción si quieres bajar grasa y cuidar el músculo a la vez."
-        : "Si quieres verte más firme sin perseguir solo la báscula, Recomposición corporal encaja bien. Si tu meta es bajar kilos, elige Bajar de peso.";
+        ? "Con este IMC, bajar de peso suele ser el foco. El acompañamiento de 3 meses adapta comida y rutina a esa meta; no es otro producto."
+        : "Si quieres ganar músculo o verte más firme, el mismo acompañamiento de 3 meses se adapta: cambia la comida y la rutina, no el servicio.";
     results.hidden = false;
     results.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-document.querySelectorAll(".tabs button").forEach(function (b) {
-    b.addEventListener("click", function () {
-        showTab(b.getAttribute("data-tab"));
-    });
-});
-window.addEventListener("hashchange", tabFromHash);
-document.querySelectorAll("[data-buy]").forEach(function (el) {
-    el.addEventListener("click", function () {
-        openBuy(el.getAttribute("data-buy"));
-    });
-});
-var closeBuy = document.getElementById("closeBuy");
-if (closeBuy) closeBuy.addEventListener("click", closeModal);
-var buyModal = document.getElementById("buyModal");
-if (buyModal) {
-    buyModal.addEventListener("click", function (e) {
-        if (e.target.id === "buyModal") closeModal();
-    });
-}
-var buyForm = document.getElementById("buyForm");
-if (buyForm) buyForm.addEventListener("submit", buyPlan);
-var coachForm = document.getElementById("coachForm");
-if (coachForm) coachForm.addEventListener("submit", sendCoaching);
 var calcForm = document.getElementById("calcForm");
 if (calcForm) calcForm.addEventListener("submit", runCalculator);
-bindOfferForm();
-var videoGrid = document.getElementById("videoGrid");
-if (videoGrid) loadVideos();
-if (!document.body.classList.contains("ad-page") && !document.body.classList.contains("quiz-page")) {
-    tabFromHash();
-}
-
-(function showQuizRecap() {
-    var bar = document.getElementById("quizRecapBar");
-    if (!bar) return;
-    var q = new URLSearchParams(location.search);
-    if (q.get("from") !== "quiz") return;
-    var sexo = q.get("sexo") === "f" ? "mujer" : q.get("sexo") === "m" ? "hombre" : "";
-    var lugar = q.get("lugar") === "casa" ? "casa" : q.get("lugar") === "gym" ? "gimnasio" : "";
-    var trabas = {
-        motivacion: "la motivación",
-        habitos: "sostener hábitos",
-        comida: "ordenar la comida",
-        tiempo: "el tiempo",
-        lesiones: "molestias o lesiones"
-    };
-    var traba = trabas[q.get("traba") || ""] || "";
-    if (!sexo || !lugar) return;
-    var bits = ["Llegaste desde el cuestionario: " + sexo + ", entreno en " + lugar];
-    if (traba) bits.push("tu traba es " + traba);
-    bar.innerHTML = "<b>A tu medida.</b> " + bits.join("; ") + ". El plan de 12 semanas se arma con tus datos después del pago.";
-    bar.classList.add("show");
-})();
+if (document.querySelector("[data-open-offer]")) bindOfferForm();

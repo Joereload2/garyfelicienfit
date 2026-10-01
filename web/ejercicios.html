@@ -16,18 +16,24 @@
     </a>
     <nav class="tabs" aria-label="Secciones">
         <a href="/">Inicio</a>
-        <a href="/herramientas">Herramientas</a>
-        <a href="/3meses">Acompañamiento</a>
-        <a href="/#coach">El coach</a>
-        <a href="/ingreso">Ingreso</a>
+        <details class="nav-drop">
+            <summary>Herramientas</summary>
+            <div class="nav-drop-menu">
+                <a href="/herramientas#calculadora">Calculadora</a>
+                <a href="/herramientas#glosario">Glosario</a>
+                <a href="/ejercicios">Ejercicios</a>
+            </div>
+        </details>
+        <a href="/3meses">3 meses</a>
+        <a href="/#coach">Coach</a>
     </nav>
 </header>
 
 <div class="reg-gate" id="regGate" role="dialog" aria-labelledby="regTitle" aria-modal="true">
     <form class="card" id="regForm">
         <p class="kicker">Registro</p>
-        <h2 id="regTitle">Para usar el mapa, regístrate</h2>
-        <p class="muted">Nombre, correo y teléfono. Desbloqueas el mapa y las demás herramientas, y podemos escribirte después.</p>
+        <h2 id="regTitle">Para ver la lista, regístrate</h2>
+        <p class="muted">Puedes tocar el mapa y ver el nombre del músculo. La lista de ejercicios pide nombre, correo y teléfono.</p>
         <div id="regError" class="error"></div>
         <label for="regName">Nombre</label>
         <input id="regName" type="text" required autocomplete="name" placeholder="Tu nombre">
@@ -40,12 +46,12 @@
             <span>Autorizo a GaryFelicienFit a usar mi nombre, correo y teléfono para enviarme información comercial, promociones y novedades por correo y WhatsApp. Puedo revocar este consentimiento cuando quiera. La casilla no viene marcada.</span>
         </label>
         <p class="legal-box">
-            Advertencia (Chile, Ley 19.628 y Ley 19.496): tus datos se usan para abrir estas herramientas
-            y, si autorizas, para publicidad. No vendemos tu lista. Para borrar tus datos o dejar de recibir
-            mensajes, escríbenos por WhatsApp o responde un correo pidiendo la baja.
+            Chile, Ley 19.628 y 19.496: datos para abrir las herramientas y, si marcas, para publicidad.
+            Baja cuando quieras por WhatsApp o respondiendo un correo.
         </p>
         <div class="actions">
-            <button class="btn btn-gold" type="submit" id="regSubmit">Entrar al mapa</button>
+            <button type="button" class="btn btn-ghost" id="regClose">Seguir mirando</button>
+            <button class="btn btn-gold" type="submit" id="regSubmit">Ver la lista</button>
         </div>
     </form>
 </div>
@@ -53,7 +59,8 @@
 <main class="wrap explora tools-body">
     <p class="kicker">Herramientas · Mapa</p>
     <h1>Elige el equipo y el músculo.</h1>
-    <p class="lead">Gimnasio o casa. Toca el mapa: te dice el nombre del músculo y una lista de ejercicios. Los videos del cuerpo llegan después; los de tu rutina están en el área de alumno.</p>
+    <p class="lead">Gimnasio o casa. Toca el mapa: te dice el nombre del músculo. La lista de ejercicios se abre con registro. Videos del cuerpo, después.</p>
+    <p class="reg-banner">Toca un músculo para ver el nombre. <button type="button" class="btn btn-gold" data-open-reg>Registrarme para la lista</button></p>
 
     <div class="eq-row" role="group" aria-label="Equipo">
         <button type="button" class="eq-btn active" data-eq="gym">Gimnasio</button>
@@ -74,6 +81,12 @@
     </div>
     <p class="muted" style="margin-top:28px;"><a href="/herramientas">Calculadora y glosario</a> · <a href="/3meses">Acompañamiento 3 meses</a></p>
 </main>
+<footer class="foot">
+    <span>GaryFelicienFit</span>
+    <a href="https://wa.me/56959128603" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+    <a href="/ingreso">Ya soy alumno</a>
+</footer>
+<a class="wa-fab" href="https://wa.me/56959128603" target="_blank" rel="noopener noreferrer">WhatsApp</a>
 <script src="/ejercicios-mapa.js"></script>
 <script src="/nav.js"></script>
 </body>

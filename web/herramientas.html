@@ -16,18 +16,24 @@
     </a>
     <nav class="tabs" aria-label="Secciones">
         <a href="/">Inicio</a>
-        <a href="/herramientas">Herramientas</a>
-        <a href="/3meses">Acompañamiento</a>
-        <a href="/#coach">El coach</a>
-        <a href="/ingreso">Ingreso</a>
+        <details class="nav-drop">
+            <summary>Herramientas</summary>
+            <div class="nav-drop-menu">
+                <a href="/herramientas#calculadora">Calculadora</a>
+                <a href="/herramientas#glosario">Glosario</a>
+                <a href="/ejercicios">Ejercicios</a>
+            </div>
+        </details>
+        <a href="/3meses">3 meses</a>
+        <a href="/#coach">Coach</a>
     </nav>
 </header>
 
 <div class="reg-gate" id="regGate" role="dialog" aria-labelledby="regTitle" aria-modal="true">
     <form class="card" id="regForm">
         <p class="kicker">Registro</p>
-        <h2 id="regTitle">Para usar las herramientas, regístrate</h2>
-        <p class="muted">Nombre, correo y teléfono. Así desbloqueas calculadora, glosario y mapa, y podemos escribirte después.</p>
+        <h2 id="regTitle">Para calcular, regístrate</h2>
+        <p class="muted">Nombre, correo y teléfono. El glosario se puede leer igual. Así podemos escribirte después.</p>
         <div id="regError" class="error"></div>
         <label for="regName">Nombre</label>
         <input id="regName" type="text" required autocomplete="name" placeholder="Tu nombre">
@@ -40,12 +46,12 @@
             <span>Autorizo a GaryFelicienFit a usar mi nombre, correo y teléfono para enviarme información comercial, promociones y novedades por correo y WhatsApp. Puedo revocar este consentimiento cuando quiera. La casilla no viene marcada.</span>
         </label>
         <p class="legal-box">
-            Advertencia (Chile, Ley 19.628 y Ley 19.496): tus datos se usan para abrir estas herramientas
-            y, si autorizas, para publicidad. No vendemos tu lista. Para borrar tus datos o dejar de recibir
-            mensajes, escríbenos por WhatsApp o responde un correo pidiendo la baja.
+            Chile, Ley 19.628 y 19.496: datos para abrir las herramientas y, si marcas, para publicidad.
+            Baja cuando quieras por WhatsApp o respondiendo un correo.
         </p>
         <div class="actions">
-            <button class="btn btn-gold" type="submit" id="regSubmit">Entrar a las herramientas</button>
+            <button type="button" class="btn btn-ghost" id="regClose">Seguir mirando</button>
+            <button class="btn btn-gold" type="submit" id="regSubmit">Calcular con registro</button>
         </div>
     </form>
 </div>
@@ -53,12 +59,13 @@
 <main class="wrap tools-body">
     <p class="kicker">Herramientas</p>
     <h1>Números, jerga y ejercicios.</h1>
-    <p class="lead">La calculadora te da un punto de partida. El glosario explica las palabras. El mapa muestra ejercicios por músculo. El acompañamiento de 3 meses usa esto con seguimiento.</p>
+    <p class="lead">La calculadora te da un punto de partida. El glosario se lee sin registro. El mapa muestra el músculo al tocarlo; la lista pide registro.</p>
     <div class="hub-jump">
         <a class="btn btn-ghost" href="#calculadora">Calculadora</a>
         <a class="btn btn-ghost" href="#glosario">Glosario</a>
         <a class="btn btn-ghost" href="/ejercicios">Mapa de ejercicios</a>
     </div>
+    <p class="reg-banner">Para ver el resultado de la calculadora: nombre, correo y WhatsApp. <button type="button" class="btn btn-gold" data-open-reg>Registrarme</button></p>
 
     <section id="calculadora">
         <p class="kicker">Números</p>
@@ -224,9 +231,11 @@
 </main>
 
 <footer class="foot">
-    <span>GaryFelicienFit · Herramientas</span>
-    <a href="/">Volver al inicio</a>
+    <span>GaryFelicienFit</span>
+    <a href="https://wa.me/56959128603" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+    <a href="/ingreso">Ya soy alumno</a>
 </footer>
+<a class="wa-fab" href="https://wa.me/56959128603" target="_blank" rel="noopener noreferrer">WhatsApp</a>
 <script src="/site.js"></script>
 <script src="/nav.js"></script>
 </body>

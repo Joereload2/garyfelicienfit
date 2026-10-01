@@ -68,6 +68,10 @@
         return NAMES[id] || id;
     }
 
+    function registered() {
+        return typeof window.gffIsReg === "function" ? window.gffIsReg() : true;
+    }
+
     function renderList() {
         labelEl.textContent = labelText();
         if (!selected) {
@@ -77,6 +81,17 @@
         }
         var loc = equipment === "home" ? "casa" : "gimnasio";
         var items = (CATALOG[equipment] && CATALOG[equipment][selected]) || [];
+        if (!registered()) {
+            hintEl.textContent = (NAMES[selected] || selected) + " · " + loc;
+            listEl.innerHTML = '<li><button type="button" class="btn btn-gold" data-open-reg>Regístrate para ver la lista</button></li>';
+            var ask = listEl.querySelector("[data-open-reg]");
+            if (ask) {
+                ask.addEventListener("click", function () {
+                    if (window.gffNeedReg) window.gffNeedReg();
+                });
+            }
+            return;
+        }
         hintEl.textContent = NAMES[selected] + " · " + loc + " · " + items.length + (items.length === 1 ? " ejercicio" : " ejercicios");
         listEl.innerHTML = items
             .map(function (name) {
@@ -147,6 +162,7 @@
                 });
             });
             renderList();
+            document.addEventListener("gff-reg-ok", renderList);
         })
         .catch(function () {
             mapBox.innerHTML = "<p class=\"muted\">No se pudo cargar el mapa.</p>";

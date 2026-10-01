@@ -84,10 +84,6 @@ function wireOfferModal() {
             if (btn) btn.disabled = false;
         }
     });
-    if (location.pathname.indexOf("3meses") >= 0 && !sessionStorage.getItem("gff_offer_seen")) {
-        sessionStorage.setItem("gff_offer_seen", "1");
-        setTimeout(openOffer, 1200);
-    }
 }
 
 function imcClass(imc) {
@@ -138,6 +134,10 @@ function runCalculator(ev) {
         return;
     }
 
+    if (typeof window.gffNeedReg === "function" && window.gffNeedReg()) {
+        return;
+    }
+
     const imc = weight / Math.pow(height / 100, 2);
     const tmb = (10 * weight) + (6.25 * height) - (5 * age) + (sex === "m" ? 5 : -161);
     const get = tmb * act;
@@ -160,5 +160,10 @@ function runCalculator(ev) {
 }
 
 var calcForm = document.getElementById("calcForm");
-if (calcForm) calcForm.addEventListener("submit", runCalculator);
+if (calcForm) {
+    calcForm.addEventListener("submit", runCalculator);
+    document.addEventListener("gff-reg-ok", function () {
+        if (document.getElementById("calcSex").value) calcForm.requestSubmit();
+    });
+}
 if (document.querySelector("[data-open-offer]")) bindOfferForm();

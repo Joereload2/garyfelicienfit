@@ -11,14 +11,37 @@
         return null;
     }
 
+    function isReg() {
+        return document.body.classList.contains("reg-ok") || !!readReg();
+    }
+
+    function openGate() {
+        document.body.classList.add("reg-open");
+        var input = document.getElementById("regName");
+        if (input) setTimeout(function () { input.focus(); }, 50);
+    }
+
+    function closeGate() {
+        document.body.classList.remove("reg-open");
+    }
+
     function unlock() {
         document.body.classList.add("reg-ok");
+        closeGate();
         var hash = location.hash;
         if (hash) {
             var el = document.querySelector(hash);
             if (el) setTimeout(function () { el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
         }
+        document.dispatchEvent(new Event("gff-reg-ok"));
     }
+
+    window.gffIsReg = isReg;
+    window.gffNeedReg = function () {
+        if (isReg()) return false;
+        openGate();
+        return true;
+    };
 
     if (readReg()) unlock();
 
@@ -26,6 +49,25 @@
         var form = document.getElementById("regForm");
         if (!form || form.getAttribute("data-bound")) return;
         form.setAttribute("data-bound", "1");
+
+        document.querySelectorAll("[data-open-reg]").forEach(function (btn) {
+            btn.addEventListener("click", function (ev) {
+                ev.preventDefault();
+                openGate();
+            });
+        });
+        var closer = document.getElementById("regClose");
+        if (closer) closer.addEventListener("click", closeGate);
+        var gate = document.getElementById("regGate");
+        if (gate) {
+            gate.addEventListener("click", function (e) {
+                if (e.target.id === "regGate") closeGate();
+            });
+        }
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") closeGate();
+        });
+
         form.addEventListener("submit", async function (ev) {
             ev.preventDefault();
             var err = document.getElementById("regError");

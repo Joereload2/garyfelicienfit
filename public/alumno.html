@@ -11,10 +11,16 @@
     <a class="brand" href="/">Gary Felicien Fit</a>
     <nav class="tabs" aria-label="Secciones">
         <a href="/">Inicio</a>
-        <a href="/herramientas">Herramientas</a>
-        <a href="/3meses">Acompañamiento</a>
-        <a href="/#coach">El coach</a>
-        <a href="/ingreso">Ingreso</a>
+        <details class="nav-drop">
+            <summary>Herramientas</summary>
+            <div class="nav-drop-menu">
+                <a href="/herramientas#calculadora">Calculadora</a>
+                <a href="/herramientas#glosario">Glosario</a>
+                <a href="/ejercicios">Ejercicios</a>
+            </div>
+        </details>
+        <a href="/3meses">3 meses</a>
+        <a href="/#coach">Coach</a>
     </nav>
     <button type="button" class="btn btn-ghost hidden" id="logoutBtn">Salir</button>
 </header>

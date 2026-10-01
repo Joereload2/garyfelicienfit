@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GaryFelicienFit — Acompañamiento 3 meses</title>
-<meta name="description" content="Entrenamiento y alimentación a tu medida, 3 meses, con seguimiento. Bajar de peso o ganar músculo: cambia la adaptación, no el servicio. Herramientas para entender números y ejercicios.">
+<meta name="description" content="Entrenamiento y alimentación a tu medida, 3 meses, con seguimiento. Bajar de peso o ganar músculo: cambia la adaptación, no el servicio.">
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
@@ -15,10 +15,16 @@
     </a>
     <nav class="tabs" aria-label="Secciones">
         <a href="/">Inicio</a>
-        <a href="/herramientas">Herramientas</a>
-        <a href="/3meses">Acompañamiento</a>
-        <a href="/#coach">El coach</a>
-        <a href="/ingreso">Ingreso</a>
+        <details class="nav-drop">
+            <summary>Herramientas</summary>
+            <div class="nav-drop-menu">
+                <a href="/herramientas#calculadora">Calculadora</a>
+                <a href="/herramientas#glosario">Glosario</a>
+                <a href="/ejercicios">Ejercicios</a>
+            </div>
+        </details>
+        <a href="/3meses">3 meses</a>
+        <a href="/#coach">Coach</a>
     </nav>
 </header>
 
@@ -28,70 +34,54 @@
         <p class="kicker">GaryFelicienFit</p>
         <h1>Acompañamiento real, 3 meses.</h1>
         <p class="lead">
-            Entrenamiento y comida hechos para ti, con seguimiento.
-            Sirve para <b>bajar de peso</b> o <b>ganar músculo</b>: el servicio es el mismo;
-            cambia la adaptación. Abajo hay herramientas para entender números, jerga y ejercicios.
+            Rutina y comida a tu medida, con seguimiento.
+            Sirve para bajar de peso o ganar músculo: se adapta el plan, no cambias de servicio.
         </p>
         <div class="price-row">
             <div class="price">$450.000 <small>CLP · 3 meses</small></div>
         </div>
         <div class="actions">
-            <a class="btn btn-gold" href="/3meses">Ver el acompañamiento</a>
-            <a class="btn btn-ghost" href="/herramientas">Herramientas</a>
+            <a class="btn btn-gold" href="/3meses">Cómo funciona</a>
+            <button type="button" class="btn btn-ghost" data-open-offer>50% off por correo</button>
         </div>
     </div>
 </section>
 
 <main class="wrap">
-    <section>
+    <section id="acompanamiento">
+        <p class="kicker">El servicio</p>
+        <h2>Alguien te acompaña a ejecutarlo.</h2>
+        <p class="lead">No es un PDF. En 3 meses: rutina, comida realista, dashboard y ajuste cada 2 semanas. Gym o casa.</p>
+        <ul class="list">
+            <li><b>Rutina y alimentación</b> — a tus días, tu nivel y lo que ya comes.</li>
+            <li><b>Seguimiento</b> — dashboard, WhatsApp y evaluación quincenal.</li>
+            <li><b>Videos de tu rutina</b> — dentro del área de alumno.</li>
+        </ul>
+        <div class="actions">
+            <a class="btn btn-gold" href="/3meses">Ver el acompañamiento</a>
+        </div>
+    </section>
+
+    <section class="inside">
         <p class="kicker">Úsalas hoy</p>
-        <h2>Herramientas para entender el proceso</h2>
-        <p class="muted">Calculadora, mapa de músculos y un glosario de la jerga. Para usarlas te registras con nombre, correo y WhatsApp.</p>
+        <h2>Calculadora, jerga y mapa</h2>
+        <p class="muted">El glosario se lee sin cuenta. Calcular y ver la lista de ejercicios pide registro. El menú de arriba llega a cada una.</p>
         <div class="tool-grid">
             <a class="card tool-card" href="/herramientas#calculadora">
                 <p class="kicker">Números</p>
                 <h3>Calculadora</h3>
-                <p class="muted">IMC, calorías en reposo y gasto según tu actividad. Orientativo.</p>
+                <p class="muted">IMC, calorías en reposo y gasto según tu actividad.</p>
             </a>
             <a class="card tool-card" href="/ejercicios">
                 <p class="kicker">Mapa</p>
                 <h3>Ejercicios</h3>
-                <p class="muted">Gym o casa. Toca un músculo y ves el nombre y una lista. Videos del cuerpo, después.</p>
+                <p class="muted">Gym o casa. Toca un músculo y ves el nombre y una lista.</p>
             </a>
             <a class="card tool-card" href="/herramientas#glosario">
                 <p class="kicker">Jerga</p>
                 <h3>Glosario</h3>
-                <p class="muted">Calorías, macros, mesociclo, PPL, rutina. En cristiano.</p>
+                <p class="muted">Calorías, macros, mesociclo, PPL. En cristiano.</p>
             </a>
-        </div>
-    </section>
-
-    <section class="inside" id="acompanamiento">
-        <p class="kicker">El servicio</p>
-        <h2>Entrenamiento personalizado con seguimiento — 3 meses</h2>
-        <p class="lead">No es un PDF que descargas y ya. Alguien te acompaña a ejecutarlo. Bajar grasa o ganar masa: se ajusta comida y rutina a esa meta.</p>
-        <div class="grid-2" style="margin-top:28px;">
-            <div>
-                <p class="kicker">Qué incluye</p>
-                <ul class="list">
-                    <li><b>Rutina personalizada</b> — días, nivel, gym o casa.</li>
-                    <li><b>Alimentación realista</b> — con lo que ya comes, sin prohibiciones imposibles.</li>
-                    <li><b>Dashboard</b> — resultados y cumplimiento, no solo “si anotaste algo”.</li>
-                    <li><b>Videos de tus ejercicios</b> — dentro del área de alumno, no en YouTube público.</li>
-                    <li><b>WhatsApp directo</b> — dudas en el momento.</li>
-                    <li><b>Evaluación cada 2 semanas</b> — mail o videollamada, y se ajusta lo que no está funcionando.</li>
-                </ul>
-            </div>
-            <article class="card offer-card">
-                <p class="kicker">Inversión</p>
-                <div class="price">$450.000 <small>CLP · 3 meses</small></div>
-                <p class="muted">¿Quieres 50% de descuento? Te enviamos el código a tu correo ($225.000).</p>
-                <div class="actions">
-                    <button type="button" class="btn btn-gold" data-open-offer>Quiero el 50% off</button>
-                    <a class="btn btn-ghost" href="/3meses">Ver detalle</a>
-                </div>
-                <p class="note">El código llega por email. Lo usas al coordinar el pago con Gary.</p>
-            </article>
         </div>
     </section>
 
@@ -101,21 +91,12 @@
         <div class="grid-2">
             <div>
                 <p class="lead">
-                    Gary Felicien, venezolano de 39 años, lleva más de 25 años
-                    en el entrenamiento, el deporte y el estudio del cuerpo.
+                    Venezolano, 39 años. Más de 25 en entrenamiento y el estudio del cuerpo.
+                    ACE Certified Personal Trainer y técnico en alimentos.
                 </p>
                 <p class="muted">
-                    Empezó joven, en el equipo juvenil de triatlón del estado Lara.
-                    Después vinieron décadas de gimnasio: métodos, sistemas y rutinas
-                    que fue probando en carne propia.
-                </p>
-                <p class="muted">
-                    Se formó en culturismo con la IFBB. Nunca ha competido; la pasión
-                    lo llevó a estudiar qué funciona de verdad en entrenamiento y comida.
-                    Es <b>ACE Certified Personal Trainer</b> y técnico en alimentos.
-                </p>
-                <p class="lead" style="margin-top:18px;">
-                    No necesitas ser atleta para empezar. Solo un punto de partida.
+                    Se formó en culturismo con la IFBB; la práctica la hizo en gimnasio, no en escenario.
+                    No necesitas ser atleta para empezar.
                 </p>
             </div>
             <div class="photo-grid">
@@ -129,29 +110,54 @@
         <div class="certs">
             <figure>
                 <img src="/img/cert-ace-cpt.jpg" alt="ACE Certified Personal Trainer, Gary Felicien">
-                <figcaption>ACE Certified Personal Trainer</figcaption>
+                <figcaption>Personal Trainer</figcaption>
             </figure>
             <figure>
                 <img src="/img/cert-ift.jpg" alt="ACE IFT Program Design for Every Client">
-                <figcaption>ACE IFT · diseño de programas</figcaption>
+                <figcaption>IFT · programas</figcaption>
             </figure>
             <figure>
                 <img src="/img/cert-athletic.jpg" alt="ACE Athletic Performance for Sport and Life">
-                <figcaption>ACE Athletic Performance</figcaption>
+                <figcaption>Athletic Performance</figcaption>
             </figure>
             <figure>
                 <img src="/img/cert-lifestyle.jpg" alt="ACE Foundations of Lifestyle Medicine">
-                <figcaption>ACE Lifestyle Medicine</figcaption>
+                <figcaption>Lifestyle Medicine</figcaption>
             </figure>
+        </div>
+    </section>
+
+    <section class="inside" id="faq">
+        <p class="kicker">Dudas</p>
+        <h2>Preguntas cortas</h2>
+        <div class="glossary">
+            <details>
+                <summary>¿Sirve para bajar de peso y para ganar músculo?</summary>
+                <p>Sí. El servicio es el mismo. Se adapta comida y rutina a esa meta.</p>
+            </details>
+            <details>
+                <summary>¿Gym o casa?</summary>
+                <p>Las dos. La rutina se arma con el equipo que tienes.</p>
+            </details>
+            <details>
+                <summary>¿Tengo que dejar la comida chatarra?</summary>
+                <p>No de golpe. Se trabaja con lo que ya comes, para que se pueda sostener.</p>
+            </details>
+            <details>
+                <summary>¿Qué pasa cuando terminan los 3 meses?</summary>
+                <p>Te quedas con el sistema. Si quieres seguir con seguimiento, se habla con Gary.</p>
+            </details>
         </div>
     </section>
 </main>
 
 <footer class="foot">
-    <span>GaryFelicienFit · Gary Felicien</span>
-    <span>El seguimiento de alumnos está en Ingreso. Las herramientas públicas piden registro.</span>
+    <span>GaryFelicienFit</span>
+    <a href="https://wa.me/56959128603" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+    <a href="/ingreso">Ya soy alumno</a>
     <span class="credit"><a href="https://anclacl.netlify.app/#top" target="_blank" rel="noopener noreferrer">Página hecha por Ancla</a></span>
 </footer>
+<a class="wa-fab" href="https://wa.me/56959128603" target="_blank" rel="noopener noreferrer">WhatsApp</a>
 <script src="/site.js"></script>
 <script src="/nav.js"></script>
 </body>

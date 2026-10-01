@@ -15,10 +15,16 @@
     </a>
     <nav class="tabs" aria-label="Secciones">
         <a href="/">Inicio</a>
-        <a href="/herramientas">Herramientas</a>
-        <a href="/3meses">Acompañamiento</a>
-        <a href="/#coach">El coach</a>
-        <a href="/ingreso">Ingreso</a>
+        <details class="nav-drop">
+            <summary>Herramientas</summary>
+            <div class="nav-drop-menu">
+                <a href="/herramientas#calculadora">Calculadora</a>
+                <a href="/herramientas#glosario">Glosario</a>
+                <a href="/ejercicios">Ejercicios</a>
+            </div>
+        </details>
+        <a href="/3meses">3 meses</a>
+        <a href="/#coach">Coach</a>
     </nav>
 </header>
 
@@ -26,67 +32,88 @@
     <img class="gary-hero" src="/img/gary-lift.jpg" alt="Gary Felicien">
     <div class="hero-copy">
         <p class="kicker">Acompañamiento</p>
-        <h1>Entrenamiento personalizado con seguimiento real — 3 meses</h1>
+        <h1>Tres meses con seguimiento, no un PDF.</h1>
         <p class="lead">
-            No es un plan que descargas y ya. Es entrenamiento y alimentación hechos para ti,
-            con seguimiento para que lo sostengas. Sirve para <b>bajar de peso</b> o <b>ganar músculo</b>:
-            el servicio es el mismo; cambia la adaptación.
+            Entrenamiento y comida hechos para ti. Bajar de peso o ganar músculo:
+            se adapta el plan. El precio de lista es $450.000 CLP; con el código, $225.000.
         </p>
-        <div class="price-row">
-            <div class="price">$450.000 <small>CLP · 3 meses</small></div>
-        </div>
         <div class="actions">
-            <button type="button" class="btn btn-gold" data-open-offer>¿Quieres 50% de descuento?</button>
+            <button type="button" class="btn btn-gold" data-open-offer>Quiero el 50% off</button>
         </div>
     </div>
 </section>
 
 <main class="wrap">
     <section>
-        <p class="kicker">Qué incluye</p>
-        <h2>Alguien que te acompaña a ejecutarlo.</h2>
+        <p class="kicker">Cómo va</p>
+        <h2>Tres pasos, claros.</h2>
         <ul class="list">
-            <li><b>Rutina personalizada</b> — según tus días, nivel, y si entrenas en gym o en casa.</li>
-            <li><b>Alimentación realista</b> — con lo que ya comes, sin prohibiciones imposibles.</li>
-            <li><b>Dashboard de seguimiento</b> — resultados y cumplimiento, no solo “si anotaste algo”.</li>
-            <li><b>Videos de tus ejercicios</b> — dentro del área de alumno, no en YouTube público.</li>
-            <li><b>WhatsApp directo</b> — dudas en el momento.</li>
-            <li><b>Evaluación cada 2 semanas</b> — mail o videollamada, y se ajusta lo que no está funcionando.</li>
+            <li><b>1. Dejas el correo</b> — te llega el código. Gary coordina el pago y el arranque.</li>
+            <li><b>2. Armamos tu plan</b> — días, gym o casa, y comida con lo que ya comes.</li>
+            <li><b>3. Tres meses encima</b> — dashboard, WhatsApp y ajuste cada 2 semanas.</li>
         </ul>
     </section>
 
     <section class="inside">
-        <p class="kicker">Para quién es</p>
-        <h2>Una meta, un mismo acompañamiento.</h2>
-        <p class="muted">
-            Si tu foco es bajar grasa o ganar masa, no hay dos productos. Se adapta comida y rutina.
-            Encaja si ya intentaste solo — apps, dietas, gym por tu cuenta — y te falta alguien que te
-            acompañe a ejecutar y ajuste el camino contigo.
-        </p>
+        <p class="kicker">Qué incluye</p>
+        <h2>Lo que usas cada semana.</h2>
+        <ul class="list">
+            <li><b>Rutina</b> — según tus días, nivel, gym o casa.</li>
+            <li><b>Alimentación</b> — sin prohibiciones imposibles.</li>
+            <li><b>Dashboard</b> — resultados y cumplimiento.</li>
+            <li><b>Videos de tus ejercicios</b> — en el área de alumno.</li>
+            <li><b>WhatsApp</b> — dudas en el momento.</li>
+            <li><b>Evaluación cada 2 semanas</b> — mail o videollamada.</li>
+        </ul>
     </section>
 
     <section class="inside" id="oferta">
         <div class="grid-2">
             <div>
                 <p class="kicker">Inversión</p>
-                <h2>$450.000 CLP por 3 meses. $225.000 si dejas tu correo.</h2>
-                <p class="muted">El 50% es por registrarte aquí. Gary te escribe para coordinar el pago y el arranque.</p>
+                <h2>$450.000. $225.000 si dejas tu correo.</h2>
+                <p class="muted">El código llega por email. No se muestra en la web. <a href="/#coach">Quién es Gary</a>.</p>
             </div>
             <article class="card offer-card">
                 <div class="price">$450.000 <small>CLP · 3 meses</small></div>
-                <p class="muted">¿Quieres 50% de descuento? Te enviamos el código a tu correo.</p>
+                <p class="muted">50% off por registrarte aquí.</p>
                 <div class="actions">
-                    <button type="button" class="btn btn-gold" data-open-offer>Quiero el 50% off</button>
+                    <button type="button" class="btn btn-gold" data-open-offer>Enviarme el código</button>
                 </div>
             </article>
+        </div>
+    </section>
+
+    <section class="inside" id="faq">
+        <p class="kicker">Dudas</p>
+        <h2>Preguntas cortas</h2>
+        <div class="glossary">
+            <details>
+                <summary>¿Sirve para bajar de peso y para ganar músculo?</summary>
+                <p>Sí. El servicio es el mismo. Se adapta comida y rutina a esa meta.</p>
+            </details>
+            <details>
+                <summary>¿Gym o casa?</summary>
+                <p>Las dos. La rutina se arma con el equipo que tienes.</p>
+            </details>
+            <details>
+                <summary>¿Tengo que dejar la comida chatarra?</summary>
+                <p>No de golpe. Se trabaja con lo que ya comes, para que se pueda sostener.</p>
+            </details>
+            <details>
+                <summary>¿Los videos están en YouTube?</summary>
+                <p>No. Los de tu rutina están en el área de alumno.</p>
+            </details>
         </div>
     </section>
 </main>
 
 <footer class="foot">
-    <span>GaryFelicienFit · 3 meses</span>
-    <a href="/">Volver al inicio</a>
+    <span>GaryFelicienFit</span>
+    <a href="https://wa.me/56959128603" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+    <a href="/ingreso">Ya soy alumno</a>
 </footer>
+<a class="wa-fab" href="https://wa.me/56959128603" target="_blank" rel="noopener noreferrer">WhatsApp</a>
 <script src="/site.js"></script>
 <script src="/nav.js"></script>
 </body>

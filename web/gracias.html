@@ -11,10 +11,16 @@
     <a class="brand" href="/"><b>Gary Felicien</b><span>Fit</span></a>
     <nav class="tabs" aria-label="Secciones">
         <a href="/">Inicio</a>
-        <a href="/herramientas">Herramientas</a>
-        <a href="/3meses">Acompañamiento</a>
-        <a href="/#coach">El coach</a>
-        <a href="/ingreso">Ingreso</a>
+        <details class="nav-drop">
+            <summary>Herramientas</summary>
+            <div class="nav-drop-menu">
+                <a href="/herramientas#calculadora">Calculadora</a>
+                <a href="/herramientas#glosario">Glosario</a>
+                <a href="/ejercicios">Ejercicios</a>
+            </div>
+        </details>
+        <a href="/3meses">3 meses</a>
+        <a href="/#coach">Coach</a>
     </nav>
 </header>
 <main class="wrap">
@@ -26,9 +32,13 @@
     </p>
     <div class="actions">
         <a class="btn btn-gold" href="/">Ir al inicio</a>
-        <a class="btn btn-ghost" href="/3meses">Ver el acompañamiento</a>
+        <a class="btn btn-ghost" href="https://wa.me/56959128603" target="_blank" rel="noopener noreferrer">WhatsApp</a>
     </div>
 </main>
+<footer class="foot">
+    <span>GaryFelicienFit</span>
+    <a href="/ingreso">Ya soy alumno</a>
+</footer>
 <script src="/nav.js"></script>
 </body>
 </html>

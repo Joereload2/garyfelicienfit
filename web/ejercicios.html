@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ejercicios por músculo — GaryFelicienFit</title>
+<meta name="description" content="Elige gimnasio o casa, toca un músculo en el mapa y mira ejercicios para esa zona. Nombres primero; videos después.">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body>
+<header class="top">
+    <a class="brand" href="/">
+        <b>Gary Felicien</b>
+        <span>Fit</span>
+    </a>
+    <nav class="tabs" aria-label="Secciones">
+        <a href="/">Inicio</a>
+        <a href="/empezar">Empezar</a>
+        <a href="/bajar">Bajar de peso</a>
+        <a href="/recomposicion">Recomposición</a>
+        <a href="/ejercicios">Ejercicios</a>
+        <a href="/#calculadora">Calculadora</a>
+        <a href="/3meses">3 meses</a>
+        <a href="/#coach">El coach</a>
+        <a href="/#coaching">Coaching</a>
+        <a href="/ingreso">Ingreso</a>
+    </nav>
+</header>
+
+<main class="wrap explora">
+    <p class="kicker">Biblioteca</p>
+    <h1>Elige el equipo y el músculo.</h1>
+    <p class="lead">Gimnasio o casa. Toca el mapa: te dice el nombre del músculo y una lista de ejercicios. Por ahora, solo el nombre.</p>
+
+    <div class="eq-row" role="group" aria-label="Equipo">
+        <button type="button" class="eq-btn active" data-eq="gym">Gimnasio</button>
+        <button type="button" class="eq-btn" data-eq="home">Casa</button>
+    </div>
+
+    <div class="explora-grid">
+        <section class="card map-card">
+            <p class="muscle-label" id="muscleLabel">Toca un músculo en el mapa.</p>
+            <div class="map-frame" id="muscleMap" aria-label="Mapa de músculos, frente y espalda"></div>
+            <p class="caption">Frente a la izquierda, espalda a la derecha.</p>
+        </section>
+        <section class="card">
+            <p class="kicker">Lista</p>
+            <h2 id="exHint">Elige gimnasio o casa y un músculo.</h2>
+            <ul class="list" id="exList"></ul>
+        </section>
+    </div>
+</main>
+<script src="/ejercicios-mapa.js"></script>
+<script src="/nav.js"></script>
+</body>
+</html>

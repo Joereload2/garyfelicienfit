@@ -5,6 +5,11 @@
   functions = "tools/netlify-functions"
 
 [[redirects]]
+  from = "/ejercicios"
+  to = "/ejercicios.html"
+  status = 200
+
+[[redirects]]
   from = "/api/checkout"
   to = "/.netlify/functions/checkout"
   status = 200

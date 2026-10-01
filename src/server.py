@@ -62,6 +62,8 @@ LANDING = {
     "recomposicion.html",
     "empezar.html",
     "3meses.html",
+    "ejercicios.html",
+    "ejercicios-mapa.js",
     "site.css",
     "site.js",
     "quiz.js",
@@ -218,8 +220,11 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/alumno", "/alumno.html"):
             self._html_file("alumno.html")
             return
-        if path in ("/alumno/ejercicios", "/ejercicios"):
+        if path in ("/ejercicios", "/ejercicios.html"):
             self._html_file("ejercicios.html")
+            return
+        if path == "/alumno/ejercicios":
+            self._file_from(PUBLIC, "ejercicios.html")
             return
         if path == "/gracias":
             self._html_file("gracias.html")
@@ -235,6 +240,7 @@ class Handler(BaseHTTPRequestHandler):
             "/quiz.js",
             "/nav.js",
             "/videos.json",
+            "/ejercicios-mapa.js",
             "/alumno.js",
             "/alumno.css",
             "/ejercicios.js",
@@ -244,7 +250,7 @@ class Handler(BaseHTTPRequestHandler):
         ):
             self._static(path.lstrip("/"))
             return
-        if re.fullmatch(r"/img/[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp)", path):
+        if re.fullmatch(r"/img/[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp|svg)", path):
             self._static(path.lstrip("/"))
             return
         if path == "/api/product":

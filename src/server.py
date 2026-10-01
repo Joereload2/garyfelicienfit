@@ -64,6 +64,8 @@ LANDING = {
     "3meses.html",
     "ejercicios.html",
     "ejercicios-mapa.js",
+    "herramientas.html",
+    "registro.js",
     "site.css",
     "site.js",
     "quiz.js",
@@ -193,20 +195,24 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/":
             self._html_file("index.html")
             return
-        if path in ("/bajar", "/bajar.html"):
-            self._html_file("bajar.html")
-            return
-        if path in ("/recomposicion", "/recomposicion.html"):
-            self._html_file("recomposicion.html")
-            return
-        if path in ("/vitalidad", "/vitalidad.html"):
-            self._redirect("/recomposicion")
-            return
-        if path in ("/empezar", "/empezar.html", "/tu-plan"):
-            self._html_file("empezar.html")
+        if path in (
+            "/bajar",
+            "/bajar.html",
+            "/recomposicion",
+            "/recomposicion.html",
+            "/empezar",
+            "/empezar.html",
+            "/tu-plan",
+            "/vitalidad",
+            "/vitalidad.html",
+        ):
+            self._redirect("/3meses")
             return
         if path in ("/3meses", "/3meses.html", "/acompanamiento"):
             self._html_file("3meses.html")
+            return
+        if path in ("/herramientas", "/herramientas.html"):
+            self._html_file("herramientas.html")
             return
         if path == "/admin":
             self._html_file("admin.html")
@@ -240,6 +246,7 @@ class Handler(BaseHTTPRequestHandler):
             "/quiz.js",
             "/nav.js",
             "/videos.json",
+            "/registro.js",
             "/ejercicios-mapa.js",
             "/alumno.js",
             "/alumno.css",
@@ -358,6 +365,9 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path == "/api/oferta-3meses":
                 self._oferta_3meses()
+                return
+            if path == "/api/registro":
+                self._registro()
                 return
             if path == "/webhooks/stripe":
                 self._stripe_webhook()
@@ -757,6 +767,48 @@ class Handler(BaseHTTPRequestHandler):
             {
                 "ok": True,
                 "message": "Revisa tu correo. Te enviamos el código de 50% de descuento.",
+            },
+        )
+
+    def _registro(self) -> None:
+        data = self._read_json()
+        name = str(data.get("name") or "").replace("<", "").replace(">", "").strip()[:80]
+        if len(name) < 2:
+            raise ValidationError("Introduce tu nombre.", "name")
+        email = normalize_email(data.get("email"))
+        phone = str(data.get("phone") or "").replace("<", "").replace(">", "").strip()[:40]
+        digits = re.sub(r"\D", "", phone)
+        if len(digits) < 8 or len(digits) > 15:
+            raise ValidationError(
+                "Introduce un teléfono válido. Ejemplo Chile: +56 9 1234 5678.",
+                "phone",
+            )
+        ads = data.get("ads_consent")
+        ads_ok = ads is True or ads == 1 or str(ads).strip().lower() in {"true", "1", "on", "sí", "si"}
+        if not ads_ok:
+            raise ValidationError(
+                "Para registrarte hay que autorizar el envío de información comercial. La casilla no viene marcada a propósito.",
+                "ads_consent",
+            )
+        source = str(data.get("source") or "herramientas").replace("<", "").replace(">", "").strip()[:40]
+        if source not in {"herramientas", "ejercicios"}:
+            source = "herramientas"
+        store.save_marketing_lead(
+            {
+                "name": name,
+                "email": email,
+                "phone": phone,
+                "ads_consent": 1,
+                "source": source,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+        self._json(
+            200,
+            {
+                "ok": True,
+                "message": "Listo. Ya puedes usar las herramientas.",
+                "email": email,
             },
         )
 

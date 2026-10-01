@@ -90,6 +90,31 @@ def create_entitlement(token: str, email: str, payment_ref: str, url: str) -> di
         return sqlite_db.insert_entitlement(ent)
 
 
+def save_marketing_lead(entry: dict) -> dict:
+    if not entry.get("created_at"):
+        entry = dict(entry)
+        entry["created_at"] = now_iso()
+    ensure_dirs()
+    with _lock:
+        saved = sqlite_db.upsert_marketing_lead(entry)
+    try:
+        save_coaching(
+            {
+                "name": entry.get("name"),
+                "email": entry.get("email"),
+                "phone": entry.get("phone") or "",
+                "message": (
+                    "Registro herramientas. Consentimiento publicidad: sí. "
+                    "Fuente: " + (entry.get("source") or "herramientas") + "."
+                ),
+                "created_at": entry.get("created_at"),
+            }
+        )
+    except Exception as exc:
+        print("marketing dual-write coaching:", str(exc)[:300])
+    return saved
+
+
 def save_coaching(entry: dict) -> dict:
     if not entry.get("created_at"):
         entry = dict(entry)

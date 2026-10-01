@@ -99,6 +99,15 @@ CREATE TABLE IF NOT EXISTS discount_codes (
   used INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS marketing_leads (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  phone TEXT NOT NULL,
+  ads_consent INTEGER NOT NULL DEFAULT 0,
+  source TEXT NOT NULL DEFAULT 'herramientas',
+  created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS pupil_lifts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   pupil_id INTEGER NOT NULL,
@@ -232,6 +241,56 @@ def consume_entitlement(token: str, pdf_path: str, pdf_filename: str, submission
     if cur.rowcount != 1:
         raise ValueError("used")
     return get_entitlement_by_token(token) or row
+
+
+def get_marketing_by_email(email: str) -> dict | None:
+    cur = _connect().execute(
+        "SELECT * FROM marketing_leads WHERE lower(email) = lower(?) LIMIT 1",
+        (email,),
+    )
+    row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def upsert_marketing_lead(entry: dict) -> dict:
+    conn = _connect()
+    email = entry.get("email") or ""
+    existing = get_marketing_by_email(email)
+    if existing:
+        conn.execute(
+            """
+            UPDATE marketing_leads
+            SET name = ?, phone = ?, ads_consent = ?, source = ?
+            WHERE lower(email) = lower(?)
+            """,
+            (
+                entry.get("name"),
+                entry.get("phone") or "",
+                1 if entry.get("ads_consent") else 0,
+                entry.get("source") or "herramientas",
+                email,
+            ),
+        )
+        conn.commit()
+        return get_marketing_by_email(email) or existing
+    cur = conn.execute(
+        """
+        INSERT INTO marketing_leads (name, email, phone, ads_consent, source, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            entry.get("name"),
+            email,
+            entry.get("phone") or "",
+            1 if entry.get("ads_consent") else 0,
+            entry.get("source") or "herramientas",
+            entry.get("created_at") or "",
+        ),
+    )
+    conn.commit()
+    entry = dict(entry)
+    entry["id"] = cur.lastrowid
+    return entry
 
 
 def insert_coaching(entry: dict) -> dict:

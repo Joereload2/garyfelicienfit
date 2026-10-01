@@ -7,7 +7,8 @@
 <meta name="description" content="Elige gimnasio o casa, toca un músculo en el mapa y mira ejercicios para esa zona. Nombres primero; videos después.">
 <link rel="stylesheet" href="/site.css">
 </head>
-<body>
+<body class="gated" data-reg-source="ejercicios">
+<script src="/registro.js"></script>
 <header class="top">
     <a class="brand" href="/">
         <b>Gary Felicien</b>
@@ -15,22 +16,44 @@
     </a>
     <nav class="tabs" aria-label="Secciones">
         <a href="/">Inicio</a>
-        <a href="/empezar">Empezar</a>
-        <a href="/bajar">Bajar de peso</a>
-        <a href="/recomposicion">Recomposición</a>
-        <a href="/ejercicios">Ejercicios</a>
-        <a href="/#calculadora">Calculadora</a>
-        <a href="/3meses">3 meses</a>
+        <a href="/herramientas">Herramientas</a>
+        <a href="/3meses">Acompañamiento</a>
         <a href="/#coach">El coach</a>
-        <a href="/#coaching">Coaching</a>
         <a href="/ingreso">Ingreso</a>
     </nav>
 </header>
 
-<main class="wrap explora">
-    <p class="kicker">Biblioteca</p>
+<div class="reg-gate" id="regGate" role="dialog" aria-labelledby="regTitle" aria-modal="true">
+    <form class="card" id="regForm">
+        <p class="kicker">Registro</p>
+        <h2 id="regTitle">Para usar el mapa, regístrate</h2>
+        <p class="muted">Nombre, correo y teléfono. Desbloqueas el mapa y las demás herramientas, y podemos escribirte después.</p>
+        <div id="regError" class="error"></div>
+        <label for="regName">Nombre</label>
+        <input id="regName" type="text" required autocomplete="name" placeholder="Tu nombre">
+        <label for="regEmail">Correo</label>
+        <input id="regEmail" type="email" required autocomplete="email" placeholder="tucorreo@email.com">
+        <label for="regPhone">Teléfono / WhatsApp</label>
+        <input id="regPhone" type="tel" required autocomplete="tel" placeholder="+56 9 1234 5678">
+        <label class="consent">
+            <input id="regAds" type="checkbox">
+            <span>Autorizo a GaryFelicienFit a usar mi nombre, correo y teléfono para enviarme información comercial, promociones y novedades por correo y WhatsApp. Puedo revocar este consentimiento cuando quiera. La casilla no viene marcada.</span>
+        </label>
+        <p class="legal-box">
+            Advertencia (Chile, Ley 19.628 y Ley 19.496): tus datos se usan para abrir estas herramientas
+            y, si autorizas, para publicidad. No vendemos tu lista. Para borrar tus datos o dejar de recibir
+            mensajes, escríbenos por WhatsApp o responde un correo pidiendo la baja.
+        </p>
+        <div class="actions">
+            <button class="btn btn-gold" type="submit" id="regSubmit">Entrar al mapa</button>
+        </div>
+    </form>
+</div>
+
+<main class="wrap explora tools-body">
+    <p class="kicker">Herramientas · Mapa</p>
     <h1>Elige el equipo y el músculo.</h1>
-    <p class="lead">Gimnasio o casa. Toca el mapa: te dice el nombre del músculo y una lista de ejercicios. Por ahora, solo el nombre.</p>
+    <p class="lead">Gimnasio o casa. Toca el mapa: te dice el nombre del músculo y una lista de ejercicios. Los videos del cuerpo llegan después; los de tu rutina están en el área de alumno.</p>
 
     <div class="eq-row" role="group" aria-label="Equipo">
         <button type="button" class="eq-btn active" data-eq="gym">Gimnasio</button>
@@ -49,6 +72,7 @@
             <ul class="list" id="exList"></ul>
         </section>
     </div>
+    <p class="muted" style="margin-top:28px;"><a href="/herramientas">Calculadora y glosario</a> · <a href="/3meses">Acompañamiento 3 meses</a></p>
 </main>
 <script src="/ejercicios-mapa.js"></script>
 <script src="/nav.js"></script>

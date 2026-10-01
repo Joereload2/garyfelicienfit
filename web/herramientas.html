@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Herramientas — GaryFelicienFit</title>
+<meta name="description" content="Calculadora de calorías e IMC, glosario de entrenamiento y mapa de ejercicios. Regístrate para usarlas.">
+<link rel="stylesheet" href="/site.css">
+</head>
+<body class="gated" data-reg-source="herramientas">
+<script src="/registro.js"></script>
+<header class="top">
+    <a class="brand" href="/">
+        <b>Gary Felicien</b>
+        <span>Fit</span>
+    </a>
+    <nav class="tabs" aria-label="Secciones">
+        <a href="/">Inicio</a>
+        <a href="/herramientas">Herramientas</a>
+        <a href="/3meses">Acompañamiento</a>
+        <a href="/#coach">El coach</a>
+        <a href="/ingreso">Ingreso</a>
+    </nav>
+</header>
+
+<div class="reg-gate" id="regGate" role="dialog" aria-labelledby="regTitle" aria-modal="true">
+    <form class="card" id="regForm">
+        <p class="kicker">Registro</p>
+        <h2 id="regTitle">Para usar las herramientas, regístrate</h2>
+        <p class="muted">Nombre, correo y teléfono. Así desbloqueas calculadora, glosario y mapa, y podemos escribirte después.</p>
+        <div id="regError" class="error"></div>
+        <label for="regName">Nombre</label>
+        <input id="regName" type="text" required autocomplete="name" placeholder="Tu nombre">
+        <label for="regEmail">Correo</label>
+        <input id="regEmail" type="email" required autocomplete="email" placeholder="tucorreo@email.com">
+        <label for="regPhone">Teléfono / WhatsApp</label>
+        <input id="regPhone" type="tel" required autocomplete="tel" placeholder="+56 9 1234 5678">
+        <label class="consent">
+            <input id="regAds" type="checkbox">
+            <span>Autorizo a GaryFelicienFit a usar mi nombre, correo y teléfono para enviarme información comercial, promociones y novedades por correo y WhatsApp. Puedo revocar este consentimiento cuando quiera. La casilla no viene marcada.</span>
+        </label>
+        <p class="legal-box">
+            Advertencia (Chile, Ley 19.628 y Ley 19.496): tus datos se usan para abrir estas herramientas
+            y, si autorizas, para publicidad. No vendemos tu lista. Para borrar tus datos o dejar de recibir
+            mensajes, escríbenos por WhatsApp o responde un correo pidiendo la baja.
+        </p>
+        <div class="actions">
+            <button class="btn btn-gold" type="submit" id="regSubmit">Entrar a las herramientas</button>
+        </div>
+    </form>
+</div>
+
+<main class="wrap tools-body">
+    <p class="kicker">Herramientas</p>
+    <h1>Números, jerga y ejercicios.</h1>
+    <p class="lead">La calculadora te da un punto de partida. El glosario explica las palabras. El mapa muestra ejercicios por músculo. El acompañamiento de 3 meses usa esto con seguimiento.</p>
+    <div class="hub-jump">
+        <a class="btn btn-ghost" href="#calculadora">Calculadora</a>
+        <a class="btn btn-ghost" href="#glosario">Glosario</a>
+        <a class="btn btn-ghost" href="/ejercicios">Mapa de ejercicios</a>
+    </div>
+
+    <section id="calculadora">
+        <p class="kicker">Números</p>
+        <h2>Tus números de partida</h2>
+        <p class="muted">IMC, calorías en reposo y gasto según tu actividad. Orientativo, no es un diagnóstico. El acompañamiento ajusta esto a tu meta — bajar de peso o ganar músculo — y a lo que comes de verdad.</p>
+        <form class="card calc-form" id="calcForm" novalidate>
+            <div class="error" id="calcError"></div>
+            <div class="calc-row">
+                <div>
+                    <label for="calcSex">Sexo</label>
+                    <select id="calcSex" required>
+                        <option value="">Selecciona</option>
+                        <option value="m">Hombre</option>
+                        <option value="f">Mujer</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="calcAge">Edad (años)</label>
+                    <input id="calcAge" type="number" inputmode="numeric" min="15" max="80" step="1" required>
+                </div>
+            </div>
+            <div class="calc-row">
+                <div>
+                    <label for="calcHeight">Altura (cm)</label>
+                    <input id="calcHeight" type="number" inputmode="decimal" min="120" max="230" step="0.1" required>
+                    <span class="note">Ejemplo: 170. Si pones 1.70, te avisamos.</span>
+                </div>
+                <div>
+                    <label for="calcWeight">Peso (kg)</label>
+                    <input id="calcWeight" type="number" inputmode="decimal" min="30" max="250" step="0.1" required>
+                </div>
+            </div>
+            <label for="calcActivity">Nivel de actividad física</label>
+            <select id="calcActivity" required>
+                <option value="">Selecciona</option>
+                <option value="1.2">Sedentario (1.2) — poco o ningún ejercicio, oficina, casi no caminas.</option>
+                <option value="1.375">Ligero (1.375) — ejercicio 1–3 días/semana (caminatas, yoga suave).</option>
+                <option value="1.55">Moderado (1.55) — 3–5 días/semana (gym, trote, deporte recreativo).</option>
+                <option value="1.725">Activo (1.725) — intenso 6–7 días/semana (fuerza o cardio casi diario).</option>
+                <option value="1.9">Muy activo (1.9) — diario muy intenso, o trabajo físico + entreno.</option>
+            </select>
+            <div class="actions">
+                <button class="btn btn-gold" type="submit">Calcular</button>
+            </div>
+        </form>
+        <div class="calc-results" id="calcResults" hidden>
+            <article class="card">
+                <h3>IMC</h3>
+                <p class="calc-value" id="calcImcN"></p>
+                <span class="calc-badge" id="calcImcBadge"></span>
+                <p class="note">Peso (kg) dividido por la altura en metros al cuadrado.</p>
+            </article>
+            <article class="card">
+                <h3>TMB</h3>
+                <p class="calc-value" id="calcTmbN"></p>
+                <p class="note">Estas son las calorías que tu cuerpo quema en reposo, solo para mantenerte vivo.</p>
+            </article>
+            <article class="card">
+                <h3>GET</h3>
+                <p class="calc-value" id="calcGetN"></p>
+                <p class="note">Este es tu gasto total considerando tu nivel de actividad. Es tu punto de referencia para bajar, mantener o subir de peso.</p>
+                <div class="calc-sugs">
+                    <div><span>Bajar de peso</span><strong id="calcCut"></strong></div>
+                    <div><span>Mantener peso</span><strong id="calcHold"></strong></div>
+                    <div><span>Ganar masa muscular</span><strong id="calcGain"></strong></div>
+                </div>
+            </article>
+            <p class="muted" id="calcSuggest"></p>
+            <div class="actions">
+                <a class="btn btn-gold" href="/3meses">Ver el acompañamiento</a>
+            </div>
+            <p class="note">Cifras orientativas (Mifflin-St Jeor). No sustituyen evaluación médica ni el acompañamiento de 3 meses.</p>
+        </div>
+    </section>
+
+    <section class="inside" id="glosario">
+        <p class="kicker">Jerga</p>
+        <h2>Glosario, en cristiano</h2>
+        <p class="muted">Palabras que vas a ver en rutinas, videos y en el dashboard. Toca cada una.</p>
+        <div class="glossary">
+            <details open>
+                <summary>Calorías</summary>
+                <p>Una caloría es una unidad de energía. La comida te las da; el cuerpo las gasta al vivir y al entrenar. Si comes menos de las que gastas, bajas de peso. Si comes más, subes. No es magia: es cuenta.</p>
+            </details>
+            <details>
+                <summary>Cómo contar calorías</summary>
+                <p>Anota lo que comes un día normal: peso de cada alimento (báscula de cocina) y busca las kcal por 100 g en el envase o en una tabla. Suma el día. Al principio pesas todo; después ya calculas a ojo. El truco no es la app, es ser honesto con aceites, pan, salsas y “un poquito más”.</p>
+            </details>
+            <details>
+                <summary>Macros</summary>
+                <p>Los macronutrientes: proteína, carbohidratos y grasas. Las tres dan calorías (proteína y carbos ~4 kcal/g, grasas ~9 kcal/g). El alcohol también suma (~7 kcal/g) y no es un macro útil.</p>
+            </details>
+            <details>
+                <summary>Cómo contar macros</summary>
+                <p>Igual que las calorías, pero separas gramos de proteína, carbo y grasa. Ejemplo: 150 g de pechuga ~31 g de proteína. La etiqueta o una tabla te da los gramos por 100 g. Multiplicas. El acompañamiento te deja un objetivo diario; tú vas midiendo si te acercas, no si aciertas al miligramo.</p>
+            </details>
+            <details>
+                <summary>Proteína</summary>
+                <p>El nutriente que más ayuda a conservar o ganar músculo. Carnes, huevos, lácteos, pescado, legumbres. En un plan de fuerza suele ir alta a propósito, tanto si bajas de peso como si quieres masa.</p>
+            </details>
+            <details>
+                <summary>Carbohidratos</summary>
+                <p>La gasolina del entreno: arroz, papa, avena, fruta, pan. No son el enemigo. En déficit se bajan un poco; en etapa de ganar músculo suelen subir.</p>
+            </details>
+            <details>
+                <summary>Grasas</summary>
+                <p>Aceite, palta, frutos secos, yema, pescados grasos. Hacen falta para hormonas y para que la comida se sostenga. No las dejes en cero.</p>
+            </details>
+            <details>
+                <summary>Déficit y superávit</summary>
+                <p>Déficit: comes menos de tu GET, bajas de peso (idealmente grasa). Superávit: comes un poco más, para ganar músculo con el entreno. El mismo servicio de 3 meses usa uno u otro según tu meta; cambia la adaptación, no el método.</p>
+            </details>
+            <details>
+                <summary>TMB y GET</summary>
+                <p>TMB (tasa metabólica basal): lo que quemas en reposo. GET (gasto energético total): TMB × tu actividad. La calculadora de arriba estima ambos. Son un punto de partida, no una sentencia.</p>
+            </details>
+            <details>
+                <summary>IMC</summary>
+                <p>Índice de masa corporal: peso y altura, sin mirar músculo ni grasa. Sirve de brújula gruesa, no de diagnóstico. Alguien musculoso puede “salir alto” y estar bien.</p>
+            </details>
+            <details>
+                <summary>Rutina</summary>
+                <p>El orden de ejercicios, series y días que vas a repetir. No es “lo que se te ocurrió hoy en el gym”. Una rutina tiene lógica: qué músculos, con qué frecuencia, y cómo vas a ir subiendo.</p>
+            </details>
+            <details>
+                <summary>Mesociclo</summary>
+                <p>Un bloque de varias semanas (a menudo 4 a 8) con un foco: bajar grasa, ganar fuerza, volumen, etc. El microciclo es la semana dentro de ese bloque. El acompañamiento de 3 meses es, en la práctica, un mesociclo largo con ajustes cada 2 semanas.</p>
+            </details>
+            <details>
+                <summary>PPL</summary>
+                <p>Push / Pull / Legs. Empuje (pecho, hombros, tríceps), jalón (espalda, bíceps) y piernas. Es una forma de partir la semana, no una religión. Encaja cuando entrenas 5–6 días; no es obligatorio.</p>
+            </details>
+            <details>
+                <summary>Full body y Upper/Lower</summary>
+                <p>Full body: casi todo el cuerpo en cada sesión; típico de 2–3 días. Upper/Lower: un día arriba, un día abajo. Se elige según cuántos días puedes ir, no según qué suena más “pro”.</p>
+            </details>
+            <details>
+                <summary>Series, repeticiones y RIR</summary>
+                <p>Serie: un bloque de repeticiones sin soltar (ej. 8 sentadillas). Repetición: cada una. RIR (reps in reserve): cuántas te quedan en el tanque. RIR 2 = podrías hacer 2 más y paraste. Entrenar siempre al fallo no es más serio; suele ser más difícil de recuperar.</p>
+            </details>
+            <details>
+                <summary>Volumen, intensidad y frecuencia</summary>
+                <p>Volumen: cuánto trabajo (series a la semana). Intensidad: qué tan pesado o qué tan cerca del límite. Frecuencia: cada cuántos días tocas un músculo. Subir los tres a la vez suele terminar en fatiga, no en magia.</p>
+            </details>
+            <details>
+                <summary>Progresión</summary>
+                <p>Hacer un poco más con el tiempo: más peso, una repetición extra, o la misma carga con mejor forma. Si la rutina no progresa, es un hobby, no un plan.</p>
+            </details>
+            <details>
+                <summary>Hipertrofia</summary>
+                <p>Ganar tamaño muscular. Pide proteína, un estímulo de fuerza repetido y, si ya estás delgado, algo de superávit. No es solo “sentir el quemazón”.</p>
+            </details>
+            <details>
+                <summary>Recomposición</summary>
+                <p>Bajar grasa y cuidar o ganar músculo a la vez. La báscula se mueve poco; cambian cintura, fuerza y cómo sienta la ropa. Pide paciencia y proteína. No es un tercer producto: es otra adaptación del mismo acompañamiento.</p>
+            </details>
+        </div>
+        <div class="actions">
+            <a class="btn btn-gold" href="/ejercicios">Abrir el mapa de ejercicios</a>
+            <a class="btn btn-ghost" href="/3meses">Acompañamiento 3 meses</a>
+        </div>
+    </section>
+</main>
+
+<footer class="foot">
+    <span>GaryFelicienFit · Herramientas</span>
+    <a href="/">Volver al inicio</a>
+</footer>
+<script src="/site.js"></script>
+<script src="/nav.js"></script>
+</body>
+</html>

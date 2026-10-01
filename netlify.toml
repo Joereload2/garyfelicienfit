@@ -10,6 +10,61 @@
   status = 200
 
 [[redirects]]
+  from = "/herramientas"
+  to = "/herramientas.html"
+  status = 200
+
+[[redirects]]
+  from = "/3meses"
+  to = "/3meses.html"
+  status = 200
+
+[[redirects]]
+  from = "/gracias"
+  to = "/gracias.html"
+  status = 200
+
+[[redirects]]
+  from = "/bajar"
+  to = "/3meses.html"
+  status = 301
+
+[[redirects]]
+  from = "/bajar.html"
+  to = "/3meses.html"
+  status = 301
+
+[[redirects]]
+  from = "/recomposicion"
+  to = "/3meses.html"
+  status = 301
+
+[[redirects]]
+  from = "/recomposicion.html"
+  to = "/3meses.html"
+  status = 301
+
+[[redirects]]
+  from = "/empezar"
+  to = "/3meses.html"
+  status = 301
+
+[[redirects]]
+  from = "/empezar.html"
+  to = "/3meses.html"
+  status = 301
+
+[[redirects]]
+  from = "/api/registro"
+  to = "/.netlify/functions/registro"
+  status = 200
+
+[[redirects]]
+  from = "/api/oferta-3meses"
+  to = "/.netlify/functions/oferta-3meses"
+  status = 200
+
+[[redirects]]
   from = "/api/checkout"
   to = "/.netlify/functions/checkout"
   status = 200

@@ -436,6 +436,22 @@ textarea { min-height: 120px; resize: vertical; }
 .offer-deal { margin: 8px 0 16px; }
 .offer-deal .btn { margin-top: 12px; }
 .offer-card .price { font-size: 34px; }
+.offer-clock {
+    font-variant-numeric: tabular-nums;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold-2);
+    letter-spacing: 0.06em;
+    margin: 8px 0 0;
+}
+.offer-clock-lg { font-size: 42px; margin: 8px 0 12px; }
+[data-offer-list] { display: none; }
+body.offer-live [data-offer-list] {
+    display: inline;
+    text-decoration: line-through;
+    opacity: 0.55;
+    margin-right: 10px;
+}
 
 .model-grid {
     display: grid;

@@ -1,5 +1,93 @@
 "use strict";
 
+var OFFER_KEY = "gff_offer_v1";
+var offerTick = null;
+var offerState = null;
+
+function clpLabel(n) {
+    return "$" + Number(n || 0).toLocaleString("es-CL");
+}
+
+function clockLabel(s) {
+    s = Math.max(0, Math.floor(s || 0));
+    var m = Math.floor(s / 60);
+    var sec = s % 60;
+    return (m < 10 ? "0" : "") + m + ":" + (sec < 10 ? "0" : "") + sec;
+}
+
+function readOfferStore() {
+    try {
+        return JSON.parse(localStorage.getItem(OFFER_KEY) || "null");
+    } catch (e) {
+        return null;
+    }
+}
+
+function writeOfferStore(email, token) {
+    localStorage.setItem(OFFER_KEY, JSON.stringify({ email: email, token: token }));
+}
+
+function paintOffer(state) {
+    offerState = state;
+    var live = !!(state && state.live && state.remaining_s > 0);
+    document.body.classList.toggle("offer-live", live);
+    var price = live ? state.sale_clp || state.price_clp : (state && state.list_clp) || 450000;
+    document.querySelectorAll("[data-offer-now]").forEach(function (el) {
+        el.textContent = clpLabel(price);
+    });
+    document.querySelectorAll("[data-offer-clock]").forEach(function (el) {
+        if (live) {
+            el.hidden = false;
+            el.textContent = clockLabel(state.remaining_s);
+        } else {
+            el.hidden = true;
+            el.textContent = "";
+        }
+    });
+    var pay = document.getElementById("offerPay");
+    var ask = document.getElementById("offerAsk");
+    var liveBox = document.getElementById("offerLiveBox");
+    var submit = document.getElementById("offerSubmit");
+    if (ask) ask.hidden = live;
+    if (liveBox) liveBox.hidden = !live;
+    if (submit) submit.hidden = live;
+    if (pay) {
+        pay.hidden = !live;
+        pay.textContent = live
+            ? "Pagar " + clpLabel(state.sale_clp || state.price_clp)
+            : "Pagar";
+    }
+}
+
+function stopOfferTick() {
+    if (offerTick) {
+        clearInterval(offerTick);
+        offerTick = null;
+    }
+}
+
+function startOfferTick() {
+    stopOfferTick();
+    if (!offerState || !offerState.live) return;
+    offerTick = setInterval(function () {
+        if (!offerState) return;
+        offerState.remaining_s = Math.max(0, (offerState.remaining_s || 0) - 1);
+        if (offerState.remaining_s <= 0) {
+            offerState.live = false;
+            offerState.price_clp = offerState.list_clp;
+            stopOfferTick();
+        }
+        paintOffer(offerState);
+    }, 1000);
+}
+
+async function fetchOfferState(token) {
+    var res = await fetch("/api/oferta-estado?token=" + encodeURIComponent(token));
+    var data = await res.json().catch(function () { return {}; });
+    if (!res.ok || !data.ok) return null;
+    return data;
+}
+
 function bindOfferForm() {
     if (document.getElementById("offerModal")) {
         wireOfferModal();
@@ -8,17 +96,24 @@ function bindOfferForm() {
     var html = ""
         + '<div class="modal" id="offerModal">'
         + '<form class="card" id="offerForm">'
-        + "<h3>¿Quieres 50% de descuento?</h3>"
-        + '<p class="muted">Déjanos tu correo y te enviamos el código. El precio con descuento es $225.000 CLP por 3 meses (lista $450.000).</p>'
+        + "<h3>50% por 10 minutos</h3>"
+        + '<p class="muted" id="offerIntro">Déjanos tu correo. El 50% arranca al pedirlo: $225.000 en vez de $450.000, 10 minutos, cronometrado.</p>'
         + '<div id="offerError" class="error"></div>'
         + '<div id="offerOk" class="ok"></div>'
+        + '<div id="offerAsk">'
         + '<label for="offerEmail">Correo electrónico</label>'
         + '<input id="offerEmail" type="email" required autocomplete="email" placeholder="tucorreo@email.com">'
+        + "</div>"
+        + '<div id="offerLiveBox" hidden>'
+        + '<p class="offer-clock offer-clock-lg" data-offer-clock></p>'
+        + '<p class="muted">Paga ahora a <b data-offer-now>$225.000</b> CLP. Después vuelve a $450.000.</p>'
+        + "</div>"
         + '<div class="actions">'
         + '<button type="button" class="btn btn-ghost" id="offerClose">Ahora no</button>'
-        + '<button type="submit" class="btn btn-gold" id="offerSubmit">Enviarme el código</button>'
+        + '<button type="submit" class="btn btn-gold" id="offerSubmit">Quiero el 50%</button>'
+        + '<button type="button" class="btn btn-gold" id="offerPay" hidden>Pagar</button>'
         + "</div>"
-        + '<p class="note">Revisa bandeja de entrada y spam. El código no se muestra aquí.</p>'
+        + '<p class="note">El código llega al correo y no se muestra aquí. Mercado Pago cobra en pesos.</p>'
         + "</form></div>";
     document.body.insertAdjacentHTML("beforeend", html);
     wireOfferModal();
@@ -29,8 +124,16 @@ function wireOfferModal() {
     var form = document.getElementById("offerForm");
     if (!modal || !form || form.getAttribute("data-bound")) return;
     form.setAttribute("data-bound", "1");
+    var stored = readOfferStore();
+    if (stored && stored.email) {
+        var emailInput = document.getElementById("offerEmail");
+        if (emailInput) emailInput.value = stored.email;
+    }
+
     function openOffer() {
         modal.classList.add("open");
+        paintOffer(offerState);
+        if (offerState && offerState.live) return;
         var input = document.getElementById("offerEmail");
         if (input) setTimeout(function () { input.focus(); }, 50);
     }
@@ -45,6 +148,41 @@ function wireOfferModal() {
     modal.addEventListener("click", function (e) {
         if (e.target.id === "offerModal") closeOffer();
     });
+
+    var payBtn = document.getElementById("offerPay");
+    if (payBtn) {
+        payBtn.addEventListener("click", async function () {
+            var err = document.getElementById("offerError");
+            if (err) err.classList.remove("show");
+            var rec = readOfferStore() || {};
+            if (!rec.token || !rec.email) return;
+            payBtn.disabled = true;
+            try {
+                var res = await fetch("/api/checkout-3meses", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: rec.email, token: rec.token }),
+                });
+                var data = await res.json().catch(function () { return {}; });
+                if (!res.ok || !data.url) {
+                    if (err) {
+                        err.textContent = data.error || "No se pudo abrir el pago.";
+                        err.classList.add("show");
+                    }
+                    payBtn.disabled = false;
+                    return;
+                }
+                window.location.href = data.url;
+            } catch (e) {
+                if (err) {
+                    err.textContent = "Sin conexión con el servidor.";
+                    err.classList.add("show");
+                }
+                payBtn.disabled = false;
+            }
+        });
+    }
+
     form.addEventListener("submit", async function (ev) {
         ev.preventDefault();
         var err = document.getElementById("offerError");
@@ -63,19 +201,19 @@ function wireOfferModal() {
             var data = await res.json().catch(function () { return {}; });
             if (!res.ok || !data.ok) {
                 if (err) {
-                    err.textContent = data.error || "No se pudo enviar el código.";
+                    err.textContent = data.error || "No se pudo activar el 50%.";
                     err.classList.add("show");
                 }
                 if (btn) btn.disabled = false;
                 return;
             }
+            writeOfferStore(email, data.token);
+            paintOffer(data);
+            startOfferTick();
             if (ok) {
-                ok.textContent = data.message || "Revisa tu correo. Ahí va el código.";
+                ok.textContent = data.message || "Tienes 10 minutos al 50%.";
                 ok.classList.add("show");
             }
-            form.querySelectorAll("input, button[type=submit]").forEach(function (el) {
-                el.disabled = true;
-            });
         } catch (e) {
             if (err) {
                 err.textContent = "Sin conexión con el servidor.";
@@ -84,6 +222,17 @@ function wireOfferModal() {
             if (btn) btn.disabled = false;
         }
     });
+
+    (async function restoreOffer() {
+        var rec = readOfferStore();
+        if (!rec || !rec.token) return;
+        try {
+            var data = await fetchOfferState(rec.token);
+            if (!data || !data.live) return;
+            paintOffer(data);
+            startOfferTick();
+        } catch (e) { /* ignore */ }
+    })();
 }
 
 function imcClass(imc) {

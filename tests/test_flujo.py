@@ -77,6 +77,7 @@ class FlujoTests(unittest.TestCase):
         self.assertIn("wa.me/56959128603", html)
         self.assertIn("Ya soy alumno", html)
         self.assertIn("id=\"faq\"", html)
+        self.assertIn("id=\"coach\"", html)
         self.assertIn("tiempo limitado", html)
         self.assertNotIn("10 min", html.lower())
         self.assertNotIn("USD $40", html)

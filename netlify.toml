@@ -65,6 +65,16 @@
   status = 200
 
 [[redirects]]
+  from = "/api/oferta-estado"
+  to = "/.netlify/functions/oferta-estado"
+  status = 200
+
+[[redirects]]
+  from = "/api/checkout-3meses"
+  to = "/.netlify/functions/checkout-3meses"
+  status = 200
+
+[[redirects]]
   from = "/api/checkout"
   to = "/.netlify/functions/checkout"
   status = 200

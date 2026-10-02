@@ -97,7 +97,9 @@ CREATE TABLE IF NOT EXISTS discount_codes (
   offer TEXT NOT NULL DEFAULT '3meses',
   percent INTEGER NOT NULL DEFAULT 50,
   used INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  token TEXT,
+  expires_at TEXT
 );
 CREATE TABLE IF NOT EXISTS marketing_leads (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -151,6 +153,11 @@ def _connect() -> sqlite3.Connection:
         lift_cols = [r[1] for r in _conn.execute("PRAGMA table_info(pupil_lifts)").fetchall()]
         if lift_cols and "minutes" not in lift_cols:
             _conn.execute("ALTER TABLE pupil_lifts ADD COLUMN minutes REAL")
+        disc_cols = [r[1] for r in _conn.execute("PRAGMA table_info(discount_codes)").fetchall()]
+        if disc_cols and "token" not in disc_cols:
+            _conn.execute("ALTER TABLE discount_codes ADD COLUMN token TEXT")
+        if disc_cols and "expires_at" not in disc_cols:
+            _conn.execute("ALTER TABLE discount_codes ADD COLUMN expires_at TEXT")
         _conn.commit()
     return _conn
 
@@ -336,6 +343,17 @@ def log_mail(entry: dict) -> None:
     conn.commit()
 
 
+def get_payment_by_ref(payment_ref: str) -> dict | None:
+    if not payment_ref:
+        return None
+    cur = _connect().execute(
+        "SELECT * FROM payments WHERE payment_ref = ? OR provider_id = ? LIMIT 1",
+        (payment_ref, payment_ref),
+    )
+    row = cur.fetchone()
+    return dict(row) if row else None
+
+
 def log_payment(entry: dict) -> None:
     conn = _connect()
     try:
@@ -430,17 +448,44 @@ def get_discount_by_email(email: str, offer: str = "3meses") -> dict | None:
     return dict(row) if row else None
 
 
-def insert_discount(email: str, code: str, created_at: str, offer: str = "3meses", percent: int = 50) -> dict:
+def insert_discount(
+    email: str,
+    code: str,
+    created_at: str,
+    offer: str = "3meses",
+    percent: int = 50,
+    token: str = "",
+    expires_at: str = "",
+) -> dict:
     conn = _connect()
     conn.execute(
         """
-        INSERT INTO discount_codes (email, code, offer, percent, used, created_at)
-        VALUES (?, ?, ?, ?, 0, ?)
+        INSERT INTO discount_codes (email, code, offer, percent, used, created_at, token, expires_at)
+        VALUES (?, ?, ?, ?, 0, ?, ?, ?)
         """,
-        (email, code, offer, percent, created_at),
+        (email, code, offer, percent, created_at, token or None, expires_at or None),
     )
     conn.commit()
     return get_discount_by_email(email, offer) or {"email": email, "code": code}
+
+
+def get_discount_by_token(token: str) -> dict | None:
+    if not token:
+        return None
+    cur = _connect().execute(
+        "SELECT * FROM discount_codes WHERE token = ? ORDER BY id DESC LIMIT 1",
+        (token,),
+    )
+    row = cur.fetchone()
+    return dict(row) if row else None
+
+
+def mark_discount_used(token: str) -> None:
+    if not token:
+        return
+    conn = _connect()
+    conn.execute("UPDATE discount_codes SET used = 1 WHERE token = ?", (token,))
+    conn.commit()
 
 
 def insert_pupil(email: str, name: str, pin_hash: str, created_at: str) -> dict:

@@ -2,7 +2,15 @@ import os
 import unittest
 
 from helpers import TEST_EMAIL
-from payments import email_from_mp_payment, mp_configured, price_clp
+from payments import (
+    course_list_clp,
+    course_sale_clp,
+    email_from_mp_payment,
+    fulfill_mp_payment,
+    mp_configured,
+    offer_minutes,
+    price_clp,
+)
 from validate import ValidationError
 
 
@@ -29,6 +37,15 @@ class MercadoPagoTests(unittest.TestCase):
     def test_email_missing(self):
         with self.assertRaises(ValidationError):
             email_from_mp_payment({"payer": {}, "metadata": {}})
+
+    def test_course_prices(self):
+        self.assertEqual(course_list_clp(), 450000)
+        self.assertEqual(course_sale_clp(), 225000)
+        self.assertEqual(offer_minutes(), 10)
+
+    def test_mp_3meses_pending_ignored(self):
+        result = fulfill_mp_payment({"status": "pending", "metadata": {"product": "3meses"}})
+        self.assertEqual(result.get("ignored"), "pending")
 
     def test_mp_configured_false_without_token(self):
         prev = os.environ.get("MP_ACCESS_TOKEN")

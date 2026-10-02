@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 
 from envload import get
 from mailer import send_access_link
-from store import create_entitlement, get_by_payment_ref, log_payment
+from store import create_entitlement, get_by_payment_ref, log_payment, save_coaching
 from validate import ValidationError, normalize_email, normalize_payment_ref
 
 
@@ -47,6 +47,26 @@ def price_clp() -> int:
     except ValueError:
         n = 38000
     return max(1000, n)
+
+
+def offer_minutes() -> int:
+    try:
+        n = int(get("OFFER_MINUTES") or "10")
+    except ValueError:
+        n = 10
+    return max(1, min(n, 120))
+
+
+def course_list_clp() -> int:
+    try:
+        n = int(get("COURSE_PRICE_CLP") or "450000")
+    except ValueError:
+        n = 450000
+    return max(1000, n)
+
+
+def course_sale_clp() -> int:
+    return max(1000, course_list_clp() // 2)
 
 
 def issue_paid_access(
@@ -234,6 +254,57 @@ def create_mp_preference(
     return url
 
 
+def create_mp_preference_3meses(
+    email: str,
+    amount: int,
+    offer_token: str,
+    success_url: str,
+    failure_url: str,
+    notification_url: str,
+) -> str:
+    email = normalize_email(email)
+    pending_url = success_url.replace("paid=1", "pending=1")
+    body = {
+        "items": [
+            {
+                "id": "acompanamiento-3meses",
+                "title": "Acompañamiento 3 meses — GaryFelicienFit",
+                "description": "Entrenamiento y alimentación con seguimiento, 3 meses.",
+                "quantity": 1,
+                "currency_id": "CLP",
+                "unit_price": int(amount),
+            }
+        ],
+        "payer": {"email": email},
+        "back_urls": {
+            "success": success_url,
+            "failure": failure_url,
+            "pending": pending_url,
+        },
+        "auto_return": "approved",
+        "binary_mode": True,
+        "external_reference": email,
+        "metadata": {
+            "email": email,
+            "product": "3meses",
+            "offer_token": offer_token,
+            "amount": int(amount),
+        },
+        "statement_descriptor": "GARYFELICIENFIT",
+    }
+    if notification_url.startswith("https://"):
+        body["notification_url"] = notification_url
+    data = _mp_request("POST", "/checkout/preferences", body)
+    token = get("MP_ACCESS_TOKEN")
+    if token.startswith("TEST-"):
+        url = data.get("sandbox_init_point") or data.get("init_point")
+    else:
+        url = data.get("init_point") or data.get("sandbox_init_point")
+    if not url:
+        raise RuntimeError("Mercado Pago no devolvió URL de pago")
+    return url
+
+
 def fetch_mp_payment(payment_id: str) -> dict:
     pid = str(payment_id or "").strip()
     if not pid:
@@ -257,10 +328,62 @@ def email_from_mp_payment(payment: dict) -> str:
     return normalize_email(email)
 
 
+def _mp_product(payment: dict) -> str:
+    meta = payment.get("metadata") or {}
+    return str(meta.get("product") or "").strip().lower()
+
+
+def fulfill_course_payment(payment: dict) -> dict:
+    import sqlite_db
+
+    status = str(payment.get("status") or "")
+    if status != "approved":
+        return {"ok": True, "ignored": status or "unknown"}
+    email = email_from_mp_payment(payment)
+    pid = str(payment.get("id") or "")
+    payment_ref = normalize_payment_ref(f"mp_{pid}")
+    if sqlite_db.get_payment_by_ref(payment_ref) or get_by_payment_ref(payment_ref):
+        return {"ok": True, "duplicate": True, "payment_ref": payment_ref, "product": "3meses"}
+    amount = int(payment.get("transaction_amount") or 0)
+    meta = payment.get("metadata") or {}
+    offer_token = str(meta.get("offer_token") or "")
+    try:
+        log_payment(
+            {
+                "provider": "mercadopago",
+                "provider_id": payment_ref,
+                "email": email,
+                "payment_ref": payment_ref,
+                "amount_cents": amount,
+                "currency": "clp",
+                "status": "approved",
+            }
+        )
+    except Exception:
+        pass
+    if offer_token:
+        sqlite_db.mark_discount_used(offer_token)
+    try:
+        save_coaching(
+            {
+                "name": email.split("@")[0],
+                "email": email,
+                "phone": "",
+                "message": f"Pago Mercado Pago 3 meses. {amount} CLP. Ref {payment_ref}.",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            }
+        )
+    except Exception:
+        pass
+    return {"ok": True, "product": "3meses", "email": email, "payment_ref": payment_ref, "amount": amount}
+
+
 def fulfill_mp_payment(payment: dict) -> dict:
     status = str(payment.get("status") or "")
     if status != "approved":
         return {"ok": True, "ignored": status or "unknown"}
+    if _mp_product(payment) == "3meses":
+        return fulfill_course_payment(payment)
     email = email_from_mp_payment(payment)
     pid = str(payment.get("id") or "")
     payment_ref = normalize_payment_ref(f"mp_{pid}")

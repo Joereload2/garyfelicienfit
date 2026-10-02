@@ -92,10 +92,64 @@ class FlujoTests(unittest.TestCase):
         self.assertEqual(resp.status, 200)
         self.assertIn("450.000", html)
         self.assertIn("data-open-offer", html)
+        self.assertIn("data-offer-clock", html)
         self.assertIn("50%", html)
         self.assertIn("ganar músculo", html.lower())
         self.assertNotIn("USD $40", html)
         self.assertNotIn("buyModal", html)
+
+    def test_01e_oferta_timer(self):
+        email = "timer.offer@example.com"
+        code, data, raw = _json_request(
+            "POST",
+            self.base + "/api/oferta-3meses",
+            {"email": email},
+        )
+        self.assertEqual(code, 200, data)
+        self.assertTrue(data.get("ok"))
+        self.assertTrue(data.get("live"))
+        token = data.get("token")
+        self.assertTrue(token)
+        self.assertGreater(data.get("remaining_s"), 0)
+        self.assertLessEqual(data.get("remaining_s"), 10 * 60)
+        self.assertEqual(data.get("price_clp"), 225000)
+        self.assertEqual(data.get("list_clp"), 450000)
+        self.assertNotIn("GARY50", raw)
+        self.assertNotIn('"code"', raw)
+
+        code2, data2, _ = _json_request(
+            "POST",
+            self.base + "/api/oferta-3meses",
+            {"email": email},
+        )
+        self.assertEqual(code2, 200, data2)
+        self.assertEqual(data2.get("token"), token)
+        self.assertLessEqual(data2.get("remaining_s"), data.get("remaining_s"))
+
+        code3, data3, _ = _json_request(
+            "GET",
+            self.base + "/api/oferta-estado?token=" + token,
+        )
+        self.assertEqual(code3, 200, data3)
+        self.assertTrue(data3.get("live"))
+        self.assertEqual(data3.get("token"), token)
+
+        code4, data4, _ = _json_request(
+            "POST",
+            self.base + "/api/checkout-3meses",
+            {"email": email, "token": token},
+        )
+        self.assertEqual(code4, 200, data4)
+        self.assertEqual(data4.get("mode"), "whatsapp")
+        self.assertIn("wa.me/56959128603", data4.get("url", ""))
+        self.assertEqual(data4.get("price_clp"), 225000)
+
+        code5, data5, _ = _json_request(
+            "POST",
+            self.base + "/api/checkout-3meses",
+            {"email": email, "token": "no-existe"},
+        )
+        self.assertEqual(code5, 400, data5)
 
     def test_01b_viejas_ofertas_redirigen(self):
         for path in ("/bajar", "/recomposicion", "/empezar"):

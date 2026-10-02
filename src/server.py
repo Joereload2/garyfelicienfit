@@ -8,10 +8,10 @@ import os
 import re
 import secrets
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -22,14 +22,19 @@ load_env()
 
 from mailer import send_discount_code, send_guia_upgrade, send_plan_pdf  # noqa: E402
 from payments import (  # noqa: E402
+    course_list_clp,
+    course_sale_clp,
     create_mp_preference,
+    create_mp_preference_3meses,
     create_stripe_checkout,
     email_from_stripe_session,
     fetch_mp_payment,
+    fulfill_course_payment,
     fulfill_mp_payment,
     fulfill_shopify_order,
     issue_paid_access,
     mp_configured,
+    offer_minutes,
     price_clp,
     price_usd,
     stripe_configured,
@@ -100,6 +105,52 @@ def _app_url() -> str:
 
 def _admin_secret() -> str:
     return require("ADMIN_SECRET")
+
+
+def _parse_iso(ts: object) -> datetime | None:
+    if not ts:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def offer_remaining_s(row: dict | None) -> int:
+    if not row or row.get("used"):
+        return 0
+    expires = _parse_iso(row.get("expires_at"))
+    if not expires:
+        return 0
+    return max(0, int((expires - datetime.now(timezone.utc)).total_seconds()))
+
+
+def offer_public(row: dict | None, *, message: str = "") -> dict:
+    remaining = offer_remaining_s(row)
+    live = remaining > 0
+    payload = {
+        "ok": True,
+        "token": (row or {}).get("token") or "",
+        "expires_at": (row or {}).get("expires_at"),
+        "remaining_s": remaining,
+        "live": live,
+        "price_clp": course_sale_clp() if live else course_list_clp(),
+        "list_clp": course_list_clp(),
+        "sale_clp": course_sale_clp(),
+        "minutes": offer_minutes(),
+        "mp": mp_configured(),
+    }
+    if message:
+        payload["message"] = message
+    return payload
+
+
+def _whatsapp_offer_url() -> str:
+    text = "Hola Gary, pedí el 50% del acompañamiento de 3 meses."
+    return "https://wa.me/56959128603?text=" + quote(text)
 
 
 def _safe_ref(payment_ref: str) -> str:
@@ -267,11 +318,17 @@ class Handler(BaseHTTPRequestHandler):
                     "ok": True,
                     "price_usd": price_usd(),
                     "price_clp": price_clp(),
+                    "course_clp": course_list_clp(),
+                    "sale_clp": course_sale_clp(),
+                    "offer_minutes": offer_minutes(),
                     "stripe": stripe_configured(),
                     "mp": mp_configured(),
                     "test_checkout": test_checkout_allowed(),
                 },
             )
+            return
+        if path == "/api/oferta-estado":
+            self._oferta_estado()
             return
         match = re.fullmatch(r"/usar/([A-Za-z0-9_-]+)", path)
         if match:
@@ -365,6 +422,12 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path == "/api/oferta-3meses":
                 self._oferta_3meses()
+                return
+            if path == "/api/checkout-3meses":
+                self._checkout_3meses()
+                return
+            if path == "/internal/course-paid":
+                self._course_paid()
                 return
             if path == "/api/registro":
                 self._registro()
@@ -744,31 +807,125 @@ class Handler(BaseHTTPRequestHandler):
         if len(name) < 2:
             name = email.split("@")[0].replace(".", " ").replace("_", " ").strip()[:80] or "Alumno"
         existing = sqlite_db.get_discount_by_email(email)
-        if existing and existing.get("code"):
-            code = existing["code"]
-        else:
-            code = "GARY50-" + secrets.token_hex(3).upper()
-            sqlite_db.insert_discount(email, code, datetime.now(timezone.utc).isoformat())
+        if existing and offer_remaining_s(existing) > 0:
+            self._json(
+                200,
+                offer_public(
+                    existing,
+                    message="Tu 50% sigue activo. Paga antes de que se acabe el tiempo.",
+                ),
+            )
+            return
+        now = datetime.now(timezone.utc)
+        minutes = offer_minutes()
+        expires = now + timedelta(minutes=minutes)
+        token = secrets.token_urlsafe(24)
+        code = "GARY50-" + secrets.token_hex(3).upper()
+        row = sqlite_db.insert_discount(
+            email,
+            code,
+            now.isoformat(),
+            token=token,
+            expires_at=expires.isoformat(),
+        )
         save_coaching(
             {
                 "name": name,
                 "email": email,
                 "phone": "",
-                "message": f"Lead 50% off 3 meses. Código {code}. Lista 450000 / con código 225000 CLP.",
-                "created_at": datetime.now(timezone.utc).isoformat(),
+                "message": (
+                    f"Lead 50% off 3 meses. Código {code}. "
+                    f"Lista {course_list_clp()} / con código {course_sale_clp()} CLP. "
+                    f"Vence {expires.isoformat()}."
+                ),
+                "created_at": now.isoformat(),
             }
         )
         try:
-            send_discount_code(email, code)
+            send_discount_code(email, code, minutes=minutes)
         except Exception as exc:
             print("discount mail:", str(exc)[:300])
         self._json(
             200,
-            {
-                "ok": True,
-                "message": "Revisa tu correo. Te enviamos el código de 50% de descuento.",
-            },
+            offer_public(
+                row,
+                message=f"Tienes {minutes} minutos al 50%. Revisa el correo: ahí va el código.",
+            ),
         )
+
+    def _oferta_estado(self) -> None:
+        qs = parse_qs(urlparse(self.path).query)
+        token = str((qs.get("token") or [""])[0]).strip()
+        row = sqlite_db.get_discount_by_token(token)
+        if not row:
+            self._json(
+                404,
+                {
+                    "ok": False,
+                    "live": False,
+                    "remaining_s": 0,
+                    "price_clp": course_list_clp(),
+                    "list_clp": course_list_clp(),
+                    "sale_clp": course_sale_clp(),
+                    "error": "Oferta no encontrada.",
+                },
+            )
+            return
+        self._json(200, offer_public(row))
+
+    def _checkout_3meses(self) -> None:
+        data = self._read_json()
+        email = normalize_email(data.get("email"))
+        token = str(data.get("token") or "").strip()
+        row = sqlite_db.get_discount_by_token(token)
+        if not row or str(row.get("email") or "").lower() != email:
+            self._json(400, {"ok": False, "error": "Pide el 50% otra vez con este correo."})
+            return
+        live = offer_remaining_s(row) > 0
+        amount = course_sale_clp() if live else course_list_clp()
+        if mp_configured():
+            success = f"{_app_url()}/gracias?paid=1&producto=3meses"
+            cancel = f"{_app_url()}/3meses"
+            notify = f"{_app_url()}/webhooks/mercadopago"
+            try:
+                url = create_mp_preference_3meses(email, amount, token, success, cancel, notify)
+            except Exception as exc:
+                self._json(502, {"ok": False, "error": str(exc)})
+                return
+            payload = offer_public(row)
+            payload.update({"mode": "mp", "url": url, "price_clp": amount})
+            self._json(200, payload)
+            return
+        payload = offer_public(row)
+        payload.update(
+            {
+                "mode": "whatsapp",
+                "url": _whatsapp_offer_url(),
+                "price_clp": amount,
+                "message": "Mercado Pago aún no está activo. Coordina el pago por WhatsApp.",
+            }
+        )
+        self._json(200, payload)
+
+    def _course_paid(self) -> None:
+        if not self._admin_ok():
+            self._json(401, {"ok": False, "error": "No autorizado"})
+            return
+        data = self._read_json()
+        email = normalize_email(data.get("email"))
+        payment_ref = normalize_payment_ref(data.get("payment_ref"))
+        amount = int(data.get("amount") or 0)
+        offer_token = str(data.get("offer_token") or "")
+        fake = {
+            "status": "approved",
+            "id": str(data.get("id") or payment_ref.replace("mp_", "")),
+            "transaction_amount": amount,
+            "payer": {"email": email},
+            "metadata": {"email": email, "product": "3meses", "offer_token": offer_token},
+            "external_reference": email,
+        }
+        result = fulfill_course_payment(fake)
+        self._json(200, result)
 
     def _registro(self) -> None:
         data = self._read_json()

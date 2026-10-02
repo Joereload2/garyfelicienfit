@@ -55,6 +55,32 @@ exports.handler = async (event) => {
     }
     const email = emailFromPayment(payment);
     const payment_ref = "mp_" + payment.id;
+    const meta = payment.metadata || {};
+    const product = String(meta.product || "");
+    if (product === "3meses") {
+      if (!process.env.PLANFIT_API_URL) {
+        return json(200, {
+          ok: true,
+          manual: true,
+          product: "3meses",
+          email: email || null,
+          payment_ref,
+          amount: payment.transaction_amount,
+        });
+      }
+      const { status, data } = await api("/internal/course-paid", {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          payment_ref,
+          amount: payment.transaction_amount,
+          offer_token: meta.offer_token || "",
+          id: payment.id,
+        }),
+      });
+      if (status === 409) return json(200, { ok: true, duplicate: true, payment_ref });
+      return json(status === 201 || status === 200 ? 200 : status, data);
+    }
     if (!process.env.PLANFIT_API_URL) {
       return json(200, {
         ok: true,

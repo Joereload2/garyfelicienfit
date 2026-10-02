@@ -149,20 +149,21 @@ def _log(kind: str, to_addr: str, subject: str, body: str, provider: str, status
         return
 
 
-def send_discount_code(email: str, code: str) -> str:
+def send_discount_code(email: str, code: str, minutes: int = 10) -> str:
     body = (
         "Hola,\n\n"
         "Pediste el 50% de descuento del entrenamiento personalizado "
         "con seguimiento real (3 meses).\n\n"
         f"Tu código: {code}\n\n"
         "Precio lista: $450.000 CLP\n"
-        "Con este código: $225.000 CLP\n\n"
-        "Escríbele a Gary por WhatsApp y menciona el código para coordinar el pago:\n"
+        "Con este código: $225.000 CLP\n"
+        f"El 50% vale {minutes} minutos desde que lo pediste.\n\n"
+        "Paga en la web con Mercado Pago o escríbele a Gary por WhatsApp y menciona el código:\n"
         "https://wa.me/56959128603\n\n"
         "Si no pediste este descuento, ignora este correo.\n\n"
         "GaryFelicienFit\n"
     )
-    return send_mail("discount", email, "Tu 50% off — código GaryFelicienFit", body)
+    return send_mail("discount", email, f"Tu 50% off — {minutes} minutos — GaryFelicienFit", body)
 
 
 def send_guia_upgrade(email: str, code: str, course: int, guide: int, price: int) -> str:

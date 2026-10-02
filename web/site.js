@@ -96,8 +96,8 @@ function bindOfferForm() {
     var html = ""
         + '<div class="modal" id="offerModal">'
         + '<form class="card" id="offerForm">'
-        + "<h3>50% por 10 minutos</h3>"
-        + '<p class="muted" id="offerIntro">Déjanos tu correo. El 50% arranca al pedirlo: $225.000 en vez de $450.000, 10 minutos, cronometrado.</p>'
+        + "<h3>50% por tiempo limitado</h3>"
+        + '<p class="muted" id="offerIntro">Déjanos tu correo. Al enviarlo arranca el 50%: $225.000 en vez de $450.000, por tiempo limitado.</p>'
         + '<div id="offerError" class="error"></div>'
         + '<div id="offerOk" class="ok"></div>'
         + '<div id="offerAsk">'
@@ -211,7 +211,7 @@ function wireOfferModal() {
             paintOffer(data);
             startOfferTick();
             if (ok) {
-                ok.textContent = data.message || "Tienes 10 minutos al 50%.";
+                ok.textContent = data.message || "El 50% está activo. El reloj ya corre.";
                 ok.classList.add("show");
             }
         } catch (e) {

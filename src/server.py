@@ -140,7 +140,6 @@ def offer_public(row: dict | None, *, message: str = "") -> dict:
         "price_clp": course_sale_clp() if live else course_list_clp(),
         "list_clp": course_list_clp(),
         "sale_clp": course_sale_clp(),
-        "minutes": offer_minutes(),
         "mp": mp_configured(),
     }
     if message:
@@ -320,7 +319,6 @@ class Handler(BaseHTTPRequestHandler):
                     "price_clp": price_clp(),
                     "course_clp": course_list_clp(),
                     "sale_clp": course_sale_clp(),
-                    "offer_minutes": offer_minutes(),
                     "stripe": stripe_configured(),
                     "mp": mp_configured(),
                     "test_checkout": test_checkout_allowed(),
@@ -849,7 +847,7 @@ class Handler(BaseHTTPRequestHandler):
             200,
             offer_public(
                 row,
-                message=f"Tienes {minutes} minutos al 50%. Revisa el correo: ahí va el código.",
+                message="El 50% está activo por tiempo limitado. El reloj ya corre. Revisa el correo: ahí va el código.",
             ),
         )
 

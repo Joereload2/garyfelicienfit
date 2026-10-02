@@ -77,6 +77,8 @@ class FlujoTests(unittest.TestCase):
         self.assertIn("wa.me/56959128603", html)
         self.assertIn("Ya soy alumno", html)
         self.assertIn("id=\"faq\"", html)
+        self.assertIn("tiempo limitado", html)
+        self.assertNotIn("10 min", html.lower())
         self.assertNotIn("USD $40", html)
         self.assertNotIn("buyModal", html)
         self.assertNotIn("panel-tresmeses", html)
@@ -95,6 +97,8 @@ class FlujoTests(unittest.TestCase):
         self.assertIn("data-offer-clock", html)
         self.assertIn("50%", html)
         self.assertIn("ganar músculo", html.lower())
+        self.assertIn("tiempo limitado", html)
+        self.assertNotIn("10 min", html.lower())
         self.assertNotIn("USD $40", html)
         self.assertNotIn("buyModal", html)
 

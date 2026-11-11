@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlanFit — Formulario de un solo uso</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="container">
+
+    <div class="header">
+        <h1>PlanFit</h1>
+        <p>Completa el formulario y descarga tu plan personalizado en PDF.</p>
+    </div>
+
+    <div id="wizard" class="card">
+
+        <div class="progress">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+
+        <div id="errorBox" class="error"></div>
+
+        <section class="step active" data-step="1">
+            <h2>Cuéntanos sobre ti</h2>
+            <p class="subtitle">
+                Primero necesitamos algunos datos básicos para personalizar tu plan.
+            </p>
+
+            <div class="field">
+                <label for="email">Email (opcional)</label>
+                <input id="email" type="email" maxlength="120" autocomplete="email">
+            </div>
+
+            <div class="field">
+                <label for="name">Nombre</label>
+                <input id="name" type="text" maxlength="60" autocomplete="name" required>
+            </div>
+
+            <div class="field">
+                <label for="age">Edad</label>
+                <input id="age" type="number" min="18" max="70" required>
+            </div>
+
+            <div class="field">
+                <label for="weight">Peso actual (kg)</label>
+                <input id="weight" type="number" min="40" max="180" step="0.1" required>
+            </div>
+
+            <div class="field">
+                <label for="height">Altura (cm)</label>
+                <input id="height" type="number" min="140" max="210" step="1" required>
+            </div>
+
+            <div class="field">
+                <label for="sex">Sexo</label>
+                <select id="sex" required>
+                    <option value="">Selecciona...</option>
+                    <option value="male">Hombre</option>
+                    <option value="female">Mujer</option>
+                </select>
+            </div>
+
+            <div class="buttons">
+                <span></span>
+                <button type="button" class="btn-primary" onclick="nextStep()">Continuar</button>
+            </div>
+        </section>
+
+        <section class="step" data-step="2">
+            <h2>¿Cuál es tu objetivo?</h2>
+            <p class="subtitle">Elige el objetivo que mejor representa lo que quieres conseguir.</p>
+            <div class="options">
+                <div class="option">
+                    <input type="radio" name="goal" id="lose" value="lose">
+                    <label for="lose">Bajar de peso</label>
+                </div>
+                <div class="option">
+                    <input type="radio" name="goal" id="recomp" value="recomp">
+                    <label for="recomp">Recomposición corporal</label>
+                </div>
+            </div>
+            <div class="buttons">
+                <button type="button" class="btn-secondary" onclick="prevStep()">Atrás</button>
+                <button type="button" class="btn-primary" onclick="nextStep()">Continuar</button>
+            </div>
+        </section>
+
+        <section class="step" data-step="3">
+            <h2>Tu meta de 3 meses</h2>
+            <p class="subtitle">
+                Queremos conocer una meta concreta y realista para las próximas 12 semanas.
+            </p>
+            <div class="field">
+                <label for="targetWeight">¿Cuál es tu peso objetivo aproximado en 3 meses?</label>
+                <input id="targetWeight" type="number" min="40" max="180" step="0.1" required>
+            </div>
+            <div class="field">
+                <label for="motivation">¿Qué te gustaría conseguir principalmente durante estos 3 meses?</label>
+                <select id="motivation">
+                    <option value="">Selecciona...</option>
+                    <option value="appearance">Mejorar mi apariencia</option>
+                    <option value="strength">Ser más fuerte</option>
+                    <option value="health">Mejorar mi condición física</option>
+                    <option value="habit">Crear hábitos saludables</option>
+                    <option value="event">Prepararme para una fecha/evento</option>
+                </select>
+            </div>
+            <div class="buttons">
+                <button type="button" class="btn-secondary" onclick="prevStep()">Atrás</button>
+                <button type="button" class="btn-primary" onclick="nextStep()">Continuar</button>
+            </div>
+        </section>
+
+        <section class="step" data-step="4">
+            <h2>Tu entrenamiento</h2>
+            <p class="subtitle">Diseñaremos la rutina según el tiempo y lugar donde entrenas.</p>
+            <div class="field">
+                <label>¿Cuántos días puedes entrenar por semana?</label>
+                <div class="options">
+                    <div class="option">
+                        <input type="radio" name="days" id="d2" value="2">
+                        <label for="d2">2 días</label>
+                    </div>
+                    <div class="option">
+                        <input type="radio" name="days" id="d3" value="3">
+                        <label for="d3">3 días</label>
+                    </div>
+                    <div class="option">
+                        <input type="radio" name="days" id="d4" value="4">
+                        <label for="d4">4 días</label>
+                    </div>
+                    <div class="option">
+                        <input type="radio" name="days" id="d5" value="5">
+                        <label for="d5">5 días</label>
+                    </div>
+                    <div class="option">
+                        <input type="radio" name="days" id="d6" value="6">
+                        <label for="d6">6 días</label>
+                    </div>
+                </div>
+            </div>
+            <div class="field">
+                <label>¿Dónde quieres entrenar?</label>
+                <div class="options">
+                    <div class="option">
+                        <input type="radio" name="location" id="gym" value="gym">
+                        <label for="gym">🏋️ Gimnasio</label>
+                    </div>
+                    <div class="option">
+                        <input type="radio" name="location" id="home" value="home">
+                        <label for="home">🏠 Casa</label>
+                    </div>
+                </div>
+            </div>
+            <div class="field">
+                <label for="duration">¿Cuánto tiempo tienes por sesión?</label>
+                <select id="duration">
+                    <option value="">Selecciona...</option>
+                    <option value="30">30 minutos</option>
+                    <option value="45">45 minutos</option>
+                    <option value="60">60 minutos</option>
+                    <option value="75">75 minutos</option>
+                    <option value="90">90 minutos o más</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="experience">Nivel de experiencia</label>
+                <select id="experience">
+                    <option value="">Selecciona...</option>
+                    <option value="beginner">Principiante</option>
+                    <option value="intermediate">Intermedio</option>
+                    <option value="advanced">Avanzado</option>
+                </select>
+            </div>
+            <div class="buttons">
+                <button type="button" class="btn-secondary" onclick="prevStep()">Atrás</button>
+                <button type="button" class="btn-primary" onclick="nextStep()">Continuar</button>
+            </div>
+        </section>
+
+        <section class="step" data-step="5">
+            <h2>Especialización muscular</h2>
+            <p class="subtitle">
+                Durante los próximos 3 meses puedes dar algo más de atención a un grupo muscular.
+            </p>
+            <div class="options">
+                <div class="option">
+                    <input type="radio" name="focusMuscle" id="balanced" value="balanced">
+                    <label for="balanced">⚖️ No, quiero trabajar todo equilibradamente</label>
+                </div>
+                <div class="option">
+                    <input type="radio" name="focusMuscle" id="chest" value="chest">
+                    <label for="chest">🫀 Pecho</label>
+                </div>
+                <div class="option">
+                    <input type="radio" name="focusMuscle" id="back" value="back">
+                    <label for="back">🪽 Espalda</label>
+                </div>
+                <div class="option">
+                    <input type="radio" name="focusMuscle" id="legs" value="legs">
+                    <label for="legs">🦵 Piernas</label>
+                </div>
+                <div class="option">
+                    <input type="radio" name="focusMuscle" id="shoulders" value="shoulders">
+                    <label for="shoulders">💪 Hombros</label>
+                </div>
+                <div class="option">
+                    <input type="radio" name="focusMuscle" id="arms" value="arms">
+                    <label for="arms">💪 Brazos</label>
+                </div>
+                <div class="option">
+                    <input type="radio" name="focusMuscle" id="glutes" value="glutes">
+                    <label for="glutes">🍑 Glúteos</label>
+                </div>
+            </div>
+            <div class="buttons">
+                <button type="button" class="btn-secondary" onclick="prevStep()">Atrás</button>
+                <button type="button" class="btn-primary" onclick="nextStep()">Continuar</button>
+            </div>
+        </section>
+
+        <section class="step" data-step="6">
+            <h2>Elige tus alimentos</h2>
+            <p class="subtitle">Selecciona los alimentos que te gustaría utilizar como base de tus menús.</p>
+
+            <h3>🥦 Vegetales — mínimo 3</h3>
+            <div class="food-grid">
+                <div class="food-item">
+                    <input type="checkbox" id="broccoli" name="vegetable" value="Brócoli">
+                    <label for="broccoli">Brócoli</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="carrot" name="vegetable" value="Zanahoria">
+                    <label for="carrot">Zanahoria</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="tomato" name="vegetable" value="Tomate">
+                    <label for="tomato">Tomate</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="lettuce" name="vegetable" value="Lechuga">
+                    <label for="lettuce">Lechuga</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="spinach" name="vegetable" value="Espinaca">
+                    <label for="spinach">Espinaca</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="pepper" name="vegetable" value="Pimentón">
+                    <label for="pepper">Pimentón</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="cucumber" name="vegetable" value="Pepino">
+                    <label for="cucumber">Pepino</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="zucchini" name="vegetable" value="Calabacín">
+                    <label for="zucchini">Calabacín</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="onion" name="vegetable" value="Cebolla">
+                    <label for="onion">Cebolla</label>
+                </div>
+            </div>
+            <div class="counter">
+                Seleccionados: <strong id="vegetableCount">0</strong>/3 mínimo
+            </div>
+
+            <h3 style="margin-top:30px;">🍎 Frutas — mínimo 3</h3>
+            <div class="food-grid">
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="banana" value="Plátano">
+                    <label for="banana">Plátano</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="apple" value="Manzana">
+                    <label for="apple">Manzana</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="orange" value="Naranja">
+                    <label for="orange">Naranja</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="strawberry" value="Frutilla">
+                    <label for="strawberry">Frutilla</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="blueberry" value="Arándanos">
+                    <label for="blueberry">Arándanos</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="pear" value="Pera">
+                    <label for="pear">Pera</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="pineapple" value="Piña">
+                    <label for="pineapple">Piña</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="kiwi" value="Kiwi">
+                    <label for="kiwi">Kiwi</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" name="fruit" id="grapes" value="Uvas">
+                    <label for="grapes">Uvas</label>
+                </div>
+            </div>
+            <div class="counter">
+                Seleccionadas: <strong id="fruitCount">0</strong>/3 mínimo
+            </div>
+
+            <h3 style="margin-top:30px;">🥩 Proteínas — mínimo 1</h3>
+            <div class="food-grid">
+                <div class="food-item">
+                    <input type="checkbox" id="protein-pollo" name="protein" value="Pollo">
+                    <label for="protein-pollo">Pollo</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="protein-carne" name="protein" value="Carne magra">
+                    <label for="protein-carne">Carne magra</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="protein-huevos" name="protein" value="Huevos">
+                    <label for="protein-huevos">Huevos</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="protein-pavo" name="protein" value="Pavo">
+                    <label for="protein-pavo">Pavo</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="protein-yogurt" name="protein" value="Yogurt griego">
+                    <label for="protein-yogurt">Yogurt griego</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="protein-legumbres" name="protein" value="Legumbres">
+                    <label for="protein-legumbres">Legumbres</label>
+                </div>
+            </div>
+
+            <h3 style="margin-top:30px;">🍚 Carbohidratos — mínimo 1</h3>
+            <div class="food-grid">
+                <div class="food-item">
+                    <input type="checkbox" id="carb-arroz" name="carb" value="Arroz">
+                    <label for="carb-arroz">Arroz</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="carb-papa" name="carb" value="Papa">
+                    <label for="carb-papa">Papa</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="carb-avena" name="carb" value="Avena">
+                    <label for="carb-avena">Avena</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="carb-pasta" name="carb" value="Pasta">
+                    <label for="carb-pasta">Pasta</label>
+                </div>
+                <div class="food-item">
+                    <input type="checkbox" id="carb-pan" name="carb" value="Pan integral">
+                    <label for="carb-pan">Pan integral</label>
+                </div>
+            </div>
+
+            <div class="buttons">
+                <button type="button" class="btn-secondary" onclick="prevStep()">Atrás</button>
+                <button type="button" class="btn-primary" onclick="nextStep()">Revisar datos</button>
+            </div>
+        </section>
+
+        <section class="step" data-step="7">
+            <h2>Revisa tus respuestas</h2>
+            <p class="subtitle">
+                Comprueba que los datos sean correctos antes de generar tu plan.
+            </p>
+            <div id="summary" class="summary"></div>
+            <div class="buttons">
+                <button type="button" class="btn-secondary" onclick="prevStep()">Atrás</button>
+                <button type="button" class="btn-primary" id="submitBtn" onclick="submitForm()">Generar mi plan</button>
+            </div>
+        </section>
+
+        <section class="step" data-step="8">
+            <div class="success">
+                <div class="success-icon">🎉</div>
+                <h2>¡Tu plan está listo!</h2>
+                <p class="subtitle">
+                    La descarga empezó automáticamente.
+                    Si no, <a id="pdfLink" href="#" download>descárgalo aquí</a>.
+                </p>
+                <p class="disclaimer">
+                    Este documento es una orientación general y no sustituye la evaluación
+                    de un médico, nutricionista o profesional del ejercicio.
+                    Si tienes una condición médica, lesión, embarazo, trastorno
+                    alimentario o tomas medicamentos, consulta a un profesional
+                    antes de realizar cambios importantes en alimentación o ejercicio.
+                </p>
+            </div>
+        </section>
+
+    </div>
+</div>
+<script src="/form.js"></script>
+</body>
+</html>

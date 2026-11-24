@@ -1,828 +1,1433 @@
-"""Premium PlanFit PDF: cover + photos + cards. Numbers come from the plan, not from images."""
+"""PDF Gary Felicien Fit — plan personalizado de 12 semanas (diseño negro y dorado)."""
 
 from __future__ import annotations
 
-from io import BytesIO
+from datetime import date
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 from PIL import Image as PILImage
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT, TA_RIGHT
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import mm
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
-    BaseDocTemplate,
-    Frame,
+    CondPageBreak,
+    Flowable,
     Image,
     KeepTogether,
-    NextPageTemplate,
     PageBreak,
-    PageTemplate,
     Paragraph,
+    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
 )
 
-from envload import ROOT
+from contenido import build_full_plan, miles
 
+ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "assets"
+
 PAGE_W, PAGE_H = A4
+MARGIN = 45
+CONTENT_W = PAGE_W - 2 * MARGIN
 
-BLUE = colors.HexColor("#2563eb")
-NAVY = colors.HexColor("#0f1c3f")
-TEXT = colors.HexColor("#17202a")
-MUTED = colors.HexColor("#667085")
-LINE = colors.HexColor("#e5e7eb")
-BG = colors.HexColor("#f4f7fb")
+BLACK = colors.HexColor("#0b0c0f")
+GOLD = colors.HexColor("#d4a017")
+CREAM = colors.HexColor("#f6f1e8")
+CREAM2 = colors.HexColor("#f3ede2")
+LINE = colors.HexColor("#e6dfd2")
+INK = colors.HexColor("#1a1714")
+MUTED = colors.HexColor("#5a5855")
+TAN = colors.HexColor("#c4a574")
+BROWN = colors.HexColor("#3d3224")
+NAVY = colors.HexColor("#0f1a3d")
 WHITE = colors.white
-SOFT = colors.HexColor("#eff6ff")
-PROT = colors.HexColor("#2563eb")
-CARB = colors.HexColor("#38bdf8")
-FAT = colors.HexColor("#1e3a8a")
-WARN = colors.HexColor("#fef2f2")
-WARN_LINE = colors.HexColor("#fecaca")
 
-_FONT = "Helvetica"
-_FONT_BOLD = "Helvetica-Bold"
-_RESAMPLE = getattr(PILImage, "Resampling", PILImage).LANCZOS
+FONT, FONT_B = "Helvetica", "Helvetica-Bold"
 
 
 def _register_fonts() -> None:
-    global _FONT, _FONT_BOLD
+    global FONT, FONT_B
     candidates = [
         (Path(r"C:\Windows\Fonts\arial.ttf"), Path(r"C:\Windows\Fonts\arialbd.ttf")),
-        (Path(r"C:\Windows\Fonts\segoeui.ttf"), Path(r"C:\Windows\Fonts\segoeuib.ttf")),
-        (Path(r"C:\Windows\Fonts\calibri.ttf"), Path(r"C:\Windows\Fonts\calibrib.ttf")),
+        (Path("/System/Library/Fonts/Supplemental/Arial.ttf"), Path("/System/Library/Fonts/Supplemental/Arial Bold.ttf")),
+        (Path("/Library/Fonts/Arial.ttf"), Path("/Library/Fonts/Arial Bold.ttf")),
+        (ASSETS / "fonts" / "LiberationSans-Regular.ttf", ASSETS / "fonts" / "LiberationSans-Bold.ttf"),
     ]
     for regular, bold in candidates:
         if regular.is_file() and bold.is_file():
-            pdfmetrics.registerFont(TTFont("PlanFit", str(regular)))
-            pdfmetrics.registerFont(TTFont("PlanFit-Bold", str(bold)))
-            _FONT = "PlanFit"
-            _FONT_BOLD = "PlanFit-Bold"
+            pdfmetrics.registerFont(TTFont("GFF", str(regular)))
+            pdfmetrics.registerFont(TTFont("GFF-Bold", str(bold)))
+            pdfmetrics.registerFontFamily("GFF", normal="GFF", bold="GFF-Bold", italic="GFF", boldItalic="GFF-Bold")
+            FONT, FONT_B = "GFF", "GFF-Bold"
             return
 
 
 _register_fonts()
 
 
-def _asset(name: str) -> Path | None:
-    path = ASSETS / name
-    return path if path.is_file() else None
+def esc(text: object) -> str:
+    return escape(str(text))
 
 
-def _cover_reader(path: Path) -> ImageReader:
-    img = PILImage.open(path).convert("RGB")
-    tw, th = 1240, 1754
-    iw, ih = img.size
-    scale = max(tw / iw, th / ih)
-    nw, nh = max(1, int(iw * scale)), max(1, int(ih * scale))
-    img = img.resize((nw, nh), _RESAMPLE)
-    left = max(0, (nw - tw) // 2)
-    top = max(0, (nh - th) // 2)
-    img = img.crop((left, top, left + tw, top + th))
-    buf = BytesIO()
-    img.save(buf, format="JPEG", quality=88)
-    buf.seek(0)
-    return ImageReader(buf)
+# ---------------------------------------------------------------- estilos
 
 
 def _styles() -> dict:
-    base = getSampleStyleSheet()
+    base = dict(fontName=FONT, textColor=INK)
     return {
-        "kicker": ParagraphStyle(
-            "kicker", parent=base["Normal"], fontName=_FONT_BOLD,
-            fontSize=8, textColor=BLUE, tracking=1, spaceAfter=2,
-        ),
-        "h": ParagraphStyle(
-            "h", parent=base["Heading1"], fontName=_FONT_BOLD,
-            fontSize=18, textColor=NAVY, spaceBefore=0, spaceAfter=6, leading=22,
-        ),
-        "body": ParagraphStyle(
-            "body", parent=base["Normal"], fontName=_FONT,
-            fontSize=10, textColor=TEXT, leading=14, alignment=TA_JUSTIFY, spaceAfter=8,
-        ),
-        "left": ParagraphStyle(
-            "left", parent=base["Normal"], fontName=_FONT,
-            fontSize=10, textColor=TEXT, leading=14, alignment=TA_LEFT, spaceAfter=3,
-        ),
-        "small": ParagraphStyle(
-            "small", parent=base["Normal"], fontName=_FONT,
-            fontSize=8, textColor=MUTED, leading=11, alignment=TA_JUSTIFY,
-        ),
-        "card_k": ParagraphStyle(
-            "card_k", parent=base["Normal"], fontName=_FONT,
-            fontSize=8, textColor=MUTED, alignment=TA_CENTER, leading=11,
-        ),
-        "card_v": ParagraphStyle(
-            "card_v", parent=base["Normal"], fontName=_FONT_BOLD,
-            fontSize=13, textColor=NAVY, alignment=TA_CENTER, leading=16,
-        ),
-        "menu_title": ParagraphStyle(
-            "menu_title", parent=base["Normal"], fontName=_FONT_BOLD,
-            fontSize=11, textColor=BLUE, spaceAfter=4,
-        ),
-        "meal": ParagraphStyle(
-            "meal", parent=base["Normal"], fontName=_FONT,
-            fontSize=9, textColor=TEXT, leading=13, spaceAfter=2,
-        ),
-        "day_title": ParagraphStyle(
-            "day_title", parent=base["Normal"], fontName=_FONT_BOLD,
-            fontSize=11, textColor=NAVY, leading=14,
-        ),
-        "day_meta": ParagraphStyle(
-            "day_meta", parent=base["Normal"], fontName=_FONT,
-            fontSize=8, textColor=MUTED, alignment=TA_RIGHT, leading=12,
-        ),
-        "ex": ParagraphStyle(
-            "ex", parent=base["Normal"], fontName=_FONT,
-            fontSize=9.5, textColor=TEXT, leading=13,
-        ),
-        "label": ParagraphStyle(
-            "label", parent=base["Normal"], fontName=_FONT,
-            fontSize=8, textColor=MUTED,
-        ),
-        "value": ParagraphStyle(
-            "value", parent=base["Normal"], fontName=_FONT_BOLD,
-            fontSize=10, textColor=TEXT,
-        ),
-        "disc": ParagraphStyle(
-            "disc", parent=base["Normal"], fontName=_FONT,
-            fontSize=8, textColor=MUTED, leading=11, alignment=TA_JUSTIFY,
-        ),
-        "th": ParagraphStyle(
-            "th", parent=base["Normal"], fontName=_FONT_BOLD,
-            fontSize=8, textColor=WHITE, leading=11,
-        ),
-        "td": ParagraphStyle(
-            "td", parent=base["Normal"], fontName=_FONT,
-            fontSize=8.5, textColor=TEXT, leading=12,
-        ),
-        "td_b": ParagraphStyle(
-            "td_b", parent=base["Normal"], fontName=_FONT_BOLD,
-            fontSize=8.5, textColor=NAVY, leading=12,
-        ),
-        "bar_l": ParagraphStyle(
-            "bar_l", parent=base["Normal"], fontName=_FONT_BOLD,
-            fontSize=9, textColor=NAVY, leading=12,
-        ),
-        "bar_r": ParagraphStyle(
-            "bar_r", parent=base["Normal"], fontName=_FONT,
-            fontSize=8.5, textColor=MUTED, alignment=TA_RIGHT, leading=12,
-        ),
-        "dont": ParagraphStyle(
-            "dont", parent=base["Normal"], fontName=_FONT,
-            fontSize=9.5, textColor=TEXT, leading=13,
-        ),
-        "h3": ParagraphStyle(
-            "h3", parent=base["Normal"], fontName=_FONT_BOLD,
-            fontSize=12, textColor=NAVY, spaceBefore=4, spaceAfter=6, leading=15,
-        ),
+        "body": ParagraphStyle("body", fontSize=9.8, leading=14.2, alignment=TA_JUSTIFY, spaceAfter=6, **base),
+        "bodyl": ParagraphStyle("bodyl", fontSize=9.8, leading=14.2, spaceAfter=6, **base),
+        "h2": ParagraphStyle("h2", fontName=FONT_B, fontSize=12, leading=15, textColor=INK, spaceBefore=6, spaceAfter=5, keepWithNext=1),
+        "h3": ParagraphStyle("h3", fontName=FONT_B, fontSize=9.8, leading=13, textColor=INK, spaceBefore=3, spaceAfter=2, keepWithNext=1),
+        "cell": ParagraphStyle("cell", fontSize=7.8, leading=10.6, **base),
+        "cellb": ParagraphStyle("cellb", fontName=FONT_B, fontSize=7.8, leading=10.6, textColor=INK),
+        "cellh": ParagraphStyle("cellh", fontName=FONT_B, fontSize=7.6, leading=10.6, textColor=WHITE),
+        "small": ParagraphStyle("small", fontSize=7, leading=10, textColor=MUTED, fontName=FONT),
+        "kicker": ParagraphStyle("kicker", fontName=FONT_B, fontSize=7, leading=9, textColor=GOLD),
+        "head": ParagraphStyle("head", fontName=FONT_B, fontSize=12.5, leading=16, textColor=WHITE),
+        "dark": ParagraphStyle("dark", fontSize=8.6, leading=12.6, textColor=WHITE, fontName=FONT),
+        "darksig": ParagraphStyle("darksig", fontName=FONT_B, fontSize=7.4, leading=10, textColor=GOLD, spaceBefore=3),
+        "statl": ParagraphStyle("statl", fontSize=7, leading=9, textColor=MUTED, alignment=TA_CENTER, fontName=FONT),
+        "statv": ParagraphStyle("statv", fontName=FONT_B, fontSize=11.5, leading=14, textColor=INK, alignment=TA_CENTER),
+        "boxt": ParagraphStyle("boxt", fontName=FONT_B, fontSize=10, leading=13, textColor=INK),
+        "boxx": ParagraphStyle("boxx", fontSize=8.4, leading=11.6, textColor=INK, fontName=FONT),
+        "callout": ParagraphStyle("callout", fontSize=9.2, leading=12.6, textColor=INK, fontName=FONT),
+        "mtitle": ParagraphStyle("mtitle", fontName=FONT_B, fontSize=8.8, leading=11.4, textColor=INK),
+        "mdet": ParagraphStyle("mdet", fontSize=7.6, leading=10.4, textColor=MUTED, fontName=FONT),
+        "mhead": ParagraphStyle("mhead", fontName=FONT_B, fontSize=12, leading=15, textColor=WHITE),
+        "mdays": ParagraphStyle("mdays", fontSize=7.4, leading=10, textColor=GOLD, alignment=TA_RIGHT, fontName=FONT),
+        "rtitle": ParagraphStyle("rtitle", fontName=FONT_B, fontSize=9.6, leading=12.4, textColor=INK),
+        "rmeta": ParagraphStyle("rmeta", fontSize=7, leading=9.5, textColor=GOLD, fontName=FONT, spaceAfter=4),
+        "rsec": ParagraphStyle("rsec", fontName=FONT_B, fontSize=7, leading=9.5, textColor=GOLD, spaceBefore=2),
+        "rtxt": ParagraphStyle("rtxt", fontSize=7.8, leading=10.6, textColor=INK, fontName=FONT),
+        "exn": ParagraphStyle("exn", fontName=FONT_B, fontSize=8.8, leading=11.2, textColor=INK),
+        "ext": ParagraphStyle("ext", fontSize=7.2, leading=9.6, textColor=MUTED, fontName=FONT),
+        "exr": ParagraphStyle("exr", fontSize=7.4, leading=10, textColor=INK, alignment=TA_RIGHT, fontName=FONT),
+        "dayh": ParagraphStyle("dayh", fontName=FONT_B, fontSize=11, leading=14, textColor=WHITE),
+        "dayhr": ParagraphStyle("dayhr", fontSize=7.4, leading=10, textColor=GOLD, alignment=TA_RIGHT, fontName=FONT),
+        "week": ParagraphStyle("week", fontSize=9.2, leading=12, textColor=INK, fontName=FONT),
     }
 
 
-def _cover_page(canvas, doc) -> None:
-    info = getattr(doc, "cover_info", {}) or {}
-    cover = _asset("cover.jpg")
-    canvas.saveState()
-    if cover:
-        canvas.drawImage(_cover_reader(cover), 0, 0, width=PAGE_W, height=PAGE_H)
-    else:
-        canvas.setFillColor(NAVY)
-        canvas.rect(0, 0, PAGE_W, PAGE_H, fill=1, stroke=0)
+S: dict = {}
 
-    canvas.setFillColor(colors.Color(0.06, 0.10, 0.24, alpha=0.42))
-    canvas.rect(0, 0, PAGE_W, PAGE_H, fill=1, stroke=0)
-
-    band_h = 128 * mm
-    canvas.setFillColor(colors.Color(0.06, 0.11, 0.25, alpha=0.92))
-    canvas.rect(0, 0, PAGE_W, band_h, fill=1, stroke=0)
-    canvas.setFillColor(BLUE)
-    canvas.rect(0, band_h, PAGE_W, 3.2, fill=1, stroke=0)
-
-    canvas.setFillColor(WHITE)
-    canvas.setFont(_FONT_BOLD, 11)
-    canvas.drawString(18 * mm, PAGE_H - 16 * mm, "PLANFIT")
-    canvas.setFont(_FONT, 9)
-    canvas.drawRightString(PAGE_W - 18 * mm, PAGE_H - 16 * mm, "Uso único · no se publica en la web")
-
-    y = 92 * mm
-    canvas.setFillColor(BLUE)
-    canvas.setFont(_FONT_BOLD, 9)
-    canvas.drawString(18 * mm, y + 22 * mm, "PLAN PERSONALIZADO  ·  12 SEMANAS")
-
-    canvas.setFillColor(WHITE)
-    canvas.setFont(_FONT_BOLD, 26)
-    name = str(info.get("name") or "Tu plan")
-    canvas.drawString(18 * mm, y, name[:42])
-
-    canvas.setFont(_FONT, 13)
-    canvas.setFillColor(colors.HexColor("#dbe7ff"))
-    canvas.drawString(18 * mm, y - 10 * mm, str(info.get("goal") or ""))
-
-    canvas.setFillColor(WHITE)
-    canvas.setFont(_FONT_BOLD, 16)
-    arrow = f"{info.get('weight', '')} kg   →   {info.get('target', '')} kg"
-    canvas.drawString(18 * mm, y - 24 * mm, arrow)
-
-    canvas.setFont(_FONT, 10)
-    canvas.setFillColor(colors.HexColor("#c9d4ea"))
-    meta = "  ·  ".join(p for p in info.get("meta_bits") or [] if p)
-    canvas.drawString(18 * mm, 18 * mm, meta)
-    canvas.restoreState()
+# ---------------------------------------------------------------- piezas
 
 
-def _body_page(canvas, doc) -> None:
-    canvas.saveState()
-    canvas.setFillColor(NAVY)
-    canvas.rect(0, PAGE_H - 11 * mm, PAGE_W, 11 * mm, fill=1, stroke=0)
-    canvas.setFillColor(WHITE)
-    canvas.setFont(_FONT_BOLD, 9)
-    canvas.drawString(16 * mm, PAGE_H - 7.2 * mm, "PlanFit")
-    canvas.setFont(_FONT, 8)
-    canvas.drawRightString(PAGE_W - 16 * mm, PAGE_H - 7.2 * mm, "Plan personalizado · 12 semanas")
-    canvas.setFillColor(BG)
-    canvas.rect(0, 0, PAGE_W, 12 * mm, fill=1, stroke=0)
-    canvas.setFillColor(MUTED)
-    canvas.setFont(_FONT, 7.5)
-    canvas.drawString(16 * mm, 5 * mm, "Guía general · no sustituye valoración profesional")
-    canvas.drawRightString(PAGE_W - 16 * mm, 5 * mm, f"Página {doc.page}")
-    canvas.restoreState()
+class Divider(Flowable):
+    """Línea dorada con un punto negro al centro."""
+
+    def __init__(self, width: float = CONTENT_W + 6, space: float = 10):
+        super().__init__()
+        self.width = width
+        self.space = space
+
+    def wrap(self, aw, ah):
+        return self.width, self.space * 2
+
+    def draw(self):
+        c = self.canv
+        y = self.space
+        c.setStrokeColor(GOLD)
+        c.setLineWidth(1.3)
+        c.line(6, y, self.width, y)
+        c.setFillColor(BLACK)
+        c.circle((6 + self.width) / 2, y, 2.2, stroke=0, fill=1)
 
 
-def _fitted_jpeg(path: Path, width: float, height: float, zoom: float = 1.0) -> Image:
-    img = PILImage.open(path).convert("RGB")
-    tw = max(8, int(width * 72 / 25.4 * 2))
-    th = max(8, int(height * 72 / 25.4 * 2))
-    iw, ih = img.size
-    scale = max(tw / iw, th / ih) * zoom
-    nw, nh = max(tw, int(iw * scale)), max(th, int(ih * scale))
-    img = img.resize((nw, nh), _RESAMPLE)
-    left = max(0, (nw - tw) // 2)
-    top = max(0, (nh - th) // 2)
-    img = img.crop((left, top, left + tw, top + th))
-    buf = BytesIO()
-    img.save(buf, format="JPEG", quality=86)
-    buf.seek(0)
-    flow = Image(buf, width=width, height=height)
-    flow.hAlign = "CENTER"
-    flow._keep_buf = buf
-    return flow
-
-
-def _photo(name: str, width: float, height: float):
-    path = _asset(name)
-    if not path:
-        return Spacer(width, 4)
-    return _fitted_jpeg(path, width, height)
-
-
-def _icon(name: str, size: float = 14 * mm):
-    path = _asset(name)
-    if not path:
-        return Spacer(size, size)
-    return _fitted_jpeg(path, size, size, zoom=1.18)
-
-
-def _section_head(icon_file: str, kicker: str, title: str, styles: dict):
-    icon = _icon(icon_file, 16 * mm)
-    text = [
-        Paragraph(kicker.upper(), styles["kicker"]),
-        Paragraph(title, styles["h"]),
-    ]
-    inner = Table([[icon, text]], colWidths=[20 * mm, 154 * mm])
-    inner.setStyle(
+def section(kicker: str, title: str) -> list:
+    t = Table(
+        [[[Paragraph(esc(kicker.upper()), S["kicker"]), Spacer(1, 2), Paragraph(esc(title), S["head"])]]],
+        colWidths=[CONTENT_W],
+    )
+    t.setStyle(
         TableStyle(
             [
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 0),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-                ("TOPPADDING", (0, 0), (-1, -1), 0),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                ("BACKGROUND", (0, 0), (-1, -1), BLACK),
+                ("LINEBEFORE", (0, 0), (0, -1), 3, GOLD),
+                ("LEFTPADDING", (0, 0), (-1, -1), 11),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 9),
             ]
         )
     )
-    return inner
+    return [t, Divider()]
 
 
-def _stat_cards(items: list[tuple[str, str]], styles: dict, col_w: float) -> Table:
-    cells = []
-    for label, value in items:
-        block = [Paragraph(label, styles["card_k"]), Paragraph(value, styles["card_v"])]
-        cells.append(block)
-    table = Table([cells], colWidths=[col_w] * len(items))
-    cmds = [
-        ("BACKGROUND", (0, 0), (-1, -1), WHITE),
-        ("BOX", (0, 0), (-1, -1), 0.3, LINE),
-        ("INNERGRID", (0, 0), (-1, -1), 0.3, LINE),
-        ("TOPPADDING", (0, 0), (-1, -1), 10),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
-        ("LEFTPADDING", (0, 0), (-1, -1), 6),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-    ]
-    for i in range(len(items)):
-        cmds.append(("LINEABOVE", (i, 0), (i, 0), 2.2, BLUE))
-    table.setStyle(TableStyle(cmds))
-    return table
-
-
-def _menu_card(menu: dict, styles: dict, width: float) -> Table:
-    body = [
-        Paragraph(menu["name"], styles["menu_title"]),
-        Paragraph(f"<b>Desayuno</b>  {menu['breakfast']}", styles["meal"]),
-        Paragraph(f"<b>Almuerzo</b>  {menu['lunch']}", styles["meal"]),
-        Paragraph(f"<b>Merienda</b>  {menu['snack']}", styles["meal"]),
-        Paragraph(f"<b>Cena</b>  {menu['dinner']}", styles["meal"]),
-    ]
-    card = Table([[body]], colWidths=[width])
-    card.setStyle(
+def dark_box(kicker: str | None, text: str, signature: str | None, width: float = CONTENT_W) -> Table:
+    inner = []
+    if kicker:
+        inner += [Paragraph(esc(kicker.upper()), S["kicker"]), Spacer(1, 3)]
+    inner.append(Paragraph(text, S["dark"]))
+    if signature:
+        inner.append(Paragraph(esc(signature), S["darksig"]))
+    t = Table([[inner]], colWidths=[width])
+    t.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, -1), WHITE),
-                ("BOX", (0, 0), (-1, -1), 0.3, LINE),
-                ("LINEBEFORE", (0, 0), (0, 0), 3.2, BLUE),
+                ("BACKGROUND", (0, 0), (-1, -1), BLACK),
+                ("LINEBEFORE", (0, 0), (0, -1), 3, GOLD),
                 ("LEFTPADDING", (0, 0), (-1, -1), 12),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-                ("TOPPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+                ("TOPPADDING", (0, 0), (-1, -1), 9),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
-                ("VALIGN", (0, 0), (-1, -1), "TOP"),
             ]
         )
     )
-    return card
+    return t
 
 
-def _workout_day(day: dict, styles: dict, width: float) -> Table:
-    header = Table(
-        [[
-            Paragraph(day["title"], styles["day_title"]),
-            Paragraph(day["sets"], styles["day_meta"]),
-        ]],
-        colWidths=[width * 0.68, width * 0.32],
-    )
-    header.setStyle(
+def pact(stage: str, text: str, name: str) -> list:
+    return [Spacer(1, 4), dark_box(f"El pacto · {stage}", text, f"— {name} · Lo firmaste."), Spacer(1, 10)]
+
+
+def quote(text: str, author: str) -> list:
+    return [Spacer(1, 6), dark_box(None, f"“{esc(text)}”", f"— {author}"), Spacer(1, 10)]
+
+
+def cream_box(flowables: list, width: float = CONTENT_W, pad: float = 10, border=GOLD) -> Table:
+    t = Table([[flowables]], colWidths=[width])
+    t.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 0), (-1, -1), SOFT),
-                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 8),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-                ("TOPPADDING", (0, 0), (-1, -1), 7),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+                ("BACKGROUND", (0, 0), (-1, -1), CREAM2),
+                ("BOX", (0, 0), (-1, -1), 0.9, border),
+                ("LEFTPADDING", (0, 0), (-1, -1), pad),
+                ("RIGHTPADDING", (0, 0), (-1, -1), pad),
+                ("TOPPADDING", (0, 0), (-1, -1), pad - 2),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), pad - 2),
             ]
         )
     )
-    rows = [[header]]
-    for i, ex in enumerate(day["exercises"], start=1):
-        rows.append([Paragraph(f"{i}.  {ex}", styles["ex"])])
-    card = Table(rows, colWidths=[width])
-    card.setStyle(
+    return t
+
+
+def callout_rows(lines: list[str]) -> KeepTogether:
+    rows = [[Paragraph(line, S["callout"])] for line in lines]
+    t = Table(rows, colWidths=[CONTENT_W])
+    t.setStyle(
         TableStyle(
             [
-                ("BACKGROUND", (0, 1), (-1, -1), WHITE),
-                ("BOX", (0, 0), (-1, -1), 0.3, LINE),
-                ("LEFTPADDING", (0, 1), (-1, -1), 10),
-                ("RIGHTPADDING", (0, 1), (-1, -1), 10),
-                ("TOPPADDING", (0, 1), (-1, -1), 5),
-                ("BOTTOMPADDING", (0, 1), (-1, -1), 5),
-            ]
-        )
-    )
-    return card
-
-
-def _macro_bars(macros: dict, styles: dict, width: float) -> Table:
-    rows = [
-        ("Proteína", macros["protein_g"], macros["protein_pct"], PROT),
-        ("Carbohidratos", macros["carb_g"], macros["carb_pct"], CARB),
-        ("Grasa", macros["fat_g"], macros["fat_pct"], FAT),
-    ]
-    bar_w = width * 0.58
-    blocks = []
-    for label, grams, pct, color in rows:
-        filled = max(6, bar_w * (pct / 100.0))
-        empty = max(1, bar_w - filled)
-        fill = Table([[""]], colWidths=[filled])
-        fill.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), color),
-            ("TOPPADDING", (0, 0), (-1, -1), 5),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ]))
-        track = Table([[fill, ""]], colWidths=[filled, empty])
-        track.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, -1), BG),
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ("TOPPADDING", (0, 0), (-1, -1), 0),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
-        ]))
-        line = Table(
-            [[
-                Paragraph(label, styles["bar_l"]),
-                track,
-                Paragraph(f"{grams} g  ·  {pct}%", styles["bar_r"]),
-            ]],
-            colWidths=[width * 0.22, bar_w, width * 0.20],
-        )
-        line.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 2),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 2),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-        ]))
-        blocks.append([line])
-    wrap = Table(blocks, colWidths=[width])
-    wrap.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), WHITE),
-        ("BOX", (0, 0), (-1, -1), 0.3, LINE),
-        ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ("TOPPADDING", (0, 0), (-1, -1), 6),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-    ]))
-    return wrap
-
-
-def _kv_rows(rows: list[tuple[str, str]], styles: dict, width: float, header: tuple[str, str] | None = None) -> Table:
-    data = []
-    if header:
-        data.append([Paragraph(header[0], styles["th"]), Paragraph(header[1], styles["th"])])
-    for left, right in rows:
-        data.append([Paragraph(left, styles["td_b"]), Paragraph(right, styles["td"])])
-    col0 = width * 0.32
-    table = Table(data, colWidths=[col0, width - col0])
-    cmds = [
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 8),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ("GRID", (0, 0), (-1, -1), 0.3, LINE),
-        ("BACKGROUND", (0, 0), (-1, -1), WHITE),
-    ]
-    if header:
-        cmds += [
-            ("BACKGROUND", (0, 0), (-1, 0), NAVY),
-            ("BACKGROUND", (0, 1), (0, -1), BG),
-        ]
-    else:
-        cmds.append(("BACKGROUND", (0, 0), (0, -1), BG))
-    table.setStyle(TableStyle(cmds))
-    return table
-
-
-def _bullet_block(items: list[str], styles: dict, width: float) -> Table:
-    inner = [[Paragraph(f"•  {item}", styles["left"])] for item in items]
-    table = Table(inner, colWidths=[width])
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), WHITE),
-        ("BOX", (0, 0), (-1, -1), 0.3, LINE),
-        ("LEFTPADDING", (0, 0), (-1, -1), 10),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-        ("TOPPADDING", (0, 0), (-1, -1), 3),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-    ]))
-    return table
-
-
-def _dont_box(items: list[str], styles: dict, width: float) -> Table:
-    inner = [[Paragraph(f"✕  {item}", styles["dont"])] for item in items]
-    table = Table(inner, colWidths=[width])
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), WARN),
-        ("BOX", (0, 0), (-1, -1), 0.6, WARN_LINE),
-        ("LEFTPADDING", (0, 0), (-1, -1), 10),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-        ("TOPPADDING", (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-    ]))
-    return table
-
-
-def _prog_table(rows: list[tuple[str, str, str]], styles: dict, width: float) -> Table:
-    data = [[
-        Paragraph("Periodo", styles["th"]),
-        Paragraph("Foco", styles["th"]),
-        Paragraph("Qué hacer", styles["th"]),
-    ]]
-    for a, b, c in rows:
-        data.append([
-            Paragraph(a, styles["td_b"]),
-            Paragraph(b, styles["td"]),
-            Paragraph(c, styles["td"]),
-        ])
-    table = Table(data, colWidths=[width * 0.22, width * 0.16, width * 0.62])
-    table.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
-        ("BACKGROUND", (0, 1), (-1, -1), WHITE),
-        ("GRID", (0, 0), (-1, -1), 0.3, LINE),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 7),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 7),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ("BACKGROUND", (0, 1), (0, -1), SOFT),
-    ]))
-    return table
-
-
-def _chips(title: str, items: list[str], styles: dict) -> Table:
-    text = Paragraph(f"<b>{title}</b>  {', '.join(items)}", styles["left"])
-    table = Table([[text]], colWidths=[174 * mm])
-    table.setStyle(
-        TableStyle(
-            [
-                ("BACKGROUND", (0, 0), (-1, -1), BG),
+                ("BACKGROUND", (0, 0), (-1, -1), CREAM2),
+                ("BOX", (0, 0), (-1, -1), 0.9, GOLD),
                 ("LEFTPADDING", (0, 0), (-1, -1), 10),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-                ("TOPPADDING", (0, 0), (-1, -1), 7),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-                ("BOX", (0, 0), (-1, -1), 0.2, LINE),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
             ]
         )
     )
-    return table
+    return KeepTogether([t])
 
 
-def build_pdf(path: Path, user: dict, plan: dict, payment_ref: str) -> Path:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    styles = _styles()
-    w = plan["workout"]
-    macros = plan["macros"]
-    content_w = 178 * mm
+def data_table(header: list[str], rows: list[list], widths: list[float], first_bold: bool = True, row_h=None) -> Table:
+    data = [[Paragraph(esc(h), S["cellh"]) for h in header]]
+    for r in rows:
+        cells = []
+        for i, v in enumerate(r):
+            if isinstance(v, Flowable):
+                cells.append(v)
+            else:
+                cells.append(Paragraph(esc(v), S["cellb"] if (i == 0 and first_bold) else S["cell"]))
+        data.append(cells)
+    t = Table(data, colWidths=widths, rowHeights=[None] + [row_h] * len(rows) if row_h else None, repeatRows=1)
+    style = [
+        ("BACKGROUND", (0, 0), (-1, 0), BLACK),
+        ("BOX", (0, 0), (-1, -1), 0.6, LINE),
+        ("INNERGRID", (0, 1), (-1, -1), 0.6, LINE),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("TOPPADDING", (0, 0), (-1, -1), 4.5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5.5),
+        ("LEFTPADDING", (0, 0), (-1, -1), 7),
+    ]
+    if first_bold:
+        style.append(("BACKGROUND", (0, 1), (0, -1), CREAM2))
+    t.setStyle(TableStyle(style))
+    return t
 
-    doc = BaseDocTemplate(
-        str(path),
-        pagesize=A4,
-        title=f"PlanFit — {user['name']}",
-        author="PlanFit",
-        leftMargin=16 * mm,
-        rightMargin=16 * mm,
-        topMargin=16 * mm,
-        bottomMargin=16 * mm,
-    )
-    doc.cover_info = {
-        "name": user["name"],
-        "goal": plan["goal_label"],
-        "weight": user["weight"],
-        "target": user["targetWeight"],
-        "meta_bits": [
-            f"{w['days']} días / semana",
-            w["location"],
-            f"{w['duration']} min",
-            w["experience"],
-            f"Foco: {w['focus']}",
-        ],
-    }
 
-    cover_frame = Frame(0, 0, PAGE_W, PAGE_H, id="cover", leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
-    body_frame = Frame(
-        16 * mm, 14 * mm, PAGE_W - 32 * mm, PAGE_H - 28 * mm,
-        id="body", showBoundary=0,
-    )
-    doc.addPageTemplates(
+def stat_cards(items: list[tuple[str, str]], gold_top: bool = True) -> Table:
+    cells = [[Paragraph(esc(l), S["statl"]), Spacer(1, 2), Paragraph(esc(v), S["statv"])] for l, v in items]
+    t = Table([cells], colWidths=[CONTENT_W / len(items)] * len(items))
+    style = [
+        ("BOX", (0, 0), (-1, -1), 0.6, LINE),
+        ("INNERGRID", (0, 0), (-1, -1), 0.6, LINE),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 9),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+    ]
+    if gold_top:
+        style.append(("LINEABOVE", (0, 0), (-1, 0), 2, GOLD))
+    t.setStyle(TableStyle(style))
+    return t
+
+
+def photo(name: str, width: float, height: float) -> Flowable | None:
+    path = ASSETS / name
+    if not path.is_file():
+        return None
+    img = PILImage.open(path).convert("RGB")
+    iw, ih = img.size
+    target = width / height
+    if iw / ih > target:
+        nw = int(ih * target)
+        img = img.crop(((iw - nw) // 2, 0, (iw - nw) // 2 + nw, ih))
+    else:
+        nh = int(iw / target)
+        img = img.crop((0, (ih - nh) // 2, iw, (ih - nh) // 2 + nh))
+    from io import BytesIO
+
+    buf = BytesIO()
+    img.save(buf, "JPEG", quality=86)
+    buf.seek(0)
+    return Image(buf, width=width, height=height)
+
+
+class Bar(Flowable):
+    def __init__(self, pct: float, color, width: float, height: float = 15):
+        super().__init__()
+        self.pct, self.color, self.width, self.height = pct, color, width, height
+
+    def wrap(self, aw, ah):
+        return self.width, self.height
+
+    def draw(self):
+        c = self.canv
+        c.setFillColor(CREAM2)
+        c.rect(0, 0, self.width, self.height, stroke=0, fill=1)
+        c.setFillColor(self.color)
+        c.rect(0, 0, self.width * self.pct / 100.0, self.height, stroke=0, fill=1)
+
+
+class Check(Flowable):
+    """Casillas: [] sí  [] no, o una sola casilla con texto."""
+
+    def __init__(self, labels: list[str], gap: float = 34, size: float = 8.5, font_size: float = 7.4):
+        super().__init__()
+        self.labels, self.gap, self.size, self.fs = labels, gap, size, font_size
+
+    def wrap(self, aw, ah):
+        self.width = aw
+        return aw, self.size + 2
+
+    def draw(self):
+        c = self.canv
+        c.setStrokeColor(INK)
+        c.setLineWidth(0.7)
+        x = 0
+        for label in self.labels:
+            c.rect(x, 1, self.size, self.size, stroke=1, fill=0)
+            c.setFillColor(INK)
+            c.setFont(FONT, self.fs)
+            c.drawString(x + self.size + 3, 2.2, label)
+            x += self.gap
+
+
+class Water(Flowable):
+    def __init__(self, size: float = 8.5):
+        super().__init__()
+        self.size = size
+
+    def wrap(self, aw, ah):
+        return aw, self.size + 2
+
+    def draw(self):
+        c = self.canv
+        c.setStrokeColor(INK)
+        c.setLineWidth(0.9)
+        x = 0
+        for i in range(8):
+            if i == 4:
+                x += 6
+            c.rect(x, 1, self.size, self.size, stroke=1, fill=0)
+            x += self.size + 1.6
+
+
+# ---------------------------------------------------------------- portada y marco
+
+
+def _cover(c, doc) -> None:
+    user, plan = doc.gff_user, doc.gff_plan
+    path = ASSETS / "gff-cover.jpg"
+    if path.is_file():
+        img = PILImage.open(path).convert("RGB")
+        iw, ih = img.size
+        target = PAGE_W / PAGE_H
+        if iw / ih > target:
+            nw = int(ih * target)
+            img = img.crop(((iw - nw) // 2, 0, (iw - nw) // 2 + nw, ih))
+        c.drawImage(ImageReader(img), 0, 0, PAGE_W, PAGE_H)
+    else:
+        c.setFillColor(BLACK)
+        c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
+    split = PAGE_H * 0.433
+    c.saveState()
+    c.setFillColor(NAVY)
+    c.setFillAlpha(0.28)
+    c.rect(0, split, PAGE_W, PAGE_H - split, stroke=0, fill=1)
+    c.setFillAlpha(0.9)
+    c.rect(0, 0, PAGE_W, split, stroke=0, fill=1)
+    c.restoreState()
+    c.setStrokeColor(GOLD)
+    c.setLineWidth(2.2)
+    c.line(0, split, PAGE_W, split)
+
+    c.setFillColor(WHITE)
+    c.setFont(FONT_B, 10)
+    c.drawString(51, PAGE_H - 45, "GARY FELICIEN FIT")
+    c.setFont(FONT, 7.6)
+    c.drawRightString(PAGE_W - 51, PAGE_H - 45, "Plan personal · no se publica en la web")
+
+    y = split - 42
+    c.setFillColor(GOLD)
+    c.setFont(FONT_B, 7.8)
+    c.drawString(51, y, "PLAN PERSONALIZADO  ·  12 SEMANAS")
+    c.setFillColor(WHITE)
+    c.setFont(FONT_B, 25)
+    c.drawString(51, y - 56, user["name"])
+    c.setFont(FONT, 12)
+    c.drawString(51, y - 80, plan["goal_label"])
+    c.setFont(FONT_B, 14.5)
+    c.drawString(51, y - 112, f"{user['weight']:.1f} kg   →   {user['targetWeight']:.1f} kg")
+    c.setFont(FONT, 8.4)
+    c.setFillColor(colors.HexColor("#c9cbd3"))
+    focus = "Equilibrado" if user["focusMuscle"] == "balanced" else plan["focus_label"]
+    meta = "  ·  ".join(
         [
-            PageTemplate(id="Cover", frames=[cover_frame], onPage=_cover_page),
-            PageTemplate(id="Body", frames=[body_frame], onPage=_body_page),
+            f"{user['days']} días / semana",
+            plan["location_label"],
+            f"{user['duration']} min",
+            plan["experience_label"],
+            f"Foco: {focus}",
         ]
     )
+    c.drawString(51, 52, meta)
 
-    sex_label = "Hombre" if user["sex"] == "male" else "Mujer"
-    habits = plan.get("habits") or {}
-    story: list = [NextPageTemplate("Body"), PageBreak()]
 
-    story.append(_section_head("icon-habits.jpg", "Antes de empezar", "Cómo usar este documento", styles))
-    story.append(Spacer(1, 2 * mm))
+def _frame(c, doc) -> None:
+    c.saveState()
+    c.setFillColor(BLACK)
+    c.rect(0, PAGE_H - 30, PAGE_W, 30, stroke=0, fill=1)
+    c.setStrokeColor(BLACK)
+    c.setLineWidth(0.6)
+    c.line(0, PAGE_H - 32.5, PAGE_W, PAGE_H - 32.5)
+    c.setFillColor(WHITE)
+    c.setFont(FONT_B, 8.6)
+    c.drawString(MARGIN, PAGE_H - 19, "Gary Felicien Fit")
+    c.setFont(FONT, 7.4)
+    c.drawRightString(PAGE_W - MARGIN, PAGE_H - 19, "Plan personalizado · 12 semanas")
+    c.setFillColor(CREAM2)
+    c.rect(0, 0, PAGE_W, 34, stroke=0, fill=1)
+    c.setFillColor(MUTED)
+    c.setFont(FONT, 6.8)
+    c.drawString(MARGIN, 14, "Guía general · no sustituye valoración profesional")
+    c.drawRightString(PAGE_W - MARGIN, 14, f"Página {doc.page}")
+    c.restoreState()
+
+
+# ---------------------------------------------------------------- secciones
+
+
+def _intro(user: dict, name: str) -> list:
+    self_word = "mí misma" if user["sex"] == "female" else "mí mismo"
+    story = section("Antes de empezar", "Nada de esto es magia")
+    story += [
+        Paragraph(
+            "Lo que vas a leer no es información sagrada ni un atajo. Es un plan de 12 semanas: números de partida, "
+            "menús guía y una rutina. Solo funciona si lo cumples con constancia. Si lo lees y no lo haces, no falló el "
+            "PDF: no hubo plan.",
+            S["body"],
+        ),
+        Paragraph(
+            "Este documento no sustituye a un médico. Si algo duele de forma rara, paras y consultas. No hace falta "
+            "motivación todos los días. Hace falta el mismo pacto del día 1.",
+            S["body"],
+        ),
+        cream_box(
+            [
+                Paragraph(
+                    f"Yo, {name}, me comprometo a cumplir el plan aquí presentado, siguiendo las instrucciones con "
+                    f"honestidad. Quiero cambiar mi vida y cuidar mi salud. Sé que si no lo hago, solo me estaría "
+                    f"mintiendo y perjudicándome a {self_word}.",
+                    ParagraphStyle("pl", parent=S["body"], fontSize=9.4, leading=14, spaceAfter=0),
+                )
+            ],
+            pad=12,
+        ),
+        Spacer(1, 12),
+        Paragraph("Firma: _______________________________ Fecha: ____ / ____ / ________", S["bodyl"]),
+    ]
+    story += quote(
+        "Odié cada minuto de entrenamiento, pero me dije: sufre ahora y vive el resto de tu vida como un campeón.",
+        "Muhammad Ali · Boxeo",
+    )
+    story.append(Paragraph("Cómo está armado este documento", S["h2"]))
+    rows = [
+        ("El pacto", "Lo firmas al inicio. El resto del documento es cómo cumplirlo 12 semanas."),
+        ("Glosario", "Las palabras del plan (kcal, TMB, macros, reserva). Léelo una vez; después es consulta."),
+        ("Tu ficha", "Quién eres en este plan: peso, meta, objetivo. Si un dato está mal, genera el plan de nuevo."),
+        ("Alimentación", "Calorías y macros de partida, 4 menús y recetario con tus alimentos."),
+        ("Cómo contar y leer envases", "Para que los números no sean magia: se aprenden y se usan."),
+        ("Entrenamiento", "Rutina por días, con series, descanso, pistas y por qué está armada así."),
+        ("Hábitos", "Agua, sueño y pasos. Sostienen el plan más que cualquier suplemento."),
+        ("Medidas y fotos", "Cinta, peso promedio, fotos y ropa testigo. Se usan para no mentirte."),
+        ("Planner de 12 semanas", "La bitácora que se imprime y se marca. Aquí se ve si el pacto sigue en pie."),
+        ("Lo que no debes hacer", "Errores que rompen el progreso. Léelos antes de empezar."),
+    ]
+    story.append(data_table(["Sección", "Para qué sirve"], rows, [CONTENT_W * 0.31, CONTENT_W * 0.69]))
+    story.append(PageBreak())
+    return story
+
+
+DONTS = [
+    "No cortes las calorías por debajo de este plan para 'ir más rápido'.",
+    "No te saltes comidas para compensar un exceso.",
+    "No compares el peso de cada día: usa el promedio de la semana.",
+    "No entrenes con dolor agudo, mareo, o si te falta el aire de forma rara.",
+    "No copies rutinas de redes ni añadas series extra en las semanas 1-4.",
+    "No uses laxantes, diuréticos ni 'quemadores' para ver la báscula.",
+    "No cambies de plan cada semana: 12 semanas de lo mismo ganan a 12 planes distintos.",
+    "No abandones el sueño o los pasos para 'hacer más gym'. Sin eso, el plan no sostiene.",
+]
+
+GLOSSARY = [
+    ("kcal", "Kilocaloría: la “caloría” de las etiquetas. Energía que da la comida y que el cuerpo gasta."),
+    ("TMB", "Tasa metabólica basal: calorías que gastas en reposo, solo por estar vivo."),
+    ("Gasto del día (TDEE)", "TMB más moverte, entrenar y digerir. El plan se calcula a partir de aquí."),
+    ("NEAT", "Energía que gastas al caminar, estar de pie y hacer la casa. Suele ser más que la hora de gym."),
+    ("Macronutrientes (macros)", "Nutrientes que comes en gramos, no en miligramos: proteína, carbohidratos y grasa. De ellos salen casi todas las calorías."),
+    ("Proteína", "Nutriente hecho de aminoácidos. Está en carne, pescado, huevos, lácteos y legumbres. Aporta 4 kcal por gramo; repara músculo y sacia."),
+    ("Carbohidratos", "Azúcares y almidones. Están en arroz, papa, avena, pan y fruta. El cuerpo los usa como combustible, sobre todo en el gym. 4 kcal por gramo."),
+    ("Grasa (de la comida)", "Lípidos: aceite, frutos secos, yema, pescado graso, palta. No es la grasa del cuerpo. 9 kcal por gramo; sirve para hormonas y para absorber vitaminas A, D, E y K."),
+    ("Déficit", "Comer un poco por debajo del gasto. Así baja la grasa corporal, sin recortar a lo loco."),
+    ("Porción", "La cantidad que comes, no el envase entero."),
+    ("Crudo vs cocido", "100 g de arroz crudo no son 100 g cocidos. Se pesa como indica la etiqueta."),
+    ("Serie y repetición", "Una serie es un bloque. Las repeticiones son cada subida y bajada."),
+    ("Reserva", "Dejar 1–2 repeticiones sin hacer. No llegas al fallo."),
+    ("Tempo", "Velocidad del movimiento. Aquí: 2–3 s al bajar, subida controlada."),
+    ("Empuje / tirón", "Empujas (pecho, hombros, tríceps) o tiras (espalda, bíceps)."),
+    ("IMC", "Peso y altura en una cifra. Es un punto de partida, no un veredicto."),
+    ("Perímetro", "Medida con cinta: cuello, pecho, cintura, cadera, brazo, muslo."),
+    ("Promedio de 3 días", "Tres pesajes en ayunas. Ese número cuenta, no un martes."),
+]
+
+
+def _donts_glossary() -> list:
+    story = [Paragraph("Cosas que no debes hacer", S["h2"])]
+    lines = [f'<font color="#d4a017">▌</font> {esc(d)}' for d in DONTS]
+    story.append(callout_rows(lines))
+    story.append(Spacer(1, 8))
+    story += section("Glosario", "Palabras que vas a ver")
     story.append(
         Paragraph(
-            "Este PDF es tu plan de 12 semanas. No se publica en la web. "
-            "Léelo una vez de seguido y después úsalo como referencia. "
-            "Cada bloque tiene un propósito:",
-            styles["body"],
+            "No hace falta memorizarlo. Léelo una vez. Cuando más adelante aparezca TMB, macros o reserva, vuelves aquí.",
+            S["body"],
         )
     )
-    story.append(_kv_rows(plan.get("intro") or [], styles, content_w, ("Sección", "Para qué sirve")))
-    story.append(Spacer(1, 6 * mm))
-    story.append(Paragraph("Cosas que no debes hacer", styles["h3"]))
-    story.append(_dont_box(plan.get("donts") or [], styles, content_w))
-
+    story.append(data_table(["Término", "Qué significa"], GLOSSARY, [CONTENT_W * 0.33, CONTENT_W * 0.67]))
     story.append(PageBreak())
-    story.append(_section_head("icon-food.jpg", "Tu ficha", "Así empieza el plan", styles))
-    story.append(Spacer(1, 4 * mm))
-    story.append(
-        _stat_cards(
+    return story
+
+
+def _ficha(user: dict, plan: dict, name: str) -> list:
+    sex = "Mujer" if user["sex"] == "female" else "Hombre"
+    story = section("Tu ficha", "Así empieza el plan")
+    story += [
+        Spacer(1, 2),
+        stat_cards(
             [
                 ("Objetivo", plan["goal_label"]),
-                ("Peso inicial", f"{user['weight']} kg"),
-                ("Meta 12 sem.", f"{user['targetWeight']} kg"),
-                ("IMC", str(user["bmi"])),
-            ],
-            styles,
-            content_w / 4,
-        )
-    )
-    story.append(Spacer(1, 4 * mm))
-    story.append(
-        _stat_cards(
+                ("Peso inicial", f"{user['weight']:.1f} kg"),
+                ("Meta 12 sem.", f"{user['targetWeight']:.1f} kg"),
+                ("IMC", f"{user['bmi']:.1f}"),
+            ]
+        ),
+        Spacer(1, 8),
+        stat_cards(
             [
                 ("Edad", f"{user['age']} años"),
                 ("Altura", f"{user['height']} cm"),
-                ("Sexo", sex_label),
+                ("Sexo", sex),
                 ("Motivación", plan["motivation_label"]),
-            ],
-            styles,
-            content_w / 4,
-        )
+            ]
+        ),
+        Spacer(1, 5),
+    ]
+    stamp = f"Plan generado el {date.today().strftime('%d/%m/%Y')} para {name}"
+    if user.get("email"):
+        stamp += f" · {esc(user['email'])}"
+    story.append(Paragraph(stamp + ". Si un dato está mal, genera el plan de nuevo con los datos correctos.", S["small"]))
+    story += pact(
+        "Etapa 2",
+        f"{name}, estos números no son un veredicto: son el punto de partida de lo que firmaste. "
+        "El peso de hoy no te define. El promedio de 12 semanas, sí.",
+        name,
     )
-    story.append(Spacer(1, 3 * mm))
+    story += section("Ciencia útil", "Por qué fuerza y comida real")
     story.append(
         Paragraph(
-            f"Referencia de pago <b>{payment_ref}</b> · {user['email']}. "
-            "Este documento corresponde a un único pago y no se muestra en la web.",
-            styles["small"],
+            "No es un tratado. Son cuatro reglas que aguantan cuando la moda pasa. El músculo es un órgano que habla "
+            "con el resto del cuerpo: glucosa, inflamación, huesos, hambre.",
+            S["body"],
         )
     )
+    boxes = [
+        ("Adherencia", "El plan que no puedes sostener no es un plan. Mejor 80% constante que 100% dos semanas."),
+        ("Músculo", "La fuerza no es opcional. El músculo regula glucosa, da forma y sostiene el metabolismo."),
+        ("Comida real", "No todas las calorías se sienten igual. Proteína, verdura y comida con matriz, no solo números."),
+        ("Flexibilidad", "No hay alimentos malditos. Carbo y grasa son herramientas. El contexto manda."),
+    ]
+    cw = (CONTENT_W - 6) / 2
 
-    story.append(Spacer(1, 8 * mm))
-    story.append(_section_head("icon-food.jpg", "Alimentación", "Tus números y menús guía", styles))
-    story.append(Spacer(1, 3 * mm))
-    story.append(_photo("food.jpg", content_w, 58 * mm))
-    story.append(Spacer(1, 4 * mm))
-    story.append(
-        _stat_cards(
-            [
-                ("Calorías", f"{plan['calories']} kcal"),
-                ("Proteína", f"{macros['protein_g']} g"),
-                ("Carbos", f"{macros['carb_g']} g"),
-                ("Grasa", f"{macros['fat_g']} g"),
-            ],
-            styles,
-            content_w / 4,
-        )
-    )
-    story.append(Spacer(1, 3 * mm))
-    story.append(_macro_bars(macros, styles, content_w))
-    story.append(Spacer(1, 3 * mm))
-    story.append(
-        Paragraph(
-            "Cifras de partida. Si el peso no se mueve en 14 días, ajusta 100–150 kcal. "
-            "Alterna los 3 menús según tus preferencias; no hace falta copiarlos al gramo.",
-            styles["body"],
-        )
-    )
-    story.append(Paragraph("Cómo contar calorías y macros", styles["h3"]))
-    story.append(_bullet_block(plan.get("calorie_guide") or [], styles, content_w))
-    story.append(Spacer(1, 4 * mm))
-    story.append(_chips("Vegetales", user["vegetables"], styles))
-    story.append(Spacer(1, 2 * mm))
-    story.append(_chips("Frutas", user["fruits"], styles))
-    story.append(Spacer(1, 2 * mm))
-    story.append(_chips("Proteínas", user["proteins"], styles))
-    story.append(Spacer(1, 2 * mm))
-    story.append(_chips("Carbohidratos", user["carbs"], styles))
-    story.append(Spacer(1, 5 * mm))
-
-    menu_w = (content_w - 6 * mm) / 2
-    menus = plan["menus"]
-    if len(menus) >= 2:
-        pair = Table(
-            [[_menu_card(menus[0], styles, menu_w), _menu_card(menus[1], styles, menu_w)]],
-            colWidths=[menu_w, menu_w],
-        )
-        pair.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0),
-            ("RIGHTPADDING", (0, 0), (0, 0), 6),
-            ("LEFTPADDING", (1, 0), (1, 0), 0),
-        ]))
-        story.append(pair)
-        story.append(Spacer(1, 4 * mm))
-    if len(menus) >= 3:
-        story.append(_menu_card(menus[2], styles, content_w))
-
-    story.append(PageBreak())
-    story.append(_section_head("icon-gym.jpg", "Entrenamiento", "Tu rutina de 12 semanas", styles))
-    story.append(Spacer(1, 3 * mm))
-    story.append(_photo("gym.jpg", content_w, 58 * mm))
-    story.append(Spacer(1, 4 * mm))
-    story.append(
-        _stat_cards(
-            [
-                ("Frecuencia", f"{w['days']} días"),
-                ("Lugar", w["location"]),
-                ("Sesión", f"{w['duration']} min"),
-                ("Foco", w["focus"]),
-            ],
-            styles,
-            content_w / 4,
-        )
-    )
-    story.append(Spacer(1, 3 * mm))
-    story.append(
-        _stat_cards(
-            [
-                ("Descanso", w.get("rest", "75-90 s")),
-                ("Tempo", "2-3 s bajada"),
-                ("Reserva", "1-2 reps"),
-                ("Nivel", w["experience"]),
-            ],
-            styles,
-            content_w / 4,
-        )
-    )
-    story.append(Spacer(1, 3 * mm))
-    story.append(Paragraph(w.get("tempo", ""), styles["body"]))
-    story.append(Paragraph("Calentamiento", styles["h3"]))
-    story.append(_bullet_block(w.get("warmup") or [], styles, content_w))
-    story.append(Spacer(1, 2 * mm))
-    story.append(Paragraph("Progresión de 12 semanas", styles["h3"]))
-    story.append(_prog_table(w.get("progression_table") or [], styles, content_w))
-    story.append(Spacer(1, 2 * mm))
-    if w.get("cooldown"):
-        story.append(Paragraph(w["cooldown"], styles["body"]))
-
-    story.append(Spacer(1, 3 * mm))
-    for day in w["schedule"]:
-        story.append(KeepTogether([_workout_day(day, styles, content_w), Spacer(1, 3.5 * mm)]))
-
-    story.append(PageBreak())
-    story.append(_section_head("icon-food.jpg", "Sustituciones", "Si falta un alimento o un ejercicio", styles))
-    story.append(Spacer(1, 2 * mm))
-    story.append(
-        Paragraph(
-            "Cambia una cosa por otra de la misma lista. No sustituyas proteína por pan, ni sentadilla por 40 minutos de bici.",
-            styles["body"],
-        )
-    )
-    if plan.get("food_swaps"):
-        story.append(Paragraph("Alimentos", styles["h3"]))
-        story.append(_kv_rows(plan["food_swaps"], styles, content_w, ("Eliges", "Puedes usar")))
-        story.append(Spacer(1, 4 * mm))
-    if plan.get("exercise_swaps"):
-        story.append(Paragraph("Ejercicios", styles["h3"]))
-        story.append(_kv_rows(plan["exercise_swaps"], styles, content_w, ("Programado", "Alternativa")))
-
-    story.append(Spacer(1, 8 * mm))
-    story.append(_section_head("icon-habits.jpg", "Hábitos", "Lo que sostiene el plan", styles))
-    story.append(Spacer(1, 3 * mm))
-    story.append(
-        _stat_cards(
-            [
-                ("Agua", f"{habits.get('water_l', '—')} L"),
-                ("Sueño", habits.get("sleep", "7-9 h")),
-                ("Pasos", habits.get("steps", "8.000")),
-                ("Báscula", "promedio 3 días"),
-            ],
-            styles,
-            content_w / 4,
-        )
-    )
-    story.append(Spacer(1, 3 * mm))
-    story.append(
-        Paragraph(
-            f"Agua: unos <b>{habits.get('water_ml', 0)} ml</b> al día "
-            f"({habits.get('water_l', 0)} litros), repartidos. "
-            f"Pasos: <b>{habits.get('steps', '')}</b>. {habits.get('steps_note', '')} "
-            f"{habits.get('scale', '')}",
-            styles["body"],
-        )
-    )
-
-    disc = Table(
-        [[
-            Paragraph(
-                "<b>Importante.</b> Este documento es una guía general y no sustituye la evaluación "
-                "de un médico, nutricionista o profesional del ejercicio. Si tienes una condición médica, "
-                "lesión, embarazo, trastorno alimentario o tomas medicamentos, consulta a un profesional "
-                "antes de realizar cambios importantes en alimentación o ejercicio. "
-                "Si hay un error en los datos, no reutilices el enlace: escribe a soporte.",
-                styles["disc"],
+    def box(t, x):
+        b = Table([[[Paragraph(t, S["boxt"]), Paragraph(x, S["boxx"])]]], colWidths=[cw])
+        b.setStyle(
+            TableStyle(
+                [
+                    ("BOX", (0, 0), (-1, -1), 1, GOLD),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 7),
+                    ("TOPPADDING", (0, 0), (-1, -1), 5),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+                ]
             )
-        ]],
-        colWidths=[content_w],
+        )
+        return b
+
+    grid = Table(
+        [[box(*boxes[0]), "", box(*boxes[1])], [box(*boxes[2]), "", box(*boxes[3])]],
+        colWidths=[cw, 6, cw],
     )
-    disc.setStyle(
-        TableStyle(
+    grid.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 6), ("TOPPADDING", (0, 0), (-1, -1), 0)]))
+    story += [grid, Spacer(1, 4), Paragraph("En tu caso", S["h3"])]
+    for line in plan["science"]:
+        story.append(Paragraph(f"• {esc(line)}", ParagraphStyle("b", parent=S["bodyl"], spaceAfter=3)))
+    story.append(Spacer(1, 6))
+    story.append(
+        Paragraph(
+            "Tensión mecánica, no sudor. El músculo crece o se conserva cuando tira contra una carga, con rango y "
+            "control. Sudar en la cinta no le da esa orden. NEAT: los pasos del día suelen gastar más grasa que la hora "
+            "de gym. El entreno dice qué tejido guardar; caminar dice cuánta grasa usar.",
+            S["body"],
+        )
+    )
+    story.append(PageBreak())
+    return story
+
+
+def _energy_food(user: dict, plan: dict, name: str) -> list:
+    m = plan["macros"]
+    kcal = miles(plan["calories"])
+    story = section("Energía", "Tu gasto, no un número mágico")
+    story.append(Paragraph(esc(plan["energy"]["text"]), S["body"]))
+    story.append(Paragraph("De dónde sale tu gasto (estimado)", S["h3"]))
+    rows = [[Paragraph(esc(a), S["cellb"]), Paragraph(esc(b), S["cell"])] for a, b in plan["energy"]["rows"]]
+    t = Table(rows, colWidths=[CONTENT_W * 0.55, CONTENT_W * 0.45])
+    t.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, LINE), ("INNERGRID", (0, 0), (-1, -1), 0.6, LINE), ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 6)]))
+    story += [Spacer(1, 3), t, Spacer(1, 8)]
+    story.append(Paragraph("Macros, sin enemigos", S["h3"]))
+    story.append(
+        Paragraph(
+            "Proteína: ladrillos y freno del hambre. Carbohidratos: gasolina del entreno, no el villano. Grasas: "
+            "hormonas y vitaminas A, D, E, K. Las vitaminas y minerales no se reemplazan bien con un puñado de "
+            "pastillas: viajan mejor en la comida real (hierro + vitamina C; grasas + vitamina D). Magnesio y sueño; "
+            "sodio al extremo empeora el gym.",
+            S["body"],
+        )
+    )
+    story += section("Alimentación", "Tus números y menús guía")
+    img = photo("gff-food.jpg", CONTENT_W, CONTENT_W * 932 / 2860)
+    if img:
+        story += [img, Spacer(1, 6)]
+    story.append(
+        stat_cards(
             [
-                ("BACKGROUND", (0, 0), (-1, -1), BG),
-                ("BOX", (0, 0), (-1, -1), 0.3, LINE),
-                ("LEFTPADDING", (0, 0), (-1, -1), 10),
-                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
-                ("TOPPADDING", (0, 0), (-1, -1), 8),
-                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("Calorías", f"{kcal} kcal"),
+                ("Proteína", f"{m['protein_g']} g"),
+                ("Carbos", f"{m['carb_g']} g"),
+                ("Grasa", f"{m['fat_g']} g"),
             ]
         )
     )
-    story.append(disc)
+    story.append(Spacer(1, 12))
+    bar_w = CONTENT_W * 0.5
+    bars = []
+    for label, g, pct, col in [
+        ("Proteína", m["protein_g"], m["protein_pct"], GOLD),
+        ("Carbohidratos", m["carb_g"], m["carb_pct"], TAN),
+        ("Grasa", m["fat_g"], m["fat_pct"], BROWN),
+    ]:
+        bars.append(
+            [
+                Paragraph(label, S["cellb"]),
+                Bar(pct, col, bar_w),
+                Paragraph(f"{g} g<br/>{pct}%", ParagraphStyle("bv", parent=S["small"], alignment=TA_RIGHT)),
+            ]
+        )
+    bt = Table(bars, colWidths=[CONTENT_W * 0.25, bar_w + 10, CONTENT_W * 0.25 - 10], rowHeights=[38] * 3)
+    bt.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, LINE), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (-1, -1), 8)]))
+    story += [bt, Spacer(1, 8)]
+    story.append(
+        Paragraph(
+            "Cifras de partida. Si el peso no se mueve en 14 días, ajusta 100–150 kcal. Hay 4 menús para rotar. "
+            "Las porciones son estimadas, no una receta de laboratorio.",
+            S["body"],
+        )
+    )
+    story.append(Paragraph("Aprende a contar tus calorías y macronutrientes", S["h2"]))
+    story.append(
+        Paragraph(
+            f"Tu objetivo diario es de aproximadamente {kcal} kcal, con una referencia de {m['protein_g']} g de "
+            f"proteína, {m['carb_g']} g de carbohidratos y {m['fat_g']} g de grasa.",
+            S["body"],
+        )
+    )
+    story.append(
+        Paragraph(
+            "Pero más que darte un número para seguir, queremos que aprendas cómo se obtiene y cómo controlar lo que comes.",
+            S["body"],
+        )
+    )
+    steps = [
+        ("1. Registra todo lo que consumes", [
+            "Durante al menos 7 días, anota tus comidas en una aplicación, hoja de cálculo o libreta.",
+            "Incluye todo: comidas principales, snacks, bebidas, salsas, aceites y pequeños “picoteos”. No necesitas hacerlo perfecto; primero necesitas conocer tus hábitos.",
+        ]),
+        ("2. Aprende a leer las etiquetas", [
+            "Busca en la información nutricional: proteínas, carbohidratos y grasas (gramos por porción) y las calorías que aporta esa cantidad.",
+            "Presta atención al tamaño de la porción. Si la etiqueta indica los valores para 100 g y tú consumes 150 g, tendrás que multiplicar esos valores por 1,5.",
+        ]),
+        ("3. Aprende a calcular las calorías de los macros", ["Los macronutrientes aportan aproximadamente:"]),
+    ]
+    for title, paras in steps:
+        story.append(Paragraph(title, S["h3"]))
+        for p in paras:
+            story.append(Paragraph(p, S["body"]))
+    story.append(
+        callout_rows(
+            [
+                "Proteína → 4 kcal por gramo",
+                "Carbohidratos → 4 kcal por gramo",
+                "Grasas → 9 kcal por gramo",
+                "Ejemplo: 30 g de proteína, 40 g de carbohidratos y 10 g de grasa → 30 × 4 = 120 · 40 × 4 = 160 · 10 × 9 = 90. En total, unas 370 kcal.",
+            ]
+        )
+    )
+    story.append(Spacer(1, 6))
+    story.append(
+        Paragraph(
+            "Esto te permite entender de dónde vienen las calorías que consumes, en lugar de simplemente confiar en un número.",
+            S["body"],
+        )
+    )
+    more = [
+        ("4. Al principio, pesa tus alimentos", [
+            "Durante las primeras semanas, utiliza una balanza de cocina para familiarizarte con las cantidades.",
+            "Lo más sencillo es pesar carnes, pescados, arroz, pasta, cereales y otros alimentos principales en crudo, siempre que la información nutricional que estés utilizando también corresponda al alimento en crudo.",
+            "Esto es importante porque 100 g de arroz crudo y 100 g de arroz cocido no tienen los mismos valores nutricionales.",
+            "Una vez que conozcas mejor las cantidades, podrás estimar algunas porciones, aunque seguir pesando los alimentos siempre será una opción si quieres mayor precisión.",
+        ]),
+        ("5. No olvides las calorías pequeñas", [
+            "El aceite, frutos secos, mantequilla de maní, salsas, aderezos, bebidas y alcohol pueden aportar muchas calorías aunque parezcan cantidades pequeñas.",
+            "Por ejemplo, una cucharada de aceite puede aportar alrededor de 120 kcal. Si quieres un registro preciso, cuenta también aquello que utilizas para preparar o acompañar tus comidas.",
+        ]),
+        ("6. Compara lo que consumes con tu objetivo", ["Al finalizar el día, compara tus totales con tus objetivos:"]),
+    ]
+    for title, paras in more:
+        story.append(Paragraph(title, S["h3"]))
+        for p in paras:
+            story.append(Paragraph(p, S["body"]))
+    story.append(
+        callout_rows(
+            [
+                f"Objetivo: {kcal} kcal",
+                f"Proteína: {m['protein_g']} g",
+                f"Carbohidratos: {m['carb_g']} g",
+                f"Grasas: {m['fat_g']} g",
+            ]
+        )
+    )
+    story.append(Spacer(1, 6))
+    story.append(
+        Paragraph(
+            "No es necesario acertar exactamente cada número todos los días. Lo importante es mantenerte cerca de tus objetivos de manera consistente.",
+            S["body"],
+        )
+    )
+    for title, paras in [
+        ("7. ¿Y si un día comes de más?", [
+            "No pasa nada. Un día por encima de tu objetivo no significa que hayas arruinado tu progreso. No intentes compensarlo dejando de comer o haciendo ejercicio excesivo.",
+            "Simplemente vuelve a tu alimentación habitual al día siguiente.",
+        ]),
+        ("8. Mira la tendencia, no un solo día", [
+            "El objetivo es crear hábitos que puedas mantener durante meses, no ganar una batalla de un solo día. Por eso, presta más atención a tu promedio semanal que a lo que ocurrió en una comida concreta.",
+        ]),
+    ]:
+        story.append(Paragraph(title, S["h3"]))
+        for p in paras:
+            story.append(Paragraph(p, S["body"]))
+    story.append(
+        callout_rows(
+            [
+                "Aprender a contar calorías no significa vivir pendiente de una calculadora. Significa entender lo que comes para poder tomar mejores decisiones."
+            ]
+        )
+    )
+    story.append(Spacer(1, 10))
+    chips = [
+        [Paragraph(f"<b>Vegetales</b> {esc(', '.join(user['vegetables']))}", S["cell"]),
+         Paragraph(f"<b>Frutas</b> {esc(', '.join(user['fruits']))}", S["cell"])],
+        [Paragraph(f"<b>Proteínas</b> {esc(', '.join(user['proteins']))}", S["cell"]),
+         Paragraph(f"<b>Carbohidratos</b> {esc(', '.join(user['carbs']))}", S["cell"])],
+    ]
+    ct = Table(chips, colWidths=[CONTENT_W / 2] * 2)
+    ct.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, LINE), ("INNERGRID", (0, 0), (-1, -1), 0.6, LINE), ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#fbf9f5")), ("TOPPADDING", (0, 0), (-1, -1), 5), ("BOTTOMPADDING", (0, 0), (-1, -1), 6)]))
+    story.append(KeepTogether([ct] + pact(
+        "Etapa 3",
+        "El menú no se elige cada mañana. Ya lo elegiste al firmar. Rotas estos cuatro; no improvisas un quinto "
+        "porque “hoy no apetece”.",
+        name,
+    )))
+    story.append(PageBreak())
+    return story
 
-    doc.build(story)
+
+def _menu_card(menu: dict, width: float) -> Table:
+    rows = [[Paragraph(esc(menu["name"]), S["mhead"]), Paragraph(esc(menu["days"]), S["mdays"])]]
+    for meal in menu["meals"]:
+        rows.append(
+            [
+                [
+                    Paragraph(meal["kind"], S["kicker"]),
+                    Paragraph(esc(meal["title"]), S["mtitle"]),
+                    Paragraph(esc(meal["detail"]), S["mdet"]),
+                ],
+                "",
+            ]
+        )
+    t = Table(rows, colWidths=[width * 0.62, width * 0.38])
+    style = [
+        ("BACKGROUND", (0, 0), (-1, 0), BLACK),
+        ("BOX", (0, 0), (-1, -1), 0.9, GOLD),
+        ("VALIGN", (0, 0), (-1, 0), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, 0), 9),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 9),
+        ("LEFTPADDING", (0, 0), (-1, -1), 10),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ("TOPPADDING", (0, 1), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 1), (-1, -1), 7),
+    ]
+    for i in range(1, len(rows)):
+        style.append(("SPAN", (0, i), (1, i)))
+        if i < len(rows) - 1:
+            style.append(("LINEBELOW", (0, i), (-1, i), 0.6, LINE))
+    t.setStyle(TableStyle(style))
+    return t
+
+
+def _menus(plan: dict) -> list:
+    w = (CONTENT_W - 6) / 2
+    menus = plan["menus"]
+    grid = Table(
+        [
+            [_menu_card(menus[0], w), "", _menu_card(menus[1], w)],
+            ["", "", ""],
+            [_menu_card(menus[2], w), "", _menu_card(menus[3], w)],
+        ],
+        colWidths=[w, 6, w],
+        rowHeights=[None, 14, None],
+    )
+    grid.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
+    return [Spacer(1, 4), grid, PageBreak()]
+
+
+def _recipe_card(r: dict, width: float) -> Table:
+    inner = [
+        Paragraph(esc(r["title"]), S["rtitle"]),
+        Paragraph(esc(r["meta"]), S["rmeta"]),
+        Paragraph("Ingredientes", S["rsec"]),
+    ]
+    inner += [Paragraph(f"• {esc(i)}", S["rtxt"]) for i in r["ingredients"]]
+    inner.append(Paragraph("Preparación", S["rsec"]))
+    inner += [Paragraph(f"{n}. {esc(s)}", S["rtxt"]) for n, s in enumerate(r["steps"], start=1)]
+    t = Table([[inner]], colWidths=[width])
+    t.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 1, GOLD), ("LEFTPADDING", (0, 0), (-1, -1), 8), ("RIGHTPADDING", (0, 0), (-1, -1), 8), ("TOPPADDING", (0, 0), (-1, -1), 7), ("BOTTOMPADDING", (0, 0), (-1, -1), 9)]))
+    return t
+
+
+def _recipes(plan: dict) -> list:
+    story = section("Recetario", "Seis platos con lo que elegiste")
+    story.append(
+        Paragraph(
+            "No hace falta ser chef. Seis recetas cortas usando tus proteínas, carbos y verduras. Cambia el orden, "
+            "no el tamaño de la porción de golpe.",
+            S["body"],
+        )
+    )
+    w = (CONTENT_W - 6) / 2
+    recs = plan["recipes"]
+    for i in range(0, 6, 2):
+        row = Table([[_recipe_card(recs[i], w), "", _recipe_card(recs[i + 1], w)]], colWidths=[w, 6, w])
+        row.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
+        story += [row, Spacer(1, 10)]
+    story += section("Comer mejor", "Hambre, envase y compra")
+    story.append(Paragraph("Hambre, antojo o “me pasé”", S["h2"]))
+    for p in [
+        "Hambre de verdad: bajó la energía, te diste cuenta a las horas, un plato del plan te calma. Come la comida que tocaba, no un extra “porque ya reventó el día”.",
+        "Antojo: aparece después de pantallas, aburrimiento o el primer bocado dulce. Espera 12 minutos, agua o infusión, y si sigue, una fruta de tu lista. No abras el paquete “un poquito”.",
+        "Te pasaste: esa noche cierras la cocina. Al día siguiente desayunas el menú normal. No ayunes, no agregues 40 min de cardio, no “castigues” la cena. Un exceso no es un mes. Tres excesos seguidos sí son un patrón: vuelve al planner y marca la comida con honestidad.",
+    ]:
+        story.append(Paragraph(p, S["body"]))
+    story.append(Paragraph("Lista de compra · 7 días", S["h2"]))
+    story.append(
+        Paragraph(
+            "Cantidades para una semana si rotas los 4 menús. Ajusta si comes fuera dos noches. Compra verdura dos "
+            "veces si se te pone fea.",
+            S["body"],
+        )
+    )
+    story.append(data_table(["Producto", "Cantidad estimada"], plan["shopping"], [CONTENT_W * 0.33, CONTENT_W * 0.67]))
+    story.append(PageBreak())
+    return story
+
+
+def _labels() -> list:
+    story = [Paragraph("Aprende a leer un envase en 20 segundos", S["h2"])]
+    story.append(
+        Paragraph(
+            "No necesitas ser nutricionista para entender una etiqueta. Con unos pocos datos puedes saber rápidamente "
+            "qué estás comprando y cómo encaja en tus objetivos.",
+            S["body"],
+        )
+    )
+    items = [
+        ("1. Primero, mira el tamaño de la porción", [
+            "No asumas que toda la bolsa, botella o envase corresponde a una sola porción. Algunos productos contienen 2, 3 o incluso más porciones.",
+            "Ejemplo: si una porción tiene 150 kcal y el envase contiene 2,5 porciones, consumir todo el envase significa aproximadamente 375 kcal.",
+        ]),
+        ("2. Revisa las calorías y los macronutrientes", [
+            "Mira principalmente calorías, proteínas, carbohidratos y grasas. Compáralos con tus objetivos y con la cantidad que realmente vas a consumir.",
+        ]),
+        ("3. Fíjate en los azúcares, pero ponlos en contexto", [
+            "El azúcar forma parte de los carbohidratos. No todos los azúcares tienen el mismo origen: un alimento puede contener azúcares naturalmente presentes, como ocurre en la leche o la fruta, o azúcares añadidos.",
+            "Si un producto tiene una cantidad elevada de azúcar añadida, especialmente si es un alimento que esperabas que fuera bajo en azúcar, vale la pena revisar qué estás comprando.",
+        ]),
+        ("4. Las grasas también cuentan", [
+            "Aceites, frutos secos, mantequillas, quesos, aderezos y algunas salsas pueden aumentar rápidamente las calorías de una comida.",
+            "Que un producto diga “light” o “reducido en grasa” tampoco significa que sea bajo en calorías. Mira siempre la información nutricional.",
+        ]),
+        ("5. Lee la lista de ingredientes", [
+            "Los ingredientes aparecen de mayor a menor cantidad.",
+            "Si entre los primeros ingredientes aparecen azúcar, aceites u otros ingredientes que no esperabas encontrar en grandes cantidades, es una señal para mirar con más atención la información nutricional.",
+        ]),
+    ]
+    for title, paras in items:
+        story.append(Paragraph(title, S["h3"]))
+        for p in paras:
+            story.append(Paragraph(p, S["body"]))
+    story += [Spacer(1, 6), Paragraph("La regla de los 20 segundos", S["h3"])]
+    story.append(
+        callout_rows(
+            [
+                "Porción → Calorías → Proteína → Carbohidratos → Grasas → Ingredientes.",
+                "Con esta pequeña rutina puedes tomar mejores decisiones sin necesidad de memorizar cientos de reglas.",
+            ]
+        )
+    )
+    story.append(PageBreak())
+    return story
+
+
+def _day_table(session: dict) -> Table:
+    rows = [[Paragraph(esc(session["title"]), S["dayh"]), Paragraph(esc(session["header"]), S["dayhr"]), ""]]
+    for r in session["rows"]:
+        rows.append(
+            [
+                [Paragraph(esc(r["name"]), S["exn"]), Paragraph(esc(r["tip"]), S["ext"])],
+                Paragraph(esc(r["scheme"]), S["exr"]),
+                Paragraph(esc(r["rest"]), S["exr"]),
+            ]
+        )
+    t = Table(rows, colWidths=[CONTENT_W * 0.66, CONTENT_W * 0.17, CONTENT_W * 0.17])
+    style = [
+        ("BACKGROUND", (0, 0), (-1, 0), BLACK),
+        ("SPAN", (1, 0), (2, 0)),
+        ("LINEABOVE", (0, 0), (-1, 0), 1.2, GOLD),
+        ("VALIGN", (0, 0), (-1, 0), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, 0), 10),
+        ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
+        ("BOX", (0, 0), (-1, -1), 0.6, LINE),
+        ("VALIGN", (0, 1), (-1, -1), "TOP"),
+        ("TOPPADDING", (0, 1), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 1), (-1, -1), 4),
+        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+    ]
+    for i in range(1, len(rows) - 1):
+        style.append(("LINEBELOW", (0, i), (-1, i), 0.6, LINE))
+    t.setStyle(TableStyle(style))
+    return t
+
+
+def _training(user: dict, plan: dict, name: str) -> list:
+    tr = plan["training"]
+    story = section("Entrenamiento", "Tu rutina de 12 semanas")
+    story += pact(
+        "Etapa 4",
+        "La sesión de hoy es el pacto en movimiento. No se negocia el día 1. Si duele raro, paras. Si solo "
+        "“no apetece”, vas igual.",
+        name,
+    )
+    img = photo("gff-gym.jpg", CONTENT_W, CONTENT_W * 932 / 2860)
+    if img:
+        story += [img, Spacer(1, 6)]
+    story += [stat_cards(tr["stats1"]), Spacer(1, 8), stat_cards(tr["stats2"]), Spacer(1, 6)]
+    story.append(Paragraph("Bajada de 2-3 s, subida controlada, sin rebotar. Deja 1-2 repeticiones en reserva.", S["bodyl"]))
+    story.append(Paragraph(esc(tr["rest_line"]), S["bodyl"]))
+    story.append(Paragraph("Por qué tu rutina es así", S["h2"]))
+    story.append(Paragraph(esc(tr["why"]), S["body"]))
+    story.append(Paragraph("Distribución semanal recomendada", S["h2"]))
+    story.append(
+        Paragraph(
+            "Puedes mover los días. Mantén el orden de las sesiones y no entrenes el mismo grupo al máximo dos días seguidos.",
+            S["body"],
+        )
+    )
+    story.append(data_table(["Día", "Sesión"], tr["distribution"], [CONTENT_W * 0.33, CONTENT_W * 0.67]))
+    story.append(Paragraph("Peso del día 1", S["h2"]))
+    story.append(Paragraph(esc(tr["first_day"]), S["body"]))
+    story.append(CondPageBreak(200))
+    story.append(Paragraph("Calentamiento", S["h2"]))
+    warm = Table([[Paragraph(f"• {esc(w)}", S["bodyl"])] for w in tr["warmup"]], colWidths=[CONTENT_W])
+    warm.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), 0.6, LINE), ("LEFTPADDING", (0, 0), (-1, -1), 8), ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 0)]))
+    story += [warm, Spacer(1, 6), Paragraph("Progresión de 12 semanas", S["h2"])]
+    story.append(
+        data_table(
+            ["Periodo", "Foco", "Qué hacer"],
+            [list(r) for r in tr["progression"]],
+            [CONTENT_W * 0.22, CONTENT_W * 0.16, CONTENT_W * 0.62],
+        )
+    )
+    story += [Spacer(1, 4), Paragraph(esc(tr["cooldown"]), S["bodyl"]), Spacer(1, 10)]
+    for s in tr["sessions"]:
+        story += [KeepTogether([_day_table(s)]), Spacer(1, 12)]
+    story += quote(
+        "La diferencia entre lo posible y lo imposible está en la determinación de una persona.",
+        "Serena Williams · Tenis",
+    )
+    story.append(PageBreak())
+    return story
+
+
+def _swaps(plan: dict) -> list:
+    story = section("Sustituciones", "Si falta un alimento o un ejercicio")
+    story.append(
+        Paragraph(
+            "Cambia una cosa por otra de la misma lista. No sustituyas proteína por pan, ni sentadilla por 40 minutos de bici.",
+            S["body"],
+        )
+    )
+    story.append(Paragraph("Alimentos", S["h2"]))
+    story.append(data_table(["Eliges", "Puedes usar"], plan["food_swaps"], [CONTENT_W * 0.33, CONTENT_W * 0.67]))
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("Ejercicios", S["h2"]))
+    story.append(
+        data_table(["Programado", "Alternativa"], plan["training"]["exercise_swaps"], [CONTENT_W * 0.33, CONTENT_W * 0.67])
+    )
+    story.append(PageBreak())
+    return story
+
+
+# coordenadas relativas de los puntos de medida (x, y desde arriba)
+MARKS = {
+    "male": {1: (0.495, 0.22), 2: (0.495, 0.33), 3: (0.495, 0.427), 4: (0.495, 0.495), 5: (0.695, 0.356), 6: (0.59, 0.634)},
+    "female": {1: (0.496, 0.224), 2: (0.496, 0.338), 3: (0.496, 0.405), 4: (0.496, 0.495), 5: (0.615, 0.351), 6: (0.588, 0.625)},
+}
+LEGEND = [
+    (1, "Cuello — bajo la nuez, cinta horizontal"),
+    (2, "Pecho / busto — a la altura de los pezones"),
+    (3, "Cintura — ombligo, sin succionar"),
+    (4, "Cadera — la parte más ancha"),
+    (5, "Brazo — medio hombro-codo, relajado"),
+    (6, "Muslo — medio cadera-rodilla"),
+]
+
+
+class BodyMap(Flowable):
+    def __init__(self, sex: str, width: float = CONTENT_W + 6):
+        super().__init__()
+        self.sex = sex
+        self.width = width
+        self.img_h = 216
+        self.img_w = self.img_h * 864 / 1152
+        self.height = 12 + self.img_h + 26 + 3 * 21 + 8
+
+    def wrap(self, aw, ah):
+        return self.width, self.height
+
+    def _mark(self, x, y, n):
+        c = self.canv
+        c.setFillColor(GOLD)
+        c.circle(x, y, 5.6, stroke=0, fill=1)
+        c.setFillColor(INK)
+        c.setFont(FONT_B, 6.4)
+        c.drawCentredString(x, y - 2.2, str(n))
+
+    def draw(self):
+        c = self.canv
+        c.setFillColor(CREAM2)
+        c.roundRect(0, 0, self.width, self.height, 5, stroke=0, fill=1)
+        top = self.height - 12
+        cols = [self.width * 0.25, self.width * 0.75]
+        for sex, cx in zip(("male", "female"), cols):
+            x0 = cx - self.img_w / 2
+            y0 = top - self.img_h
+            path = ASSETS / ("gff-body-male.jpg" if sex == "male" else "gff-body-female.jpg")
+            if path.is_file():
+                c.drawImage(str(path), x0, y0, self.img_w, self.img_h)
+            if sex == self.sex:
+                c.setStrokeColor(GOLD)
+                c.setLineWidth(1.6)
+                c.roundRect(x0 - 3, y0 - 3, self.img_w + 6, self.img_h + 6, 3, stroke=1, fill=0)
+            for n, (fx, fy) in MARKS[sex].items():
+                self._mark(x0 + fx * self.img_w, top - fy * self.img_h, n)
+            label = ("Hombre" if sex == "male" else "Mujer") + ("  ·  Tú" if sex == self.sex else "")
+            c.setFillColor(INK if sex == self.sex else MUTED)
+            c.setFont(FONT_B if sex == self.sex else FONT, 7.6)
+            c.drawCentredString(cx, y0 - 17, label)
+        y = y0 - 42
+        for i, (n, text) in enumerate(LEGEND):
+            col = i % 2
+            row = i // 2
+            x = 18 + col * self.width * 0.5
+            yy = y - row * 21
+            self._mark(x, yy + 2.5, n)
+            c.setFillColor(INK)
+            c.setFont(FONT, 7.6)
+            c.drawString(x + 11, yy, text)
+
+
+def _habits_measures(user: dict, plan: dict, name: str) -> list:
+    h = plan["habits"]
+    story = section("Hábitos", "Lo que sostiene el plan")
+    story.append(
+        stat_cards(
+            [
+                ("Agua", f"{h['water_l']} L"),
+                ("Sueño", h["sleep"]),
+                ("Pasos", h["steps"]),
+                ("Báscula", "promedio 3 días"),
+            ]
+        )
+    )
+    story.append(Spacer(1, 6))
+    story.append(
+        Paragraph(
+            f"Agua: unos {miles(h['water_ml'])} ml al día ({h['water_l']} litros), repartidos. Pasos: {esc(h['steps'])}. "
+            f"{esc(h['steps_note'])} {esc(h['scale'])}",
+            S["body"],
+        )
+    )
+    story += section("Registro", "Siguiendo mis medidas")
+    story += pact(
+        "Etapa 5",
+        "Te mides para no mentirte. La cinta es el testigo del pacto. El espejo miente según la luz. La báscula "
+        "miente según el agua. Las cintas no.",
+        name,
+    )
+    story.append(
+        Paragraph(
+            "Mídete el día anterior a empezar y otra vez a las 12 semanas, a la misma hora, en ropa interior o similar, "
+            "cinta flexible, sin apretar hasta marcar piel.",
+            S["body"],
+        )
+    )
+    story.append(BodyMap(user["sex"]))
+    story.append(PageBreak())
+
+    story.append(Paragraph("Tabla de perímetros (cm)", S["h2"]))
+    zones = ["Cuello", "Pecho", "Cintura", "Cadera", "Brazo", "Muslo"]
+    story.append(
+        data_table(
+            ["Zona", "Día 0", "Semana 12", "Cambio"],
+            [[z, "", "", ""] for z in zones],
+            [CONTENT_W * 0.4, CONTENT_W * 0.2, CONTENT_W * 0.2, CONTENT_W * 0.2],
+            row_h=22,
+        )
+    )
+    story.append(Spacer(1, 12))
+    story += section("Registro", "El peso: promedio, no un martes")
+    story.append(
+        Paragraph(
+            "Pésate en ayunas, después de ir al baño, 3 mañanas seguidas. Anota el promedio. Repite cada semana (o "
+            "cada 15 días si la báscula te obsesiona). No compares un día con el anterior: compara promedios.",
+            S["body"],
+        )
+    )
+    story.append(
+        data_table(
+            ["Semana", "Día 1", "Día 2", "Día 3", "Promedio"],
+            [[str(i), "", "", "", ""] for i in range(1, 13)],
+            [CONTENT_W * 0.12] + [CONTENT_W * 0.22] * 4,
+            first_bold=False,
+            row_h=21,
+        )
+    )
+    story.append(PageBreak())
+
+    story += section("Avance", "Fotos, ropa y cuándo mover calorías")
+    story.append(Paragraph("Fotos de progreso", S["h2"]))
+    story.append(
+        Paragraph(
+            "Día 0 y día 84 (o cada 4 semanas). Tres tomas: frente, lado, espalda. Misma hora (mañana), misma luz "
+            "(ventana, no flash del baño), misma pose, misma ropa interior o tight. Celular a la altura del ombligo, no "
+            "desde arriba. No las compares a diario: el hinchazón miente.",
+            S["body"],
+        )
+    )
+    story.append(
+        data_table(
+            ["Toma", "Día 0 (sí/fecha)", "Semana 4", "Semana 8", "Semana 12"],
+            [[t, "", "", "", ""] for t in ("Frente", "Lado", "Espalda")],
+            [CONTENT_W * 0.2] * 5,
+            row_h=21,
+        )
+    )
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("Ropa testigo", S["h2"]))
+    story.append(
+        Paragraph(
+            "Elige un pantalón o una polera que hoy te quede justa. No la uses de diario. Pruébatela el día 0 y el día "
+            "84 (y si quieres a las 6 semanas). La cintura y el muslo suelen hablar antes que el número de la báscula. "
+            "Anota: holgado / igual / más justo.",
+            S["body"],
+        )
+    )
+    story.append(
+        data_table(
+            ["Prenda", "Día 0", "Semana 6", "Semana 12"],
+            [["Pantalón", "", "", ""], ["Polera / top", "", "", ""]],
+            [CONTENT_W * 0.34, CONTENT_W * 0.22, CONTENT_W * 0.22, CONTENT_W * 0.22],
+            row_h=21,
+        )
+    )
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("“Esta semana no bajé” no significa fracaso", S["h2"]))
+    story.append(
+        Paragraph(
+            "El peso sube 0,5–1,5 kg por agua si comiste más sal, entrenaste pesado (los músculos retienen), dormiste "
+            "mal o estás en esos días del ciclo. Eso no es grasa ganada en 48 horas. Mira el promedio de 3 días de esta "
+            "semana contra el de hace 14 días, las cintas y la ropa. Si todo eso está igual o peor 14 días seguidos, "
+            "entonces sí: se ajusta. Antes, no toques el plan.",
+            S["body"],
+        )
+    )
+    story.append(Paragraph("Cuándo mover 100–150 kcal", S["h2"]))
+    story.append(Paragraph("Espera 14 días de promedio de peso + cintura. Un martes no cuenta.", S["body"]))
+    story.append(
+        data_table(
+            ["Qué ves", "Qué haces"],
+            [
+                ("El promedio bajó o la cinta aflojó", "No cambies calorías. Sigue. El plan está trabajando."),
+                ("El promedio no se movió en 14 días (objetivo bajar)", "Resta 100–150 kcal/día. Recorta un poco de carb o aceite, no la proteína."),
+                ("Bajaste de más, te sientes destrozado o el gym se cayó", "Suma 100–150 kcal. Mejor un descenso lento que abandonar."),
+                ("Objetivo ganar y no subió nada en 14 días", "Suma 100–150 kcal, sobre todo en la comida post entreno."),
+                ("Hambre feroz todas las noches", "Revisa sueño y proteína antes de cortar más. Casi nunca es “falta de voluntad”."),
+            ],
+            [CONTENT_W * 0.38, CONTENT_W * 0.62],
+        )
+    )
+    story.append(PageBreak())
+    return story
+
+
+PLANNER_W = [CONTENT_W * f for f in (0.08, 0.18, 0.18, 0.24, 0.12, 0.20)]
+DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+
+
+def week_table(n: int) -> Table:
+    blank = "________"
+    head = Paragraph(f"Semana {n} · del {blank} / {blank} al {blank} / {blank}", S["week"])
+    rows = [[head, "", "", "", "", ""]]
+    rows.append([Paragraph(h, S["cellh"]) for h in ("Día", "Entreno", "Comida", "Agua (8 vasos)", "Ánimo", "Notas")])
+    for d in DAYS:
+        rows.append([Paragraph(d, S["cellb"]), Check(["sí", "no"]), Check(["sí", "no"]), Water(), "", ""])
+    t = Table(rows, colWidths=PLANNER_W, rowHeights=[22, 18] + [26.5] * 7)
+    t.setStyle(
+        TableStyle(
+            [
+                ("SPAN", (0, 0), (-1, 0)),
+                ("BACKGROUND", (0, 0), (-1, 0), CREAM2),
+                ("BACKGROUND", (0, 1), (-1, 1), BLACK),
+                ("BOX", (0, 0), (-1, -1), 0.9, GOLD),
+                ("INNERGRID", (0, 2), (-1, -1), 0.6, LINE),
+                ("LINEBELOW", (0, 2), (-1, -2), 0.6, LINE),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ]
+        )
+    )
+    return t
+
+
+def notes_box() -> Table:
+    rows = [[Paragraph("Notas de estas semanas (sueño, dolor, hambre, ánimo)", S["cellb"])]] + [[""] for _ in range(4)]
+    t = Table(rows, colWidths=[CONTENT_W], rowHeights=[22] + [23] * 4)
+    t.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, -1), CREAM2),
+                ("BOX", (0, 0), (-1, -1), 0.9, GOLD),
+                ("LINEBELOW", (0, 1), (-1, -1), 0.5, colors.HexColor("#ddd5c5")),
+                ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+            ]
+        )
+    )
+    return t
+
+
+def control_box(text: str, name: str, week: int) -> list:
+    checks = Table(
+        [[Check(["Entrené ≥ 80% de las sesiones"]), Check(["Comí cerca del número"]), Check(["Me pesé en promedio"])]],
+        colWidths=[CONTENT_W / 3] * 3,
+        rowHeights=[22],
+    )
+    checks.setStyle(TableStyle([("BACKGROUND", (0, 0), (-1, -1), CREAM2), ("BOX", (0, 0), (-1, -1), 0.9, GOLD), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (-1, -1), 8)]))
+    return [
+        Spacer(1, 8),
+        dark_box(f"El pacto · Control semana {week}", text, f"— {name} · Lo firmaste."),
+        Spacer(1, 8),
+        checks,
+        Spacer(1, 8),
+    ]
+
+
+def _planner(name: str) -> list:
+    story = section("Bitácora", "Planner de 12 semanas")
+    story.append(
+        Paragraph(
+            "Cada semana anota si entrenaste, cómo te sentiste y una nota corta (sueño, comida, ánimo, dolor). No hace "
+            "falta un diario. Hace falta no mentirte.",
+            S["body"],
+        )
+    )
+    gap = Spacer(1, 10)
+    story += [week_table(1), PageBreak()]
+    story += [week_table(2), gap, week_table(3), gap, notes_box(), PageBreak()]
+    story += [week_table(4)]
+    story += control_box(
+        f"{name}, cuatro semanas. No se mide el ánimo de un martes: se mira el planner. Si está marcado, el pacto sigue en pie.",
+        name,
+        4,
+    )
+    story += [week_table(5), gap, notes_box(), PageBreak()]
+    story += [week_table(6), gap, week_table(7), gap, notes_box(), PageBreak()]
+    story += [week_table(8)]
+    story += control_box(
+        f"{name}, semana 8. El pacto no se renegocia a mitad. Doce semanas no se sienten largas cuando dejas de contar "
+        "los días y empiezas a marcarlos.",
+        name,
+        8,
+    )
+    story += [week_table(9), gap, notes_box(), PageBreak()]
+    story += [week_table(10), gap, week_table(11), gap, notes_box(), PageBreak()]
+    story += [week_table(12), Spacer(1, 12)]
+    return story
+
+
+def _closing(user: dict, plan: dict, name: str) -> list:
+    m = plan["macros"]
+    story = section("Cierre", "Esto se imprime y se usa")
+    story += pact(
+        "Etapa 6",
+        f"{name}, lo firmaste. Doce semanas. El plan no falla: se cumple o se abandona. Si a las 12 semanas el "
+        "planner está lleno, el trabajo ya está hecho.",
+        name,
+    )
+    story.append(
+        Paragraph(
+            "No es un archivo para guardar en el celular y olvidar. Imprímelo o tenlo a mano. El planner se llena cada "
+            "semana, con honestidad.",
+            S["body"],
+        )
+    )
+    story.append(
+        stat_cards(
+            [
+                ("Calorías", f"{miles(plan['calories'])} kcal"),
+                ("Proteína", f"{m['protein_g']} g"),
+                ("Entreno", f"{user['days']} días · {user['duration']} min"),
+                ("Meta", f"{user['targetWeight']:.1f} kg"),
+            ]
+        )
+    )
+    story.append(Spacer(1, 6))
+    story.append(
+        Paragraph(
+            "Cada domingo (o el día que elijas) marca entreno, comida y agua. El peso se mira en promedio de 3 días, no "
+            "un martes. Si un dato del formulario está mal, genera el plan de nuevo con los datos correctos.",
+            S["body"],
+        )
+    )
+    story.append(callout_rows(["Lo firmaste. El mismo pacto del día 1 es el del día 84."]))
+    story.append(Spacer(1, 10))
+    story.append(
+        cream_box(
+            [
+                Paragraph(
+                    "<b>Importante.</b> Este documento es una guía general y no sustituye la evaluación de un médico, "
+                    "nutricionista o profesional del ejercicio. Si tienes una condición médica, lesión, embarazo, "
+                    "trastorno alimentario o tomas medicamentos, consulta a un profesional antes de realizar cambios "
+                    "importantes en alimentación o ejercicio.",
+                    S["small"],
+                )
+            ],
+            border=LINE,
+        )
+    )
+    return story
+
+
+# ---------------------------------------------------------------- entrada
+
+
+def build_pdf(path: Path, user: dict, plan: dict | None = None, payment_ref: str = "") -> Path:
+    """Genera el PDF. `plan` y `payment_ref` se aceptan por compatibilidad y se ignoran."""
+    global S
+    S = _styles()
+    full = build_full_plan(user)
+    name = esc(user["name"])
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    doc = SimpleDocTemplate(
+        str(path),
+        pagesize=A4,
+        leftMargin=MARGIN,
+        rightMargin=MARGIN,
+        topMargin=48,
+        bottomMargin=50,
+        title=f"GaryFelicienFit — {user['name']}",
+        author="Gary Felicien",
+    )
+    doc.gff_user = user
+    doc.gff_plan = full
+    story: list = [Spacer(1, 1), PageBreak()]
+    story += _intro(user, name)
+    story += _donts_glossary()
+    story += _ficha(user, full, name)
+    story += _energy_food(user, full, name)
+    story += _menus(full)
+    story += _recipes(full)
+    story += _labels()
+    story += _training(user, full, name)
+    story += _swaps(full)
+    story += _habits_measures(user, full, name)
+    story += _planner(name)
+    story += _closing(user, full, name)
+    doc.build(story, onFirstPage=_cover, onLaterPages=_frame)
     return path

@@ -20,39 +20,55 @@
   status = 200
 
 [[redirects]]
+  from = "/plan-personalizado"
+  to = "/plan-personalizado.html"
+  status = 200
+
+[[redirects]]
+  from = "/acompanamiento"
+  to = "/3meses.html"
+  status = 200
+
+[[redirects]]
   from = "/gracias"
   to = "/gracias.html"
   status = 200
 
 [[redirects]]
   from = "/bajar"
-  to = "/3meses.html"
+  to = "/plan-personalizado"
   status = 301
+  force = true
 
 [[redirects]]
   from = "/bajar.html"
-  to = "/3meses.html"
+  to = "/plan-personalizado"
   status = 301
+  force = true
 
 [[redirects]]
   from = "/recomposicion"
-  to = "/3meses.html"
+  to = "/plan-personalizado"
   status = 301
+  force = true
 
 [[redirects]]
   from = "/recomposicion.html"
-  to = "/3meses.html"
+  to = "/plan-personalizado"
   status = 301
+  force = true
 
 [[redirects]]
   from = "/empezar"
-  to = "/3meses.html"
+  to = "/plan-personalizado"
   status = 301
+  force = true
 
 [[redirects]]
   from = "/empezar.html"
-  to = "/3meses.html"
+  to = "/plan-personalizado"
   status = 301
+  force = true
 
 [[redirects]]
   from = "/api/registro"

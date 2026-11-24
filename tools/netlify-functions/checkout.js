@@ -1,15 +1,39 @@
 const { api, json } = require("./lib");
 
+// Dos planes, los dos de 3 meses (12 semanas). La única diferencia es el contacto 1 a 1.
+//   personalizado  -> cuestionario + PDF por correo. USD 30.
+//   acompanamiento -> lo mismo + contacto 1 a 1 con Gary. USD 400, en promoción USD 150.
+// Mercado Pago cobra en pesos chilenos: los montos en CLP se fijan en Netlify (variables de entorno).
+const PLANES = {
+  personalizado: {
+    id: "plan-personalizado-3-meses",
+    product: "plan-personalizado",
+    title: "Plan personalizado 3 meses — GaryFelicienFit",
+    description: "Cuestionario + plan de alimentación y entrenamiento en PDF. Un solo uso.",
+    envClp: "PRICE_CLP",
+    defaultClp: 28500,
+  },
+  acompanamiento: {
+    id: "acompanamiento-3-meses",
+    product: "3meses",
+    title: "Acompañamiento 1 a 1, 3 meses — GaryFelicienFit",
+    description: "Plan personalizado + seguimiento 1 a 1 con Gary durante 3 meses.",
+    envClp: "COURSE_SALE_CLP",
+    defaultClp: 142500,
+  },
+};
+
 function siteUrl() {
   return (process.env.URL || process.env.DEPLOY_PRIME_URL || "").replace(/\/$/, "");
 }
 
-function priceClp() {
-  const n = parseInt(process.env.PRICE_CLP || "38000", 10);
-  return Number.isFinite(n) && n >= 1000 ? n : 38000;
+function priceClp(plan) {
+  const n = parseInt(process.env[plan.envClp] || String(plan.defaultClp), 10);
+  return Number.isFinite(n) && n >= 1000 ? n : plan.defaultClp;
 }
 
-async function createMpPreference(email) {
+async function createMpPreference(email, key) {
+  const plan = PLANES[key];
   const token = process.env.MP_ACCESS_TOKEN || "";
   if (!token) return null;
   const site = siteUrl();
@@ -18,26 +42,26 @@ async function createMpPreference(email) {
     err.status = 503;
     throw err;
   }
-  const success = site + "/gracias.html?paid=1";
-  const failure = site + "/#guia";
+  const success = site + "/gracias.html?paid=1&plan=" + key;
+  const failure = site + "/#planes";
   const notify = site + "/.netlify/functions/mp-webhook";
   const body = {
     items: [
       {
-        id: "guia-12-semanas",
-        title: "Guía 12 semanas — GaryFelicienFit",
-        description: "Plan personalizado de nutrición y entrenamiento. Un solo uso.",
+        id: plan.id,
+        title: plan.title,
+        description: plan.description,
         quantity: 1,
         currency_id: "CLP",
-        unit_price: priceClp(),
+        unit_price: priceClp(plan),
       },
     ],
     payer: { email },
-    back_urls: { success, failure, pending: site + "/gracias.html?pending=1" },
+    back_urls: { success, failure, pending: site + "/gracias.html?pending=1&plan=" + key },
     auto_return: "approved",
     binary_mode: true,
     external_reference: email,
-    metadata: { email, product: "guia-12-semanas" },
+    metadata: { email, product: plan.product, plan: key },
     notification_url: notify,
     statement_descriptor: "GARYFELICIENFIT",
   };
@@ -78,16 +102,24 @@ exports.handler = async (event) => {
   if (!email || email.indexOf("@") < 1) {
     return json(400, { ok: false, error: "Introduce un email válido.", field: "email" });
   }
+  const key = PLANES[body.plan] ? body.plan : "personalizado";
   try {
     if (process.env.MP_ACCESS_TOKEN) {
-      const url = await createMpPreference(email);
-      return json(200, { ok: true, mode: "mp", url });
+      const url = await createMpPreference(email, key);
+      return json(200, { ok: true, mode: "mp", plan: key, url });
     }
-    const { status, data } = await api("/api/checkout", {
-      method: "POST",
-      body: JSON.stringify({ email }),
+    if (key === "personalizado" && process.env.PLANFIT_API_URL) {
+      const { status, data } = await api("/api/checkout", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      return json(status, data);
+    }
+    return json(503, {
+      ok: false,
+      offline: true,
+      error: "El pago en línea todavía no está activo. Escríbenos por WhatsApp y te lo dejamos listo.",
     });
-    return json(status, data);
   } catch (err) {
     return json(err.status || 502, { ok: false, error: err.message });
   }

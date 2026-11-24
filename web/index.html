@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GaryFelicienFit — Acompañamiento 3 meses</title>
-<meta name="description" content="Entrenamiento y alimentación a tu medida, 3 meses, con seguimiento. Bajar de peso o ganar músculo: cambia la adaptación, no el servicio.">
+<title>GaryFelicienFit — Tu plan de 3 meses, a tu medida</title>
+<meta name="description" content="Dos planes de 3 meses: plan personalizado (USD 30) o acompañamiento 1 a 1 con Gary (USD 150 en promoción). Calculadora de IMC y calorías gratis.">
 <link rel="stylesheet" href="/site.css">
 </head>
 <body>
@@ -15,15 +15,15 @@
     </a>
     <nav class="tabs" aria-label="Secciones">
         <a href="/">Inicio</a>
+        <a href="/#planes">Planes</a>
         <details class="nav-drop">
             <summary>Herramientas</summary>
             <div class="nav-drop-menu">
-                <a href="/herramientas#calculadora">Calculadora</a>
+                <a href="/#calculadoras">Calculadoras</a>
                 <a href="/herramientas#glosario">Glosario</a>
                 <a href="/ejercicios">Ejercicios</a>
             </div>
         </details>
-        <a href="/3meses">3 meses</a>
         <a href="/#coach">Coach</a>
     </nav>
 </header>
@@ -32,51 +32,148 @@
     <img class="gary-hero" src="/img/gary-fondo.jpg" alt="Gary Felicien" style="object-position:62% 10%">
     <div class="hero-copy">
         <p class="kicker">GaryFelicienFit</p>
-        <h1>Acompañamiento real, 3 meses.</h1>
+        <h1>Tu plan de 3 meses, hecho a tu medida.</h1>
         <p class="lead">
-            Rutina y comida a tu medida, con seguimiento.
-            Sirve para bajar de peso o ganar músculo: se adapta el plan, no cambias de servicio.
+            Rutina y comida a tu medida para bajar de peso o ganar músculo.
+            Elige si lo sigues por tu cuenta o con Gary acompañándote 1 a 1.
         </p>
         <div class="price-row">
-            <div class="price">
-                <span data-offer-list>$450.000</span>
-                <span data-offer-now>$450.000</span>
-                <small>CLP · 3 meses</small>
-            </div>
-            <p class="offer-clock" data-offer-clock hidden aria-live="polite"></p>
+            <div class="price">Desde USD $30 <small>· 3 meses</small></div>
         </div>
         <div class="actions">
-            <a class="btn btn-gold" href="/3meses">Cómo funciona</a>
-            <button type="button" class="btn btn-ghost" data-open-offer>50% off por tiempo limitado</button>
+            <a class="btn btn-gold" href="/#planes">Ver los planes</a>
+            <a class="btn btn-ghost" href="/#calculadoras">Calcula tu IMC y calorías</a>
         </div>
     </div>
 </section>
 
 <main class="wrap">
-    <section id="acompanamiento">
-        <p class="kicker">El servicio</p>
-        <h2>Alguien te acompaña a ejecutarlo.</h2>
-        <p class="lead">No es un PDF. En 3 meses: rutina, comida realista, dashboard y ajuste cada 2 semanas. Gym o casa.</p>
-        <ul class="list">
-            <li><b>Rutina y alimentación</b> — a tus días, tu nivel y lo que ya comes.</li>
-            <li><b>Seguimiento</b> — dashboard, WhatsApp y evaluación quincenal.</li>
-            <li><b>Videos de tu rutina</b> — dentro del área de alumno.</li>
-        </ul>
+    <section id="planes">
+        <p class="kicker">Los planes</p>
+        <h2>Dos planes de 3 meses. Cambia solo el contacto 1 a 1.</h2>
+        <p class="lead">En los dos llenas el mismo cuestionario y recibes el mismo plan en PDF, hecho con tus datos. En el acompañamiento, además, Gary te sigue 1 a 1 los 3 meses.</p>
+
+        <div class="plans">
+            <article class="card plan-card">
+                <p class="kicker">Por tu cuenta</p>
+                <h3>Plan personalizado</h3>
+                <div class="price">USD $30 <small>· 3 meses · pago único</small></div>
+                <ul class="list">
+                    <li><b>Cuestionario</b> — tu meta, tus días, gym o casa y lo que ya comes.</li>
+                    <li><b>Tu plan en PDF</b> — alimentación y entrenamiento para 12 semanas.</li>
+                    <li><b>Llega a tu correo</b> — sin esperar a nadie.</li>
+                    <li class="no-1a1">Sin contacto 1 a 1 con Gary.</li>
+                </ul>
+                <div class="actions">
+                    <a class="btn btn-ghost" href="/plan-personalizado">Ver qué incluye</a>
+                    <button type="button" class="btn btn-gold" data-buy="personalizado">Comprar · USD $30</button>
+                </div>
+            </article>
+
+            <article class="card plan-card featured">
+                <span class="plan-tag">Promoción</span>
+                <p class="kicker">Con Gary</p>
+                <h3>Acompañamiento 1 a 1</h3>
+                <div class="price"><span class="price-old">USD $400</span>USD $150 <small>· 3 meses</small></div>
+                <ul class="list">
+                    <li><b>Todo lo del plan personalizado</b> — el mismo cuestionario y el mismo PDF.</li>
+                    <li><b>Contacto 1 a 1 por WhatsApp</b> — dudas en el momento.</li>
+                    <li><b>Evaluación cada 2 semanas</b> — Gary ajusta tu plan según cómo vas.</li>
+                    <li><b>Área de alumno</b> — dashboard de avance y videos de tus ejercicios.</li>
+                </ul>
+                <div class="actions">
+                    <a class="btn btn-ghost" href="/3meses">Ver qué incluye</a>
+                    <button type="button" class="btn btn-gold" data-buy="acompanamiento">Comprar · USD $150</button>
+                </div>
+            </article>
+        </div>
+
+        <table class="compare" aria-label="Comparación de los planes">
+            <thead>
+                <tr><th></th><th>Plan personalizado</th><th>Acompañamiento 1 a 1</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Duración</td><td>3 meses</td><td>3 meses</td></tr>
+                <tr><td>Cuestionario a tu medida</td><td class="si">Sí</td><td class="si">Sí</td></tr>
+                <tr><td>Plan de alimentación y entrenamiento en PDF</td><td class="si">Sí</td><td class="si">Sí</td></tr>
+                <tr><td>Contacto 1 a 1 con Gary (WhatsApp)</td><td class="no">No</td><td class="si">Sí</td></tr>
+                <tr><td>Evaluación y ajuste cada 2 semanas</td><td class="no">No</td><td class="si">Sí</td></tr>
+                <tr><td>Área de alumno con dashboard y videos</td><td class="no">No</td><td class="si">Sí</td></tr>
+                <tr><td>Precio</td><td>USD $30</td><td><span class="price-old" style="font-size:1em">USD $400</span> USD $150</td></tr>
+            </tbody>
+        </table>
+        <p class="note">Mercado Pago cobra el equivalente en pesos chilenos.</p>
+    </section>
+
+    <section class="inside" id="calculadoras">
+        <p class="kicker">Gratis</p>
+        <h2>Calcula tu IMC y tus calorías</h2>
+        <p class="muted">Sin registro. Los números se calculan en tu teléfono, no se guardan.</p>
+        <div class="calc-duo">
+            <form class="card" id="imcForm">
+                <p class="kicker">IMC</p>
+                <h3>Índice de masa corporal</h3>
+                <div class="calc-row">
+                    <div>
+                        <label for="imcHeight">Altura (cm)</label>
+                        <input id="imcHeight" type="number" inputmode="decimal" min="100" max="250" placeholder="170" required>
+                    </div>
+                    <div>
+                        <label for="imcWeight">Peso (kg)</label>
+                        <input id="imcWeight" type="number" inputmode="decimal" min="30" max="250" step="0.1" placeholder="75" required>
+                    </div>
+                </div>
+                <div class="actions"><button type="submit" class="btn btn-gold">Calcular IMC</button></div>
+                <div class="calc-out" id="imcOut" aria-live="polite"></div>
+            </form>
+
+            <form class="card" id="kcalForm">
+                <p class="kicker">Calorías</p>
+                <h3>Cuántas calorías necesitas</h3>
+                <div class="calc-row">
+                    <div>
+                        <label for="kcalSex">Sexo</label>
+                        <select id="kcalSex" required>
+                            <option value="">Elige</option>
+                            <option value="f">Mujer</option>
+                            <option value="m">Hombre</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="kcalAge">Edad</label>
+                        <input id="kcalAge" type="number" inputmode="numeric" min="15" max="80" placeholder="30" required>
+                    </div>
+                    <div>
+                        <label for="kcalHeight">Altura (cm)</label>
+                        <input id="kcalHeight" type="number" inputmode="decimal" min="100" max="250" placeholder="170" required>
+                    </div>
+                    <div>
+                        <label for="kcalWeight">Peso (kg)</label>
+                        <input id="kcalWeight" type="number" inputmode="decimal" min="30" max="250" step="0.1" placeholder="75" required>
+                    </div>
+                </div>
+                <label for="kcalActivity">Actividad</label>
+                <select id="kcalActivity" required>
+                    <option value="">Elige</option>
+                    <option value="1.2">Sedentaria (poco o nada de ejercicio)</option>
+                    <option value="1.375">Ligera (1–3 días por semana)</option>
+                    <option value="1.55">Moderada (3–5 días por semana)</option>
+                    <option value="1.725">Alta (6–7 días por semana)</option>
+                    <option value="1.9">Muy alta (trabajo físico + entreno)</option>
+                </select>
+                <div class="actions"><button type="submit" class="btn btn-gold">Calcular calorías</button></div>
+                <div class="calc-out" id="kcalOut" aria-live="polite"></div>
+            </form>
+        </div>
         <div class="actions">
-            <a class="btn btn-gold" href="/3meses">Ver el acompañamiento</a>
+            <a class="btn btn-ghost" href="/#planes">Quiero un plan con mis números</a>
         </div>
     </section>
 
     <section class="inside">
         <p class="kicker">Úsalas hoy</p>
-        <h2>Calculadora, jerga y mapa</h2>
-        <p class="muted">El glosario se lee sin cuenta. Calcular y ver la lista de ejercicios pide registro. El menú de arriba llega a cada una.</p>
+        <h2>Jerga y mapa de ejercicios</h2>
         <div class="tool-grid">
-            <a class="card tool-card" href="/herramientas#calculadora">
-                <p class="kicker">Números</p>
-                <h3>Calculadora</h3>
-                <p class="muted">IMC, calorías en reposo y gasto según tu actividad.</p>
-            </a>
             <a class="card tool-card" href="/ejercicios">
                 <p class="kicker">Mapa</p>
                 <h3>Ejercicios</h3>
@@ -130,20 +227,9 @@
                 <figcaption>Lifestyle Medicine</figcaption>
             </figure>
         </div>
-        <article class="card offer-card" style="margin-top:28px;">
-            <p class="kicker">La oferta</p>
-            <div class="price">
-                <span data-offer-list>$450.000</span>
-                <span data-offer-now>$450.000</span>
-                <small>CLP · 3 meses</small>
-            </div>
-            <p class="offer-clock" data-offer-clock hidden aria-live="polite"></p>
-            <p class="muted">Acompañamiento con seguimiento. 50% off por tiempo limitado: al enviar el correo arranca el reloj.</p>
-            <div class="actions">
-                <a class="btn btn-ghost" href="/3meses">Cómo funciona</a>
-                <button type="button" class="btn btn-gold" data-open-offer>Quiero el 50%</button>
-            </div>
-        </article>
+        <div class="actions">
+            <a class="btn btn-gold" href="/#planes">Elegir mi plan</a>
+        </div>
     </section>
 
     <section class="inside" id="faq">
@@ -151,8 +237,12 @@
         <h2>Preguntas cortas</h2>
         <div class="glossary">
             <details>
+                <summary>¿Qué diferencia hay entre los dos planes?</summary>
+                <p>Solo el contacto 1 a 1. Los dos duran 3 meses y tienen el mismo cuestionario y el mismo plan en PDF. En el acompañamiento, Gary además te responde por WhatsApp, te evalúa cada 2 semanas y ajusta tu plan.</p>
+            </details>
+            <details>
                 <summary>¿Sirve para bajar de peso y para ganar músculo?</summary>
-                <p>Sí. El servicio es el mismo. Se adapta comida y rutina a esa meta.</p>
+                <p>Sí. Los dos planes se adaptan a tu meta: cambia la comida y la rutina.</p>
             </details>
             <details>
                 <summary>¿Gym o casa?</summary>
@@ -163,8 +253,8 @@
                 <p>No de golpe. Se trabaja con lo que ya comes, para que se pueda sostener.</p>
             </details>
             <details>
-                <summary>¿Qué pasa cuando terminan los 3 meses?</summary>
-                <p>Te quedas con el sistema. Si quieres seguir con seguimiento, se habla con Gary.</p>
+                <summary>¿Cómo recibo el plan?</summary>
+                <p>Después de pagar te llega un correo con el enlace al cuestionario. Lo llenas una vez y tu plan en PDF llega en un segundo correo.</p>
             </details>
         </div>
     </section>

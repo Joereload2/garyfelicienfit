@@ -1,240 +1,110 @@
 "use strict";
 
-var OFFER_KEY = "gff_offer_v1";
-var offerTick = null;
-var offerState = null;
+// ---------- Planes y compra ----------
+// Los dos planes duran 3 meses (12 semanas). La diferencia es el contacto 1 a 1.
+var PLANES = {
+    personalizado: {
+        nombre: "Plan personalizado · 3 meses",
+        precio: "USD $30",
+        wa: "Hola Gary, quiero el plan personalizado de 3 meses (USD 30)",
+    },
+    acompanamiento: {
+        nombre: "Acompañamiento 1 a 1 · 3 meses",
+        precio: "USD $150 (antes USD $400)",
+        wa: "Hola Gary, quiero el acompañamiento 1 a 1 de 3 meses (promo USD 150)",
+    },
+};
+var WA_NUM = "56959128603";
 
-function clpLabel(n) {
-    return "$" + Number(n || 0).toLocaleString("es-CL");
+function waLink(text) {
+    return "https://wa.me/" + WA_NUM + "?text=" + encodeURIComponent(text);
 }
 
-function clockLabel(s) {
-    s = Math.max(0, Math.floor(s || 0));
-    var m = Math.floor(s / 60);
-    var sec = s % 60;
-    return (m < 10 ? "0" : "") + m + ":" + (sec < 10 ? "0" : "") + sec;
-}
-
-function readOfferStore() {
-    try {
-        return JSON.parse(localStorage.getItem(OFFER_KEY) || "null");
-    } catch (e) {
-        return null;
-    }
-}
-
-function writeOfferStore(email, token) {
-    localStorage.setItem(OFFER_KEY, JSON.stringify({ email: email, token: token }));
-}
-
-function paintOffer(state) {
-    offerState = state;
-    var live = !!(state && state.live && state.remaining_s > 0);
-    document.body.classList.toggle("offer-live", live);
-    var price = live ? state.sale_clp || state.price_clp : (state && state.list_clp) || 450000;
-    document.querySelectorAll("[data-offer-now]").forEach(function (el) {
-        el.textContent = clpLabel(price);
-    });
-    document.querySelectorAll("[data-offer-clock]").forEach(function (el) {
-        if (live) {
-            el.hidden = false;
-            el.textContent = clockLabel(state.remaining_s);
-        } else {
-            el.hidden = true;
-            el.textContent = "";
-        }
-    });
-    var pay = document.getElementById("offerPay");
-    var ask = document.getElementById("offerAsk");
-    var liveBox = document.getElementById("offerLiveBox");
-    var submit = document.getElementById("offerSubmit");
-    if (ask) ask.hidden = live;
-    if (liveBox) liveBox.hidden = !live;
-    if (submit) submit.hidden = live;
-    if (pay) {
-        pay.hidden = !live;
-        pay.textContent = live
-            ? "Pagar " + clpLabel(state.sale_clp || state.price_clp)
-            : "Pagar";
-    }
-}
-
-function stopOfferTick() {
-    if (offerTick) {
-        clearInterval(offerTick);
-        offerTick = null;
-    }
-}
-
-function startOfferTick() {
-    stopOfferTick();
-    if (!offerState || !offerState.live) return;
-    offerTick = setInterval(function () {
-        if (!offerState) return;
-        offerState.remaining_s = Math.max(0, (offerState.remaining_s || 0) - 1);
-        if (offerState.remaining_s <= 0) {
-            offerState.live = false;
-            offerState.price_clp = offerState.list_clp;
-            stopOfferTick();
-        }
-        paintOffer(offerState);
-    }, 1000);
-}
-
-async function fetchOfferState(token) {
-    var res = await fetch("/api/oferta-estado?token=" + encodeURIComponent(token));
-    var data = await res.json().catch(function () { return {}; });
-    if (!res.ok || !data.ok) return null;
-    return data;
-}
-
-function bindOfferForm() {
-    if (document.getElementById("offerModal")) {
-        wireOfferModal();
-        return;
-    }
+function buildBuyModal() {
+    if (document.getElementById("buyModal")) return;
     var html = ""
-        + '<div class="modal" id="offerModal">'
-        + '<form class="card" id="offerForm">'
-        + "<h3>50% por tiempo limitado</h3>"
-        + '<p class="muted" id="offerIntro">Déjanos tu correo. Al enviarlo arranca el 50%: $225.000 en vez de $450.000, por tiempo limitado.</p>'
-        + '<div id="offerError" class="error"></div>'
-        + '<div id="offerOk" class="ok"></div>'
-        + '<div id="offerAsk">'
-        + '<label for="offerEmail">Correo electrónico</label>'
-        + '<input id="offerEmail" type="email" required autocomplete="email" placeholder="tucorreo@email.com">'
-        + "</div>"
-        + '<div id="offerLiveBox" hidden>'
-        + '<p class="offer-clock offer-clock-lg" data-offer-clock></p>'
-        + '<p class="muted">Paga ahora a <b data-offer-now>$225.000</b> CLP. Después vuelve a $450.000.</p>'
-        + "</div>"
+        + '<div class="modal" id="buyModal">'
+        + '<form class="card" id="buyForm">'
+        + '<h3 id="buyTitle">Plan</h3>'
+        + '<p class="muted" id="buyLead">Deja tu correo y pasas a Mercado Pago (cobra en pesos chilenos). Al aprobarse, te llega por correo el enlace al cuestionario.</p>'
+        + '<div id="buyError" class="error"></div>'
+        + '<label for="buyEmail">Correo electrónico</label>'
+        + '<input id="buyEmail" type="email" required autocomplete="email" placeholder="tucorreo@email.com">'
         + '<div class="actions">'
-        + '<button type="button" class="btn btn-ghost" id="offerClose">Ahora no</button>'
-        + '<button type="submit" class="btn btn-gold" id="offerSubmit">Quiero el 50%</button>'
-        + '<button type="button" class="btn btn-gold" id="offerPay" hidden>Pagar</button>'
+        + '<button type="button" class="btn btn-ghost" id="buyClose">Cancelar</button>'
+        + '<button type="submit" class="btn btn-gold" id="buySubmit">Ir a pagar</button>'
         + "</div>"
-        + '<p class="note">El código llega al correo y no se muestra aquí. Mercado Pago cobra en pesos.</p>'
+        + '<p class="note">¿Prefieres hablar antes? <a id="buyWa" href="#" target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a>.</p>'
         + "</form></div>";
     document.body.insertAdjacentHTML("beforeend", html);
-    wireOfferModal();
 }
 
-function wireOfferModal() {
-    var modal = document.getElementById("offerModal");
-    var form = document.getElementById("offerForm");
-    if (!modal || !form || form.getAttribute("data-bound")) return;
-    form.setAttribute("data-bound", "1");
-    var stored = readOfferStore();
-    if (stored && stored.email) {
-        var emailInput = document.getElementById("offerEmail");
-        if (emailInput) emailInput.value = stored.email;
-    }
+function wireBuy() {
+    var buttons = document.querySelectorAll("[data-buy]");
+    if (!buttons.length) return;
+    // Quita un modal viejo que venga escrito en la página para usar el de aquí.
+    var old = document.getElementById("buyModal");
+    if (old && !old.hasAttribute("data-gff")) old.remove();
+    buildBuyModal();
+    var modal = document.getElementById("buyModal");
+    modal.setAttribute("data-gff", "1");
+    var form = document.getElementById("buyForm");
+    var current = "personalizado";
 
-    function openOffer() {
+    function open(plan) {
+        current = PLANES[plan] ? plan : "personalizado";
+        var p = PLANES[current];
+        document.getElementById("buyTitle").textContent = p.nombre + " · " + p.precio;
+        document.getElementById("buyWa").href = waLink(p.wa);
+        var err = document.getElementById("buyError");
+        err.classList.remove("show");
+        document.getElementById("buySubmit").disabled = false;
         modal.classList.add("open");
-        paintOffer(offerState);
-        if (offerState && offerState.live) return;
-        var input = document.getElementById("offerEmail");
-        if (input) setTimeout(function () { input.focus(); }, 50);
+        setTimeout(function () { document.getElementById("buyEmail").focus(); }, 50);
     }
-    function closeOffer() {
-        modal.classList.remove("open");
-    }
-    document.querySelectorAll("[data-open-offer]").forEach(function (btn) {
-        btn.addEventListener("click", openOffer);
-    });
-    var closer = document.getElementById("offerClose");
-    if (closer) closer.addEventListener("click", closeOffer);
-    modal.addEventListener("click", function (e) {
-        if (e.target.id === "offerModal") closeOffer();
-    });
+    function close() { modal.classList.remove("open"); }
 
-    var payBtn = document.getElementById("offerPay");
-    if (payBtn) {
-        payBtn.addEventListener("click", async function () {
-            var err = document.getElementById("offerError");
-            if (err) err.classList.remove("show");
-            var rec = readOfferStore() || {};
-            if (!rec.token || !rec.email) return;
-            payBtn.disabled = true;
-            try {
-                var res = await fetch("/api/checkout-3meses", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: rec.email, token: rec.token }),
-                });
-                var data = await res.json().catch(function () { return {}; });
-                if (!res.ok || !data.url) {
-                    if (err) {
-                        err.textContent = data.error || "No se pudo abrir el pago.";
-                        err.classList.add("show");
-                    }
-                    payBtn.disabled = false;
-                    return;
-                }
-                window.location.href = data.url;
-            } catch (e) {
-                if (err) {
-                    err.textContent = "Sin conexión con el servidor.";
-                    err.classList.add("show");
-                }
-                payBtn.disabled = false;
-            }
+    buttons.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            var plan = btn.getAttribute("data-buy");
+            // Páginas viejas usan data-buy="bajar" / "recomposicion": son el plan personalizado.
+            if (plan !== "acompanamiento") plan = "personalizado";
+            open(plan);
         });
-    }
+    });
+    document.getElementById("buyClose").addEventListener("click", close);
+    modal.addEventListener("click", function (e) { if (e.target === modal) close(); });
 
     form.addEventListener("submit", async function (ev) {
         ev.preventDefault();
-        var err = document.getElementById("offerError");
-        var ok = document.getElementById("offerOk");
-        var btn = document.getElementById("offerSubmit");
-        if (err) err.classList.remove("show");
-        if (ok) ok.classList.remove("show");
-        var email = document.getElementById("offerEmail").value.trim();
-        if (btn) btn.disabled = true;
+        var err = document.getElementById("buyError");
+        var btn = document.getElementById("buySubmit");
+        err.classList.remove("show");
+        var email = document.getElementById("buyEmail").value.trim();
+        btn.disabled = true;
         try {
-            var res = await fetch("/api/oferta-3meses", {
+            var res = await fetch("/api/checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: email }),
+                body: JSON.stringify({ email: email, plan: current }),
             });
             var data = await res.json().catch(function () { return {}; });
-            if (!res.ok || !data.ok) {
-                if (err) {
-                    err.textContent = data.error || "No se pudo activar el 50%.";
-                    err.classList.add("show");
-                }
-                if (btn) btn.disabled = false;
+            if (res.ok && data.url) {
+                window.location.href = data.url;
                 return;
             }
-            writeOfferStore(email, data.token);
-            paintOffer(data);
-            startOfferTick();
-            if (ok) {
-                ok.textContent = data.message || "El 50% está activo. El reloj ya corre.";
-                ok.classList.add("show");
-            }
+            err.innerHTML = (data.error || "No se pudo abrir el pago.")
+                + ' <a href="' + waLink(PLANES[current].wa + ". Mi correo: " + email) + '" target="_blank" rel="noopener noreferrer">Abrir WhatsApp</a>';
+            err.classList.add("show");
         } catch (e) {
-            if (err) {
-                err.textContent = "Sin conexión con el servidor.";
-                err.classList.add("show");
-            }
-            if (btn) btn.disabled = false;
+            err.textContent = "Sin conexión con el servidor.";
+            err.classList.add("show");
         }
+        btn.disabled = false;
     });
-
-    (async function restoreOffer() {
-        var rec = readOfferStore();
-        if (!rec || !rec.token) return;
-        try {
-            var data = await fetchOfferState(rec.token);
-            if (!data || !data.live) return;
-            paintOffer(data);
-            startOfferTick();
-        } catch (e) { /* ignore */ }
-    })();
 }
 
+// ---------- Calculadora de /herramientas (pide registro) ----------
 function imcClass(imc) {
     if (imc < 18.5) return { label: "Bajo peso", cls: "calc-imc-bajo" };
     if (imc < 25) return { label: "Peso normal", cls: "calc-imc-ok" };
@@ -302,8 +172,8 @@ function runCalculator(ev) {
     document.getElementById("calcHold").textContent = Math.round(get) + " kcal/día";
     document.getElementById("calcGain").textContent = Math.round(get + 300) + "–" + Math.round(get + 500) + " kcal";
     document.getElementById("calcSuggest").textContent = imc >= 25
-        ? "Con este IMC, bajar de peso suele ser el foco. El acompañamiento de 3 meses adapta comida y rutina a esa meta; no es otro producto."
-        : "Si quieres ganar músculo o verte más firme, el mismo acompañamiento de 3 meses se adapta: cambia la comida y la rutina, no el servicio.";
+        ? "Con este IMC, bajar de peso suele ser el foco. Los dos planes de 3 meses se adaptan a esa meta."
+        : "Si quieres ganar músculo o verte más firme, los dos planes de 3 meses se adaptan: cambia la comida y la rutina.";
     results.hidden = false;
     results.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
@@ -315,4 +185,58 @@ if (calcForm) {
         if (document.getElementById("calcSex").value) calcForm.requestSubmit();
     });
 }
-if (document.querySelector("[data-open-offer]")) bindOfferForm();
+
+// ---------- Calculadoras libres del inicio (IMC y calorías) ----------
+function bindHomeImc() {
+    var f = document.getElementById("imcForm");
+    if (!f) return;
+    f.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var out = document.getElementById("imcOut");
+        var h = Number(document.getElementById("imcHeight").value);
+        var w = Number(document.getElementById("imcWeight").value);
+        if (h > 0 && h < 3) h = h * 100;
+        if (!(h >= 120 && h <= 230) || !(w >= 30 && w <= 250)) {
+            out.innerHTML = '<p class="error show">Revisa los datos: altura entre 120 y 230 cm, peso entre 30 y 250 kg.</p>';
+            return;
+        }
+        var imc = w / Math.pow(h / 100, 2);
+        var cat = imcClass(imc);
+        var min = 18.5 * Math.pow(h / 100, 2), max = 24.9 * Math.pow(h / 100, 2);
+        out.innerHTML = '<div class="calc-big">' + (Math.round(imc * 10) / 10).toFixed(1)
+            + ' <span class="calc-badge ' + cat.cls + '">' + cat.label + "</span></div>"
+            + '<p class="muted">Rango de peso saludable para tu altura: <b>' + Math.round(min) + "–" + Math.round(max) + " kg</b>.</p>";
+    });
+}
+
+function bindHomeKcal() {
+    var f = document.getElementById("kcalForm");
+    if (!f) return;
+    f.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var out = document.getElementById("kcalOut");
+        var sex = document.getElementById("kcalSex").value;
+        var age = Number(document.getElementById("kcalAge").value);
+        var h = Number(document.getElementById("kcalHeight").value);
+        var w = Number(document.getElementById("kcalWeight").value);
+        var act = Number(document.getElementById("kcalActivity").value);
+        if (h > 0 && h < 3) h = h * 100;
+        if (!sex || !(age >= 15 && age <= 80) || !(h >= 120 && h <= 230) || !(w >= 30 && w <= 250) || !act) {
+            out.innerHTML = '<p class="error show">Completa todo: edad 15–80, altura 120–230 cm, peso 30–250 kg.</p>';
+            return;
+        }
+        var tmb = (10 * w) + (6.25 * h) - (5 * age) + (sex === "m" ? 5 : -161);
+        var get = tmb * act;
+        out.innerHTML = '<div class="calc-rows">'
+            + "<div><span>En reposo</span><b>" + Math.round(tmb) + " kcal</b></div>"
+            + "<div><span>Para mantener</span><b>" + Math.round(get) + " kcal</b></div>"
+            + "<div><span>Para bajar de peso</span><b>" + Math.round(get - 500) + "–" + Math.round(get - 300) + " kcal</b></div>"
+            + "<div><span>Para ganar músculo</span><b>" + Math.round(get + 300) + "–" + Math.round(get + 500) + " kcal</b></div>"
+            + "</div>"
+            + '<p class="note">Son estimaciones (fórmula de Mifflin-St Jeor). Tu plan ajusta estos números a ti.</p>';
+    });
+}
+
+wireBuy();
+bindHomeImc();
+bindHomeKcal();

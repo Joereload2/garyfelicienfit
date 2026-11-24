@@ -27,7 +27,7 @@
     <p class="kicker" id="grKicker">Recibido</p>
     <h1 id="grTitle">Ya está. Te escribimos.</h1>
     <p class="lead" id="grLead">
-        Si pagaste o dejaste tus datos, Gary te contacta por correo o WhatsApp para coordinar.
+        Si pagaste o dejaste tus datos, Gary te contacta por correo para coordinar.
     </p>
     <ul class="list" id="grSteps" hidden>
         <li><b>1. Revisa tu correo</b> — te llega el enlace a tu cuestionario (mira también Spam o Promociones).</li>
@@ -48,7 +48,7 @@
         document.getElementById("grSteps").hidden = false;
         if (plan === "acompanamiento") {
             document.getElementById("grTitle").textContent = "¡Bienvenido al acompañamiento 1 a 1!";
-            document.getElementById("grLead").textContent = "Gary te escribe por WhatsApp para coordinar tus 3 meses. Mientras tanto:";
+            document.getElementById("grLead").textContent = "Gary te escribe para coordinar tus 3 meses. Mientras tanto:";
         } else {
             document.getElementById("grTitle").textContent = "¡Listo! Tu plan personalizado está en camino.";
             document.getElementById("grLead").textContent = "Esto es lo que sigue:";
@@ -57,7 +57,6 @@
     </script>
     <div class="actions">
         <a class="btn btn-gold" href="/">Ir al inicio</a>
-        <a class="btn btn-ghost" href="https://wa.me/56959128603" target="_blank" rel="noopener noreferrer">WhatsApp</a>
     </div>
 </main>
 <footer class="foot">

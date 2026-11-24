@@ -34,7 +34,6 @@ function buildBuyModal() {
         + '<button type="button" class="btn btn-ghost" id="buyClose">Cancelar</button>'
         + '<button type="submit" class="btn btn-gold" id="buySubmit">Ir a pagar</button>'
         + "</div>"
-        + '<p class="note">¿Prefieres hablar antes? <a id="buyWa" href="#" target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a>.</p>'
         + "</form></div>";
     document.body.insertAdjacentHTML("beforeend", html);
 }
@@ -55,7 +54,6 @@ function wireBuy() {
         current = PLANES[plan] ? plan : "personalizado";
         var p = PLANES[current];
         document.getElementById("buyTitle").textContent = p.nombre + " · " + p.precio;
-        document.getElementById("buyWa").href = waLink(p.wa);
         var err = document.getElementById("buyError");
         err.classList.remove("show");
         document.getElementById("buySubmit").disabled = false;
@@ -93,8 +91,7 @@ function wireBuy() {
                 window.location.href = data.url;
                 return;
             }
-            err.innerHTML = (data.error || "No se pudo abrir el pago.")
-                + ' <a href="' + waLink(PLANES[current].wa + ". Mi correo: " + email) + '" target="_blank" rel="noopener noreferrer">Abrir WhatsApp</a>';
+            err.textContent = data.error || "No se pudo abrir el pago.";
             err.classList.add("show");
         } catch (e) {
             err.textContent = "Sin conexión con el servidor.";

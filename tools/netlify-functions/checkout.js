@@ -118,7 +118,7 @@ exports.handler = async (event) => {
     return json(503, {
       ok: false,
       offline: true,
-      error: "El pago en línea todavía no está activo. Escríbenos por WhatsApp y te lo dejamos listo.",
+      error: "El pago en línea estará activo muy pronto. Vuelve a intentarlo en unos días.",
     });
   } catch (err) {
     return json(err.status || 502, { ok: false, error: err.message });

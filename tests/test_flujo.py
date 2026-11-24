@@ -80,7 +80,7 @@ class FlujoTests(unittest.TestCase):
         self.assertIn("Calculadora", html)
         self.assertIn("imcForm", html)
         self.assertIn("kcalForm", html)
-        self.assertIn("wa.me/56959128603", html)
+        self.assertNotIn("wa.me/", html)  # WhatsApp quitado por ahora (pedido de gary)
         self.assertIn("Ya soy alumno", html)
         self.assertIn("id=\"faq\"", html)
         self.assertIn("id=\"coach\"", html)

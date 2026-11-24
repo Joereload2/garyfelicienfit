@@ -747,3 +747,4 @@ body.reg-ok .reg-banner { display: none; }
 }
 .list li.no-1a1 { color: var(--muted); }
 .list li.no-1a1::before { background: var(--muted); opacity: .45; }
+.plan-desc { margin: 10px 0 4px; color: var(--cream); line-height: 1.55; font-size: 15.5px; border-left: 2px solid var(--gold); padding-left: 12px; }

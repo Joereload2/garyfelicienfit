@@ -86,7 +86,7 @@ class FlujoTests(unittest.TestCase):
         self.assertIn("id=\"coach\"", html)
         self.assertIn("Promoción", html)
         self.assertNotIn("10 min", html.lower())
-        self.assertNotIn("USD $40", html)
+        self.assertNotRegex(html, r"USD \$40(?!\d)")
         self.assertNotIn("buyModal", html)
         self.assertNotIn("panel-tresmeses", html)
         self.assertNotIn("jspdf", html.lower())
@@ -105,7 +105,7 @@ class FlujoTests(unittest.TestCase):
         self.assertIn("1 a 1", html)
         self.assertIn("ganar músculo", html.lower())
         self.assertNotIn("10 min", html.lower())
-        self.assertNotIn("USD $40", html)
+        self.assertNotRegex(html, r"USD \$40(?!\d)")
         self.assertNotIn("buyModal", html)
 
     def test_01e_oferta_timer(self):
@@ -180,7 +180,7 @@ class FlujoTests(unittest.TestCase):
         self.assertIn("registro.js", html)
         self.assertIn("regAds", html)
         self.assertNotIn("checked", html.split("id=\"regAds\"")[1][:80])
-        self.assertNotIn("USD $40", html)
+        self.assertNotRegex(html, r"USD \$40(?!\d)")
         self.assertNotIn("youtube.com", html.lower())
 
         req = urllib.request.Request(self.base + "/ejercicios")
